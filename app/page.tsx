@@ -1,7 +1,7 @@
 import { CommunityGrid } from "@/components/home/community-grid";
 import { ForumCategory } from "@/components/home/forum-category";
 import { getFeaturedCommunities } from "@/lib/services/community/get-featured-communities";
-import { COMMONS_FEEDS } from "@/config/commons-config";
+import { COMMONS_SECTIONS } from "@/config/commons-config";
 
 export default async function HomePage() {
   const featuredCommunitiesResult = await getFeaturedCommunities();
@@ -10,10 +10,16 @@ export default async function HomePage() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="flex flex-col items-center gap-12">
-        {/* General Discussion Section */}
-        <div className="w-full max-w-5xl">
-          <ForumCategory title="General Discussion" feeds={COMMONS_FEEDS} />
-        </div>
+        {/* Forum Sections */}
+        {COMMONS_SECTIONS.map((section) => (
+          <div key={section.sectionTitle} className="w-full max-w-5xl">
+            <ForumCategory 
+              title={section.sectionTitle} 
+              feeds={section.feeds}
+              borderColor={section.borderColor}
+            />
+          </div>
+        ))}
 
         {/* Featured Communities Section */}
         <div className="w-full max-w-5xl">

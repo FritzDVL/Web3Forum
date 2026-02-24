@@ -4,13 +4,16 @@ import { CommonsFeed } from "@/config/commons-config";
 interface ForumCategoryProps {
   title: string;
   feeds: CommonsFeed[];
+  borderColor?: string;
 }
 
-export function ForumCategory({ title, feeds }: ForumCategoryProps) {
+export function ForumCategory({ title, feeds, borderColor = "blue" }: ForumCategoryProps) {
+  const borderColorClass = borderColor === "green" ? "border-green-600" : "border-blue-600";
+
   return (
     <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-gray-700 dark:bg-gray-800">
       {/* Header */}
-      <div className="border-l-4 border-blue-600 bg-slate-100 px-4 py-3 dark:bg-gray-700">
+      <div className={`border-l-4 ${borderColorClass} bg-slate-100 px-4 py-3 dark:bg-gray-700`}>
         <h3 className="text-sm font-bold uppercase tracking-wide text-slate-700 dark:text-gray-200">
           {title}
         </h3>
