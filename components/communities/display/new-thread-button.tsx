@@ -16,7 +16,7 @@ export function NewThreadButton({ community }: { community: Community }) {
       }}
       variant="default"
       size="sm"
-      className="h-8 bg-green-600 px-3 text-xs font-medium text-white shadow-sm transition-all duration-150 hover:bg-green-700 hover:shadow-md"
+      className="h-8 bg-blue-600 px-3 text-xs font-medium text-white shadow-sm transition-all duration-150 hover:bg-blue-700 hover:shadow-md"
     >
       <PenTool className="mr-1.5 h-3 w-3" />
       <span className="hidden md:inline">New Thread</span>

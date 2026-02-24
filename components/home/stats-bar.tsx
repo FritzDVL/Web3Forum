@@ -30,10 +30,10 @@ export function StatsBar({ loadingStats, statsError, forumStats }: StatsBarProps
           </p>
         </div>
       </div>
-      <div className="group cursor-pointer rounded-2xl border border-border bg-white p-4 backdrop-blur-sm transition-all hover:scale-105 hover:border-green-300/60 dark:bg-gray-800">
+      <div className="group cursor-pointer rounded-2xl border border-border bg-white p-4 backdrop-blur-sm transition-all hover:scale-105 hover:border-blue-300/60 dark:bg-gray-800">
         <div className="flex flex-col items-center text-center">
-          <div className="mb-2 rounded-full bg-green-100 p-2 transition-all group-hover:bg-green-200 dark:bg-green-900/30 dark:group-hover:bg-green-800/50">
-            <MessageCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <div className="mb-2 rounded-full bg-blue-100 p-2 transition-all group-hover:bg-blue-200 dark:bg-blue-900/30 dark:group-hover:bg-blue-800/50">
+            <MessageCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </div>
           <p className="mb-1 text-xs text-muted-foreground">Active Threads</p>
           <p className="text-lg font-bold text-foreground">

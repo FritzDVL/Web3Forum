@@ -22,11 +22,11 @@ export function ProfileHeader({ lensAccount, username }: ProfileHeaderProps) {
               width={300}
               height={100}
             />
-            <div className="absolute inset-0 bg-green-900/20"></div>
+            <div className="absolute inset-0 bg-blue-900/20"></div>
           </>
         ) : (
           <>
-            <div className="h-full w-full bg-gradient-to-r from-green-600 via-green-500 to-green-400"></div>
+            <div className="h-full w-full bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400"></div>
             <div className="absolute inset-0 bg-black/20"></div>
           </>
         )}
@@ -34,9 +34,9 @@ export function ProfileHeader({ lensAccount, username }: ProfileHeaderProps) {
       {/* Profile Info */}
       <div className="relative -mt-12 px-3 sm:-mt-20 sm:px-6">
         <div className="flex flex-col items-start space-y-3 sm:space-y-4 md:flex-row md:items-end md:space-x-6 md:space-y-0">
-          <Avatar className="h-20 w-20 border-2 border-white ring-2 ring-green-100 sm:h-32 sm:w-32 sm:border-4">
+          <Avatar className="h-20 w-20 border-2 border-white ring-2 ring-blue-100 sm:h-32 sm:w-32 sm:border-4">
             <AvatarImage src={lensAccount?.metadata?.picture || "/placeholder.svg"} />
-            <AvatarFallback className="bg-gradient-to-r from-green-400 to-green-600 text-2xl text-white sm:text-4xl">
+            <AvatarFallback className="bg-gradient-to-r from-blue-400 to-blue-600 text-2xl text-white sm:text-4xl">
               {(lensAccount?.metadata?.name || lensAccount?.username?.localName || username)[0].toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -48,7 +48,7 @@ export function ProfileHeader({ lensAccount, username }: ProfileHeaderProps) {
                     {lensAccount?.metadata?.name || lensAccount?.username?.localName || username}
                   </h1>
                 </div>
-                <p className="mb-2 text-sm font-medium text-green-600 sm:text-base">
+                <p className="mb-2 text-sm font-medium text-blue-600 sm:text-base">
                   @{lensAccount?.username?.localName || username}
                 </p>
                 <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
@@ -76,7 +76,7 @@ export function ProfileHeader({ lensAccount, username }: ProfileHeaderProps) {
                     lensAccount?.metadata?.attributes?.find(attr => attr.key === "website" || attr.key === "url")
                       ?.value || "#"
                   }
-                  className="text-green-600 hover:text-green-700 hover:underline"
+                  className="text-blue-600 hover:text-blue-700 hover:underline"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

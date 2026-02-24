@@ -91,7 +91,7 @@ export function TipGhoPopover({ to }: TipGhoPopoverProps) {
         <Button
           variant="ghost"
           size="sm"
-          className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+          className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
           disabled={!isLoggedIn || !canTip}
         >
           <Coins className="h-4 w-4" />
@@ -113,7 +113,7 @@ export function TipGhoPopover({ to }: TipGhoPopoverProps) {
                 key={val}
                 size="sm"
                 variant={tipAmount === val && !customMode ? "default" : "outline"}
-                className={`flex-1 px-0 py-2 font-semibold transition-all duration-150 ${tipAmount === val && !customMode ? "scale-105 ring-2 ring-green-200 dark:ring-green-700" : "hover:scale-105"} dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100`}
+                className={`flex-1 px-0 py-2 font-semibold transition-all duration-150 ${tipAmount === val && !customMode ? "scale-105 ring-2 ring-blue-200 dark:ring-blue-700" : "hover:scale-105"} dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100`}
                 onClick={() => {
                   setTipAmount(val);
                   setCustomMode(false);
@@ -125,7 +125,7 @@ export function TipGhoPopover({ to }: TipGhoPopoverProps) {
             <Button
               size="sm"
               variant={customMode ? "default" : "outline"}
-              className={`flex-1 px-0 py-2 font-semibold transition-all duration-150 ${customMode ? "scale-105 ring-2 ring-green-200 dark:ring-green-700" : "hover:scale-105"} dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100`}
+              className={`flex-1 px-0 py-2 font-semibold transition-all duration-150 ${customMode ? "scale-105 ring-2 ring-blue-200 dark:ring-blue-700" : "hover:scale-105"} dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100`}
               onClick={() => {
                 setCustomMode(true);
                 setTipAmount(parseFloat(customValue) || 1);
@@ -165,7 +165,7 @@ export function TipGhoPopover({ to }: TipGhoPopoverProps) {
                 }
               }}
               placeholder="Amount (GHO)"
-              className="mb-2 border-gray-200 bg-gray-50 text-center text-lg font-semibold focus:ring-green-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:ring-green-700"
+              className="mb-2 border-gray-200 bg-gray-50 text-center text-lg font-semibold focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:ring-blue-700"
             />
           </div>
           {/* Send button */}

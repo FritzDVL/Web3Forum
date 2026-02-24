@@ -12,7 +12,7 @@ interface ForumCategoryProps {
 }
 
 export function ForumCategory({ title, feeds, borderColor = "blue", isLocked = false }: ForumCategoryProps) {
-  const borderColorClass = borderColor === "green" ? "border-green-600" : "border-blue-600";
+  const borderColorClass = borderColor === "green" ? "border-blue-600" : "border-blue-600";
 
   const handleLockedClick = (e: React.MouseEvent) => {
     if (isLocked) {

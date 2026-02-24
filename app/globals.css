@@ -21,7 +21,7 @@
     --card-foreground: 0 0% 3.9%; /* almost black */
     --popover: 0 0% 100%; /* white */
     --popover-foreground: 0 0% 3.9%; /* almost black */
-    --primary: 142 76% 36%; /* brand green (#22c55e) */
+    --primary: 217 91% 60%; /* brand blue (#3b82f6) */
     --primary-foreground: 0 0% 98%; /* almost white */
     --secondary: 0 0% 96.1%; /* light gray */
     --secondary-foreground: 0 0% 9%; /* dark gray */
@@ -44,7 +44,7 @@
     --card-foreground: 0 0% 98%; /* almost white */
     --popover: 0 0% 3.9%; /* almost black */
     --popover-foreground: 0 0% 98%; /* almost white */
-    --primary: 142 76% 36%; /* brand green (#22c55e) */
+    --primary: 217 91% 60%; /* brand blue (#3b82f6) */
     --primary-foreground: 0 0% 98%; /* almost white */
     --secondary: 0 0% 14.9%; /* dark gray */
     --secondary-foreground: 0 0% 98%; /* almost white */

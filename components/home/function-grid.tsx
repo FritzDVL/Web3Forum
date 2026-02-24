@@ -9,7 +9,7 @@ interface FunctionGridProps {
 }
 
 export function FunctionGrid({ title, feeds, borderColor = "blue" }: FunctionGridProps) {
-  const borderColorClass = borderColor === "green" ? "border-green-600" : "border-blue-600";
+  const borderColorClass = borderColor === "green" ? "border-blue-600" : "border-blue-600";
 
   return (
     <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-gray-700 dark:bg-gray-800">

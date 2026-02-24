@@ -44,7 +44,7 @@ export function RulesGuidelines({ title, rules, className = "", variant = "commu
   const getIcon = (type: Rule["type"]) => {
     switch (type) {
       case "positive":
-        return <span className="text-green-600">✓</span>;
+        return <span className="text-blue-600">✓</span>;
       case "negative":
         return <span className="text-red-500">×</span>;
       default:

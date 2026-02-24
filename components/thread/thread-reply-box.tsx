@@ -47,7 +47,7 @@ export function ThreadReplyBox({ onCancel, onSubmit, value, onChange }: ThreadRe
           >
             {isSubmitting ? (
               <span className="flex items-center">
-                <span className="loader mr-2 h-3 w-3 animate-spin rounded-full border-2 border-t-2 border-gray-300 border-t-green-500" />
+                <span className="loader mr-2 h-3 w-3 animate-spin rounded-full border-2 border-t-2 border-gray-300 border-t-blue-500" />
                 Replying...
               </span>
             ) : (

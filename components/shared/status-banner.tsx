@@ -18,7 +18,7 @@ const typeStyles: Record<string, { color: string; icon: React.ReactNode }> = {
     icon: <Info className="h-8 w-8" />,
   },
   success: {
-    color: "border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400",
+    color: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
     icon: <CheckCircle2 className="h-8 w-8" />,
   },
   warning: {

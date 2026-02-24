@@ -71,7 +71,7 @@ export function CommunityMembershipRequests({ community }: CommunityMembershipRe
                     variant="outline"
                     onClick={() => handleApprove(account)}
                     // disabled={processingAccount === account}
-                    className="gap-1 border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20"
+                    className="gap-1 border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/20"
                   >
                     <Check className="h-4 w-4" />
                     Approve

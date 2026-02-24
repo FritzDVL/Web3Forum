@@ -79,11 +79,11 @@ export function CommunityBannedAccounts({ community }: CommunityBannedAccountsPr
               actionButton={
                 <button
                   type="button"
-                  className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 shadow-sm transition-all hover:bg-green-100 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-400 dark:border-green-900/30 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40 dark:hover:text-green-300"
+                  className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all hover:bg-blue-100 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 dark:hover:text-blue-300"
                   disabled={isLoading}
                   onClick={() => handleUnbanClick(ban)}
                 >
-                  <UserCheck className="mr-1 h-4 w-4 text-green-500" />
+                  <UserCheck className="mr-1 h-4 w-4 text-blue-500" />
                   Unban
                 </button>
               }

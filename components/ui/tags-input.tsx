@@ -43,7 +43,7 @@ export function TagsInput({
             type="button"
             size="sm"
             variant="ghost"
-            className="h-6 w-6 rounded-full p-0 text-green-600 hover:bg-green-100"
+            className="h-6 w-6 rounded-full p-0 text-blue-600 hover:bg-blue-100"
             onClick={() => addTag(tagInput)}
           >
             <Plus className="h-3 w-3" />

@@ -32,7 +32,7 @@ export function ProfileJoinedCommunities({ communities }: ProfileJoinedCommuniti
                   <div className="ml-4 flex flex-col justify-center">
                     <div className="flex items-center space-x-2">
                       <h3 className="text-lg font-bold text-foreground">{community.name}</h3>
-                      <Badge className="bg-green-100 text-green-700">Member</Badge>
+                      <Badge className="bg-blue-100 text-blue-700">Member</Badge>
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {(() => {

@@ -27,8 +27,8 @@ export function ThreadVoting({ postid, className }: ThreadVotingProps) {
         size="sm"
         className={`h-7 w-7 rounded-full p-0 transition-all duration-200 hover:scale-110 hover:shadow-sm ${
           hasUserUpvoted
-            ? "bg-green-100 text-green-600 shadow-sm hover:bg-green-200"
-            : "hover:bg-green-50 hover:text-green-600"
+            ? "bg-blue-100 text-blue-600 shadow-sm hover:bg-blue-200"
+            : "hover:bg-blue-50 hover:text-blue-600"
         }`}
         onClick={handleUpvote}
         disabled={isLoading === "up" || isLoading === "down" || hasUserDownvoted || !isLoggedIn}
@@ -36,7 +36,7 @@ export function ThreadVoting({ postid, className }: ThreadVotingProps) {
         aria-label="Upvote thread"
       >
         {isLoading === "up" ? (
-          <span className="inline-block h-3 w-3 animate-spin rounded-full border border-green-600 border-t-transparent" />
+          <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-600 border-t-transparent" />
         ) : (
           <ArrowUp className="h-3.5 w-3.5" />
         )}

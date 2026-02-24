@@ -19,13 +19,13 @@ export function ReplyVoting({ postid }: ReplyVotingProps) {
       <Button
         variant={hasUserUpvoted ? "secondary" : "ghost"}
         size="sm"
-        className={`rounded-full p-1 transition-all duration-300 hover:scale-110 hover:bg-green-100 hover:text-green-600 ${hasUserUpvoted ? "bg-green-100 text-green-600" : ""}`}
+        className={`rounded-full p-1 transition-all duration-300 hover:scale-110 hover:bg-blue-100 hover:text-blue-600 ${hasUserUpvoted ? "bg-blue-100 text-blue-600" : ""}`}
         onClick={handleUpvote}
         disabled={isLoading === "up" || isLoading === "down" || hasUserDownvoted || !isLoggedIn}
         aria-pressed={hasUserUpvoted}
       >
         {isLoading === "up" ? (
-          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
+          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
         ) : (
           <ArrowUp className="h-4 w-4" />
         )}

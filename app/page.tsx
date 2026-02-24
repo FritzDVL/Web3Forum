@@ -33,8 +33,8 @@ export default async function HomePage() {
 
         {/* Featured Communities Section */}
         <div className="w-full max-w-5xl">
-          <h2 className="mb-8 text-center text-3xl font-bold text-slate-900 dark:text-gray-100">
-            Featured Communities
+          <h2 className="mb-8 text-left text-xl font-bold text-slate-900 dark:text-gray-100">
+            LOCAL
           </h2>
           <CommunityGrid communities={featuredCommunities} />
         </div>

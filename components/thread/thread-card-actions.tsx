@@ -110,7 +110,7 @@ export function ThreadCardActions({ thread, community }: ThreadCardActionsProps)
             <Button
               variant="ghost"
               size="sm"
-              className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
               onClick={() => setReplyingTo("main")}
               disabled={!isLoggedIn}
             >
@@ -127,7 +127,7 @@ export function ThreadCardActions({ thread, community }: ThreadCardActionsProps)
             variant="ghost"
             size="sm"
             onClick={handleShare}
-            className="min-w-0 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+            className="min-w-0 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
           >
             <Share className="mr-2 h-4 w-4" />
             <span className="truncate">Share</span>
