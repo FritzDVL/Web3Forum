@@ -9,6 +9,7 @@ export interface CommonsSection {
   feeds: CommonsFeed[];
   borderColor?: string;
   layout?: "list" | "grid";
+  isLocked?: boolean;
 }
 
 export const COMMONS_SECTIONS: CommonsSection[] = [
@@ -125,6 +126,66 @@ export const COMMONS_SECTIONS: CommonsSection[] = [
         title: "Communication",
         address: "feed-19",
         description: "Communication protocols and systems.",
+      },
+    ],
+  },
+  {
+    sectionTitle: "SOCIETY PROTOCOL TECHNICAL SECTION",
+    borderColor: "blue",
+    layout: "list",
+    isLocked: true,
+    feeds: [
+      {
+        title: "General Architecture Discussion",
+        address: "feed-20",
+        description: "High-level system architecture and design patterns.",
+      },
+      {
+        title: "State Machine",
+        address: "feed-21",
+        description: "State transitions and machine logic discussions.",
+      },
+      {
+        title: "Consensus (Proof of Hunt)",
+        address: "feed-22",
+        description: "Consensus mechanisms and proof systems.",
+      },
+      {
+        title: "Cryptography",
+        address: "feed-23",
+        description: "Cryptographic primitives and security protocols.",
+      },
+    ],
+  },
+  {
+    sectionTitle: "OTHERS",
+    borderColor: "blue",
+    layout: "list",
+    feeds: [
+      {
+        title: "Meta-discussion",
+        address: "feed-24",
+        description: "Discussion about the Society Protocol Forum itself.",
+      },
+      {
+        title: "Politics & Society",
+        address: "feed-25",
+        description: "Political impacts on society and optimization.",
+      },
+      {
+        title: "Economics",
+        address: "feed-26",
+        description: "Economic models and theories.",
+      },
+      {
+        title: "Cryptocurrencies & Web3",
+        address: "feed-27",
+        description: "The broader crypto and web3 landscape.",
+      },
+      {
+        title: "Off-topic",
+        address: "feed-28",
+        description: "Anything unrelated to the protocol.",
       },
     ],
   },

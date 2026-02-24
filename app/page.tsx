@@ -1,5 +1,6 @@
 import { CommunityGrid } from "@/components/home/community-grid";
 import { ForumCategory } from "@/components/home/forum-category";
+import { FunctionGrid } from "@/components/home/function-grid";
 import { getFeaturedCommunities } from "@/lib/services/community/get-featured-communities";
 import { COMMONS_SECTIONS } from "@/config/commons-config";
 
@@ -13,11 +14,20 @@ export default async function HomePage() {
         {/* Forum Sections */}
         {COMMONS_SECTIONS.map((section) => (
           <div key={section.sectionTitle} className="w-full max-w-5xl">
-            <ForumCategory 
-              title={section.sectionTitle} 
-              feeds={section.feeds}
-              borderColor={section.borderColor}
-            />
+            {section.layout === "grid" ? (
+              <FunctionGrid 
+                title={section.sectionTitle} 
+                feeds={section.feeds}
+                borderColor={section.borderColor}
+              />
+            ) : (
+              <ForumCategory 
+                title={section.sectionTitle} 
+                feeds={section.feeds}
+                borderColor={section.borderColor}
+                isLocked={section.isLocked}
+              />
+            )}
           </div>
         ))}
 
