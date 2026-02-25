@@ -10,11 +10,11 @@ I’ve synthesized your notes into a clean, structured **Project Manifesto & Tec
 
 The forum is organized into three distinct "Tiers" to balance global discovery with regional and technical sovereignty.
 
-| Tier | Name | Governance Logic | Visibility & Access |
-| --- | --- | --- | --- |
-| **Tier 1** | **Public Commons** | One Lens Group / Many Feeds | Public; Open Join; Unified Indexing |
-| **Tier 2** | **Technical Vault** | Isolated Lens Group | Gated (Token NFT); Client-side Encryption |
-| **Tier 3** | **Local Embassies** | Regional Lens Groups | Sovereign; Language-based Routing |
+| Tier       | Name                | Governance Logic            | Visibility & Access                       |
+| ---------- | ------------------- | --------------------------- | ----------------------------------------- |
+| **Tier 1** | **Public Commons**  | One Lens Group / Many Feeds | Public; Open Join; Unified Indexing       |
+| **Tier 2** | **Technical Vault** | Isolated Lens Group         | Gated (Token NFT); Client-side Encryption |
+| **Tier 3** | **Local Embassies** | Regional Lens Groups        | Sovereign; Language-based Routing         |
 
 ---
 
@@ -24,13 +24,13 @@ This table maps how a user action in the UI translates to blockchain primitives 
 
 ### **Core Primitive Mapping**
 
-| UI Component | Business Logic | Lens V3 Primitive | Supabase Entity |
-| --- | --- | --- | --- |
-| **Root Category** | Unit of Governance | **Lens Group** | `root_categories` |
-| **Sub-Category** | Segmented Stream | **Lens Feed** | `sub_categories` |
-| **Topic / Thread** | Main Discussion | **Article Publication** | `threads` |
-| **Reply / Post** | Engagement | **Comment Publication** | `replies` |
-| **User Profile** | Identity | **Lens Account** | `profiles_cache` |
+| UI Component       | Business Logic     | Lens V3 Primitive       | Supabase Entity   |
+| ------------------ | ------------------ | ----------------------- | ----------------- |
+| **Root Category**  | Unit of Governance | **Lens Group**          | `root_categories` |
+| **Sub-Category**   | Segmented Stream   | **Lens Feed**           | `sub_categories`  |
+| **Topic / Thread** | Main Discussion    | **Article Publication** | `threads`         |
+| **Reply / Post**   | Engagement         | **Comment Publication** | `replies`         |
+| **User Profile**   | Identity           | **Lens Account**        | `profiles_cache`  |
 
 ---
 
@@ -40,9 +40,9 @@ Based on previous project "scar tissue," these rules are non-negotiable for stab
 
 ### **The "Goldilocks" Stack**
 
-* **Framework**: Next.js 14.2.x & React 18 (Avoid Next 15/React 19 due to Web3 library incompatibilities).
-* **Transpilation**: Must include `connectkit` and `walletconnect` in `transpilePackages` in `next.config.mjs`.
-* **Polyfills**: Manually disable Node.js modules (`fs`, `net`, `tls`) in Webpack to prevent browser crashes.
+- **Framework**: Next.js 14.2.x & React 18 (Avoid Next 15/React 19 due to Web3 library incompatibilities).
+- **Transpilation**: Must include `connectkit` and `walletconnect` in `transpilePackages` in `next.config.mjs`.
+- **Polyfills**: Manually disable Node.js modules (`fs`, `net`, `tls`) in Webpack to prevent browser crashes.
 
 ### **The 3-Step Handshake (Identity Flow)**
 
@@ -56,9 +56,9 @@ Based on previous project "scar tissue," these rules are non-negotiable for stab
 
 To ensure the UI is "instant," we use Supabase as a cache.
 
-* **The Metadata Prefix**: Every Lens post is prefixed with `LearningLens: [Tier]`. This allows the indexer to verify the post belongs to the forum.
-* **The Fallback Rule**: If a post is missing from Supabase, the UI must fetch directly from the Lens API to ensure 100% data availability.
-* **Flat Replies**: Avoid deep-nested UI bugs. Use a chronological list with "In reply to" badges (quotes) using Markdown references.
+- **The Metadata Prefix**: Every Lens post is prefixed with `LearningLens: [Tier]`. This allows the indexer to verify the post belongs to the forum.
+- **The Fallback Rule**: If a post is missing from Supabase, the UI must fetch directly from the Lens API to ensure 100% data availability.
+- **Flat Replies**: Avoid deep-nested UI bugs. Use a chronological list with "In reply to" badges (quotes) using Markdown references.
 
 ---
 
@@ -66,20 +66,20 @@ To ensure the UI is "instant," we use Supabase as a cache.
 
 ### **Phase 1: Foundations**
 
-* Deploy `SOCIETY_COMMONS_GROUP` and `SOCIETY_VAULT_GROUP` on ZKsync.
-* Initialize 15-20 static Lens Feeds for Tier 1.
-* Setup `lib/adapters/forum-adapter.ts` to transform raw Lens data into clean UI objects.
+- Deploy `SOCIETY_COMMONS_GROUP` and `SOCIETY_VAULT_GROUP` on ZKsync.
+- Initialize 15-20 static Lens Feeds for Tier 1.
+- Setup `lib/adapters/forum-adapter.ts` to transform raw Lens data into clean UI objects.
 
 ### **Phase 2: Authentication**
 
-* Build the **ConnectMonitor** (headless state sync).
-* Implement the **Account Picker Dialog** for multi-profile users.
+- Build the **ConnectMonitor** (headless state sync).
+- Implement the **Account Picker Dialog** for multi-profile users.
 
 ### **Phase 3: The Content Loop**
 
-* Build the **Thread Composer** with Markdown support.
-* Deploy **Supabase Edge Functions** to listen for `PostCreated` events.
-* Implement the **Vault Service** (Lit Protocol) for decryption.
+- Build the **Thread Composer** with Markdown support.
+- Deploy **Supabase Edge Functions** to listen for `PostCreated` events.
+- Implement the **Vault Service** (Lit Protocol) for decryption.
 
 ---
 
@@ -87,472 +87,7 @@ To ensure the UI is "instant," we use Supabase as a cache.
 
 This organized view clarifies that your **AuthStore** and **Data Adapters** are the most critical "first-build" items.
 
-What I consider the Landing page UI to look like is this: 
-
- <!DOCTYPE html>
-
-<html lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Society Protocol Forum</title>
-<!-- Tailwind CSS v3 CDN -->
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<!-- Google Fonts: Inter -->
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<!-- Lucide Icons script -->
-<script src="https://unpkg.com/lucide@latest"></script>
-<style data-purpose="typography">
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f8fafc;
-      color: #334155;
-    }
-  </style>
-<style data-purpose="custom-layout">
-    /* Custom scrollbar for a cleaner look */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #f1f1f1;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
-    .technical-section-glow {
-      box-shadow: 0 0 20px rgba(79, 70, 229, 0.1);
-    }
-    .padlock-glow {
-      filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
-    }
-  </style>
-</head>
-<body class="min-h-screen">
-<!-- BEGIN: MainHeader -->
-<header class="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md" data-purpose="navigation">
-<div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-<!-- Left: Wordmark -->
-<div class="flex items-center gap-2 cursor-pointer" data-purpose="logo">
-<div class="w-8 h-8 bg-black rounded flex items-center justify-center">
-<i class="text-white w-5 h-5" data-lucide="shield"></i>
-</div>
-<span class="font-bold text-lg tracking-tight text-slate-900 uppercase">Society Protocol</span>
-</div>
-<!-- Center: Search -->
-<div class="hidden md:flex flex-1 max-w-md mx-8">
-<div class="relative w-full">
-<i class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" data-lucide="search"></i>
-<input class="w-full bg-slate-100 border-none rounded-md py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-slate-200" placeholder="Search forum..." type="text"/>
-</div>
-</div>
-<!-- Right: Wallet Button -->
-<div class="flex items-center gap-4">
-<button class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-slate-900 text-slate-50 shadow hover:bg-slate-900/90 h-9 px-4 py-2">
-          Connect Wallet
-        </button>
-</div>
-</div>
-</header>
-<!-- END: MainHeader -->
-<!-- BEGIN: MainContent -->
-<main class="max-w-7xl mx-auto px-4 py-8">
-<!-- BEGIN: ForumList -->
-<div class="space-y-8">
-<!-- Root Category: General Discussion -->
-<section data-purpose="root-category-general">
-<div class="flex items-center justify-between border-l-4 border-blue-500 bg-slate-100 px-4 py-2 mb-2">
-<h2 class="font-bold text-sm uppercase text-slate-700">General Discussion</h2>
-<i class="w-4 h-4 text-slate-400" data-lucide="chevron-down"></i>
-</div>
-<div class="bg-white border rounded-lg overflow-hidden">
-<table class="w-full text-left text-sm table-fixed">
-<thead class="bg-slate-50 text-slate-500 font-medium border-b">
-<tr>
-<th class="px-4 py-2 w-1/2">Subject</th>
-<th class="px-4 py-2 text-center w-1/6 whitespace-nowrap">Replies</th>
-<th class="px-4 py-2 text-center w-1/6">Views</th>
-<th class="px-4 py-2 w-1/6">Last Post</th>
-</tr>
-</thead>
-<tbody class="divide-y">
-<tr class="hover:bg-slate-50" id="feed-beginners-help">
-<td class="px-4 py-4 flex items-start gap-3">
-<i class="w-4 h-4 text-blue-500 mt-1" data-lucide="pin"></i>
-<div>
-<a class="text-blue-600 font-semibold hover:underline block" href="/feed/beginners-help" data-lens-feed="beginners_help_feed_id">Beginners &amp; Help</a>
-<span class="text-[10px] text-slate-400">(1 2 3 ... 5)</span>
-</div>
-</td>
-<td class="px-4 py-4 text-center">45</td>
-<td class="px-4 py-4 text-center">1,200</td>
-<td class="px-4 py-4 text-xs">
-<span class="block">Today at 10:24 AM</span>
-<span class="text-slate-400">by</span> <a class="text-blue-500" href="#">Moderator A</a>
-</td>
-</tr>
-<tr class="hover:bg-slate-50" id="feed-key-concepts">
-<td class="px-4 py-4 flex items-start gap-3">
-<i class="w-4 h-4 text-slate-400 mt-1" data-lucide="message-square"></i>
-<a class="text-blue-600 font-semibold hover:underline" href="/feed/key-concepts" data-lens-feed="key_concepts_feed_id">4 Key Concepts – (Energy, Timeline, state, Actors, accounts, Lifeline, Death, etc...)</a>
-</td>
-<td class="px-4 py-4 text-center">892</td>
-<td class="px-4 py-4 text-center">24,500</td>
-<td class="px-4 py-4 text-xs">
-<span class="block">Yesterday at 08:15 PM</span>
-<span class="text-slate-400">by</span> <a class="text-blue-500" href="#">CoreMember</a>
-</td>
-</tr>
-<tr class="hover:bg-slate-50">
-<td class="px-4 py-4 flex items-start gap-3">
-<i class="w-4 h-4 text-slate-400 mt-1" data-lucide="message-square"></i>
-<div>
-<a class="text-blue-600 font-semibold hover:underline block" href="#">Web3 Outpost – (Outpost, Badges, SPEC)</a>
-<span class="text-[10px] text-slate-400">(1 2 3 ... 5)</span>
-</div>
-</td>
-<td class="px-4 py-4 text-center">214</td>
-<td class="px-4 py-4 text-center">8,500</td>
-<td class="px-4 py-4 text-xs">
-<span class="block">Yesterday at 11:42 PM</span>
-<span class="text-slate-400">by</span> <a class="text-blue-500" href="#">CoreMember</a>
-</td>
-</tr>
-<tr class="hover:bg-slate-50">
-<td class="px-4 py-4 flex items-start gap-3">
-<i class="w-4 h-4 text-slate-400 mt-1" data-lucide="gavel"></i>
-<div>
-<a class="text-blue-600 font-semibold hover:underline block" href="#">DAO Governance</a>
-<span class="text-[10px] text-slate-400">(1 2 3 ... 5)</span>
-</div>
-</td>
-<td class="px-4 py-4 text-center">56</td>
-<td class="px-4 py-4 text-center">4,231</td>
-<td class="px-4 py-4 text-xs">
-<span class="block">Aug 12, 2023</span>
-<span class="text-slate-400">by</span> <a class="text-blue-500" href="#">Moderator B</a>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-
-<!-- Root Category: Partner Communities -->
-<section data-purpose="root-category-partners">
-<div class="flex items-center justify-between border-l-4 border-emerald-500 bg-slate-100 px-4 py-2 mb-2">
-<h2 class="font-bold text-sm uppercase text-slate-700">Partner Communities</h2>
-<i class="w-4 h-4 text-slate-400" data-lucide="chevron-down"></i>
-</div>
-<div class="bg-white border rounded-lg overflow-hidden">
-<table class="w-full text-left text-sm table-fixed">
-<thead class="bg-slate-50 text-slate-500 font-medium border-b">
-<tr>
-<th class="px-4 py-2 w-1/2">Subject</th>
-<th class="px-4 py-2 text-center w-1/6 whitespace-nowrap">Replies</th>
-<th class="px-4 py-2 text-center w-1/6">Views</th>
-<th class="px-4 py-2 w-1/6">Last Post</th>
-</tr>
-</thead>
-<tbody class="divide-y">
-<tr class="hover:bg-slate-50">
-<td class="px-4 py-4 flex items-start gap-3">
-<i class="w-4 h-4 text-emerald-500 mt-1" data-lucide="users"></i>
-<div>
-<a class="text-blue-600 font-semibold hover:underline block" href="#">General Discussion</a>
-<span class="text-[10px] text-slate-400">Discussion about Society Protocol partner communities</span>
-</div>
-</td>
-<td class="px-4 py-4 text-center">12</td>
-<td class="px-4 py-4 text-center">450</td>
-<td class="px-4 py-4 text-xs">
-<span class="block">Today at 11:15 AM</span>
-<span class="text-slate-400">by</span> <a class="text-blue-500" href="#">PartnerRel</a>
-</td>
-</tr>
-<tr class="hover:bg-slate-50">
-<td class="px-4 py-4 flex items-start gap-3">
-<i class="w-4 h-4 text-orange-500 mt-1" data-lucide="megaphone"></i>
-<div>
-<a class="text-blue-600 font-semibold hover:underline block" href="#">Announcements</a>
-<span class="text-[10px] text-slate-400">Official partner news and updates</span>
-</div>
-</td>
-<td class="px-4 py-4 text-center">5</td>
-<td class="px-4 py-4 text-center">1,120</td>
-<td class="px-4 py-4 text-xs">
-<span class="block">Yesterday at 04:30 PM</span>
-<span class="text-slate-400">by</span> <a class="text-blue-500" href="#">Admin</a>
-</td>
-</tr>
-<tr class="hover:bg-slate-50">
-<td class="px-4 py-4 flex items-start gap-3">
-<i class="w-4 h-4 text-blue-500 mt-1" data-lucide="map"></i>
-<div>
-<a class="text-blue-600 font-semibold hover:underline block" href="#">Network States Communities</a>
-<span class="text-[10px] text-slate-400">Discussion about current and upcoming network states</span>
-</div>
-</td>
-<td class="px-4 py-4 text-center">89</td>
-<td class="px-4 py-4 text-center">3,400</td>
-<td class="px-4 py-4 text-xs">
-<span class="block">Aug 14, 2023</span>
-<span class="text-slate-400">by</span> <a class="text-blue-500" href="#">Networker</a>
-</td>
-</tr>
-<tr class="hover:bg-slate-50">
-<td class="px-4 py-4 flex items-start gap-3">
-<i class="w-4 h-4 text-amber-500 mt-1" data-lucide="award"></i>
-<div>
-<a class="text-blue-600 font-semibold hover:underline block" href="#">Partner Badges &amp; SPEC</a>
-<span class="text-[10px] text-slate-400">Partner Community Badges &amp; SPEC Distribution Plans</span>
-</div>
-</td>
-<td class="px-4 py-4 text-center">34</td>
-<td class="px-4 py-4 text-center">2,100</td>
-<td class="px-4 py-4 text-xs">
-<span class="block">Aug 12, 2023</span>
-<span class="text-slate-400">by</span> <a class="text-blue-500" href="#">SPEC_Dev</a>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-
-<!-- Root Category: Functions (Value System) -->
-<section data-purpose="root-category-functions">
-<div class="flex items-center justify-between border-l-4 border-blue-500 bg-slate-100 px-4 py-2 mb-2">
-<h2 class="font-bold text-sm uppercase text-slate-700">Functions (Value System)</h2>
-<i class="w-4 h-4 text-slate-400" data-lucide="chevron-down"></i>
-</div>
-<div class="space-y-1">
-<div class="grid grid-cols-1 md:grid-cols-2 gap-1">
-<div class="bg-white border p-3 flex items-center justify-between hover:border-blue-200 transition-colors">
-<div class="flex items-center gap-3"><i class="w-4 h-4 text-slate-400" data-lucide="trending-up"></i><a class="text-blue-600 font-medium text-sm hover:underline" href="#">Economic Game Theory</a></div>
-<div class="text-[10px] text-slate-400 text-right">45 posts</div>
-</div>
-<div class="bg-white border p-3 flex items-center justify-between hover:border-blue-200 transition-colors">
-<div class="flex items-center gap-3"><i class="w-4 h-4 text-slate-400" data-lucide="lightbulb"></i><a class="text-blue-600 font-medium text-sm hover:underline" href="#">Function Ideas</a></div>
-<div class="text-[10px] text-slate-400 text-right">892 posts</div>
-</div>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-1">
-<div class="bg-white border p-3 flex items-center justify-between hover:border-blue-200 transition-colors">
-<div class="flex items-center gap-3"><i class="w-4 h-4 text-slate-400" data-lucide="target"></i><a class="text-blue-600 font-medium text-sm hover:underline" href="#">Hunting</a></div>
-<div class="text-[10px] text-slate-400 text-right">156 posts</div>
-</div>
-<div class="bg-white border p-3 flex items-center justify-between hover:border-blue-200 transition-colors">
-<div class="flex items-center gap-3"><i class="w-4 h-4 text-slate-400" data-lucide="home"></i><a class="text-blue-600 font-medium text-sm hover:underline" href="#">Property</a></div>
-<div class="text-[10px] text-slate-400 text-right">892 posts</div>
-</div>
-<div class="bg-white border p-3 flex items-center justify-between hover:border-blue-200 transition-colors">
-<div class="flex items-center gap-3"><i class="w-4 h-4 text-slate-400" data-lucide="users-2"></i><a class="text-blue-600 font-medium text-sm hover:underline" href="#">Parenting</a></div>
-<div class="text-[10px] text-slate-400 text-right">342 posts</div>
-</div>
-<div class="bg-white border p-3 flex items-center justify-between hover:border-blue-200 transition-colors">
-<div class="flex items-center gap-3"><i class="w-4 h-4 text-slate-400" data-lucide="gavel"></i><a class="text-blue-600 font-medium text-sm hover:underline" href="#">Governance</a></div>
-<div class="text-[10px] text-slate-400 text-right">892 posts</div>
-</div>
-<div class="bg-white border p-3 flex items-center justify-between hover:border-blue-200 transition-colors">
-<div class="flex items-center gap-3"><i class="w-4 h-4 text-slate-400" data-lucide="layout-grid"></i><a class="text-blue-600 font-medium text-sm hover:underline" href="#">Organizations</a></div>
-<div class="text-[10px] text-slate-400 text-right">156 posts</div>
-</div>
-<div class="bg-white border p-3 flex items-center justify-between hover:border-blue-200 transition-colors">
-<div class="flex items-center gap-3"><i class="w-4 h-4 text-slate-400" data-lucide="filter"></i><a class="text-blue-600 font-medium text-sm hover:underline" href="#">Curation</a></div>
-<div class="text-[10px] text-slate-400 text-right">156 posts</div>
-</div>
-<div class="bg-white border p-3 flex items-center justify-between hover:border-blue-200 transition-colors">
-<div class="flex items-center gap-3"><i class="w-4 h-4 text-slate-400" data-lucide="sprout"></i><a class="text-blue-600 font-medium text-sm hover:underline" href="#">Farming</a></div>
-<div class="text-[10px] text-slate-400 text-right">156 posts</div>
-</div>
-<div class="bg-white border p-3 flex items-center justify-between hover:border-blue-200 transition-colors">
-<div class="flex items-center gap-3"><i class="w-4 h-4 text-slate-400" data-lucide="door-open"></i><a class="text-blue-600 font-medium text-sm hover:underline" href="#">Portal</a></div>
-<div class="text-[10px] text-slate-400 text-right">892 posts</div>
-</div>
-<div class="bg-white border p-3 flex items-center justify-between hover:border-blue-200 transition-colors">
-<div class="flex items-center gap-3"><i class="w-4 h-4 text-slate-400" data-lucide="message-square"></i><a class="text-blue-600 font-medium text-sm hover:underline" href="#">Communication</a></div>
-<div class="text-[10px] text-slate-400 text-right">892 posts</div>
-</div>
-</div>
-</div>
-</section>
-
-<!-- Root Category: Technical (Lens Gated & Encrypted) -->
-<section class="technical-section-glow" data-purpose="root-category-technical">
-<div class="flex items-center justify-between bg-[#1E1B4B] px-4 py-3 rounded-t-lg border-b border-indigo-500/30">
-<div class="flex items-center gap-3">
-<h2 class="font-bold text-sm uppercase text-white tracking-widest">Society Protocol Technical Section</h2>
-<i class="w-4 h-4 text-amber-400 padlock-glow" data-lucide="lock"></i>
-</div>
-<i class="w-4 h-4 text-indigo-300" data-lucide="chevron-down"></i>
-</div>
-<div class="bg-[#1E1B4B] overflow-hidden rounded-b-lg shadow-xl">
-<table class="w-full text-left text-sm table-fixed">
-<thead class="bg-indigo-950/50 text-indigo-200 font-medium">
-<tr>
-<th class="px-4 py-3 w-1/2">Subject</th>
-<th class="px-4 py-3 w-1/6">Dev Team</th>
-<th class="px-4 py-3 text-center w-1/6">Activity</th>
-<th class="px-4 py-3 w-1/6">Last Post</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-indigo-800/50">
-<tr class="hover:bg-indigo-900/40 transition-colors">
-<td class="px-4 py-4 flex items-start gap-3"><i class="w-4 h-4 text-indigo-400 mt-1" data-lucide="cpu"></i><a class="text-white font-semibold hover:text-indigo-300" href="#">General Architecture Discussion</a></td>
-<td class="px-4 py-4 text-indigo-300">Admin</td>
-<td class="px-4 py-4 text-center text-white">1,200</td>
-<td class="px-4 py-4 text-xs text-indigo-200">Today 10:24 AM</td>
-</tr>
-<tr class="hover:bg-indigo-900/40 transition-colors">
-<td class="px-4 py-4 flex items-start gap-3"><i class="w-4 h-4 text-indigo-400 mt-1" data-lucide="database"></i><a class="text-white font-semibold hover:text-indigo-300" href="#">State Machine (State Storage &amp; STF)</a></td>
-<td class="px-4 py-4 text-indigo-300">Satoshi_Dev</td>
-<td class="px-4 py-4 text-center text-white">24,500</td>
-<td class="px-4 py-4 text-xs text-indigo-200">Yesterday 08:15 PM</td>
-</tr>
-<tr class="hover:bg-indigo-900/40 transition-colors">
-<td class="px-4 py-4 flex items-start gap-3"><i class="w-4 h-4 text-indigo-400 mt-1" data-lucide="component"></i><a class="text-white font-semibold hover:text-indigo-300" href="#">Architectural Objects</a></td>
-<td class="px-4 py-4 text-indigo-300">Admin</td>
-<td class="px-4 py-4 text-center text-white">450</td>
-<td class="px-4 py-4 text-xs text-indigo-200">Aug 14, 2023</td>
-</tr>
-<tr class="hover:bg-indigo-900/40 transition-colors">
-<td class="px-4 py-4 flex items-start gap-3"><i class="w-4 h-4 text-indigo-400 mt-1" data-lucide="user-cog"></i><a class="text-white font-semibold hover:text-indigo-300" href="#">Account System</a></td>
-<td class="px-4 py-4 text-indigo-300">Core_Dev</td>
-<td class="px-4 py-4 text-center text-white">890</td>
-<td class="px-4 py-4 text-xs text-indigo-200">Aug 13, 2023</td>
-</tr>
-<tr class="hover:bg-indigo-900/40 transition-colors">
-<td class="px-4 py-4 flex items-start gap-3"><i class="w-4 h-4 text-indigo-400 mt-1" data-lucide="shield-check"></i><a class="text-white font-semibold hover:text-indigo-300" href="#">Consensus (Proof of Hunt)</a></td>
-<td class="px-4 py-4 text-indigo-300">User99</td>
-<td class="px-4 py-4 text-center text-white">3,420</td>
-<td class="px-4 py-4 text-xs text-indigo-200">Oct 23, 2023</td>
-</tr>
-<tr class="hover:bg-indigo-900/40 transition-colors">
-<td class="px-4 py-4 flex items-start gap-3"><i class="w-4 h-4 text-indigo-400 mt-1" data-lucide="lock"></i><a class="text-white font-semibold hover:text-indigo-300" href="#">Security</a></td>
-<td class="px-4 py-4 text-indigo-300">WhiteHat</td>
-<td class="px-4 py-4 text-center text-white">670</td>
-<td class="px-4 py-4 text-xs text-indigo-200">Aug 12, 2023</td>
-</tr>
-<tr class="hover:bg-indigo-900/40 transition-colors">
-<td class="px-4 py-4 flex items-start gap-3"><i class="w-4 h-4 text-indigo-400 mt-1" data-lucide="key"></i><a class="text-white font-semibold hover:text-indigo-300" href="#">Cryptography</a></td>
-<td class="px-4 py-4 text-indigo-300">Satoshi_Dev</td>
-<td class="px-4 py-4 text-center text-white">24,500</td>
-<td class="px-4 py-4 text-xs text-indigo-200">Yesterday 08:15 PM</td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-
-<!-- Root Category: Others -->
-<section data-purpose="root-category-others">
-<div class="flex items-center justify-between border-l-4 border-slate-400 bg-slate-100 px-4 py-2 mb-2">
-<h2 class="font-bold text-sm uppercase text-slate-700">Others</h2>
-<i class="w-4 h-4 text-slate-400" data-lucide="chevron-down"></i>
-</div>
-<div class="bg-white border rounded-lg overflow-hidden">
-<table class="w-full text-left text-sm table-fixed">
-<thead class="bg-slate-50 text-slate-500 font-medium border-b">
-<tr>
-<th class="px-4 py-2 w-1/2">Subject</th>
-<th class="px-4 py-2 text-center w-1/6 whitespace-nowrap">Replies</th>
-<th class="px-4 py-2 text-center w-1/6">Views</th>
-<th class="px-4 py-2 w-1/6">Last Post</th>
-</tr>
-</thead>
-<tbody class="divide-y">
-<tr class="hover:bg-slate-50">
-<td class="px-4 py-4 flex items-start gap-3"><i class="w-4 h-4 text-slate-400 mt-1" data-lucide="message-circle"></i><div><a class="text-blue-600 font-semibold hover:underline block" href="#">Meta-discussion</a><span class="text-[10px] text-slate-400">Discussion about the Society Protocol Forum itself</span></div></td>
-<td class="px-4 py-4 text-center">15</td><td class="px-4 py-4 text-center">890</td><td class="px-4 py-4 text-xs">Today at 12:00 PM</td>
-</tr>
-<tr class="hover:bg-slate-50">
-<td class="px-4 py-4 flex items-start gap-3"><i class="w-4 h-4 text-slate-400 mt-1" data-lucide="landmark"></i><div><a class="text-blue-600 font-semibold hover:underline block" href="#">Politics &amp; Society</a><span class="text-[10px] text-slate-400">Impacts on society</span></div></td>
-<td class="px-4 py-4 text-center">142</td><td class="px-4 py-4 text-center">5,600</td><td class="px-4 py-4 text-xs">Yesterday at 09:15 PM</td>
-</tr>
-<tr class="hover:bg-slate-50">
-<td class="px-4 py-4 flex items-start gap-3"><i class="w-4 h-4 text-slate-400 mt-1" data-lucide="coins"></i><div><a class="text-blue-600 font-semibold hover:underline block" href="#">Economics</a><span class="text-[10px] text-slate-400">Economic models</span></div></td>
-<td class="px-4 py-4 text-center">67</td><td class="px-4 py-4 text-center">2,300</td><td class="px-4 py-4 text-xs">Aug 14, 2023</td>
-</tr>
-<tr class="hover:bg-slate-50">
-<td class="px-4 py-4 flex items-start gap-3"><i class="w-4 h-4 text-slate-400 mt-1" data-lucide="cpu"></i><div><a class="text-blue-600 font-semibold hover:underline block" href="#">Cryptocurrencies &amp; Web3</a><span class="text-[10px] text-slate-400">Broader landscape</span></div></td>
-<td class="px-4 py-4 text-center">234</td><td class="px-4 py-4 text-center">12,400</td><td class="px-4 py-4 text-xs">Aug 13, 2023</td>
-</tr>
-<tr class="hover:bg-slate-50">
-<td class="px-4 py-4 flex items-start gap-3"><i class="w-4 h-4 text-coffee-400 mt-1" data-lucide="coffee"></i><div><a class="text-blue-600 font-semibold hover:underline block" href="#">Off-topic</a><span class="text-[10px] text-slate-400">Anything unrelated</span></div></td>
-<td class="px-4 py-4 text-center">567</td><td class="px-4 py-4 text-center">45,000</td><td class="px-4 py-4 text-xs">Today at 02:45 PM</td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-
-<!-- Section: Local -->
-<section data-purpose="category-local">
-<div class="flex items-center justify-between border-l-4 border-blue-500 bg-slate-100 px-4 py-2 mb-2">
-<h2 class="font-bold text-sm uppercase text-slate-700">Local</h2>
-<i class="w-4 h-4 text-slate-400" data-lucide="chevron-down"></i>
-</div>
-<div class="bg-white border rounded-lg overflow-hidden">
-<table class="w-full text-left text-sm table-fixed">
-<thead class="bg-slate-50 text-slate-500 font-medium border-b">
-<tr>
-<th class="px-4 py-2 w-1/2">Language</th>
-<th class="px-4 py-2 w-[15%]">Admin</th>
-<th class="px-4 py-2 text-center w-[10%]">Replies</th>
-<th class="px-4 py-2 text-center w-[10%]">Views</th>
-<th class="px-4 py-2 w-[15%]">Last Post</th>
-</tr>
-</thead>
-<tbody class="divide-y">
-<tr class="hover:bg-slate-50">
-<td class="px-4 py-4 flex items-center gap-3"><i class="w-4 h-4 text-slate-400" data-lucide="globe"></i><a class="text-blue-600 font-semibold hover:underline" href="#">العربية (Arabic)</a></td>
-<td class="px-4 py-4"><a class="text-blue-500" href="#">Satoshi_Dev</a></td>
-<td class="px-4 py-4 text-center">892</td><td class="px-4 py-4 text-center">24,500</td><td class="px-4 py-4 text-xs">Yesterday at 08:15 PM</td>
-</tr>
-<tr class="hover:bg-slate-50">
-<td class="px-4 py-4 flex items-center gap-3"><i class="w-4 h-4 text-slate-400" data-lucide="globe"></i><a class="text-blue-600 font-semibold hover:underline" href="#">Español (Spanish)</a></td>
-<td class="px-4 py-4"><a class="text-blue-500" href="#">Satoshi_Dev</a></td>
-<td class="px-4 py-4 text-center">892</td><td class="px-4 py-4 text-center">24,500</td><td class="px-4 py-4 text-xs">Yesterday at 08:15 PM</td>
-</tr>
-<tr class="hover:bg-slate-50">
-<td class="px-4 py-4 flex items-center gap-3"><i class="w-4 h-4 text-slate-400" data-lucide="globe"></i><a class="text-blue-600 font-semibold hover:underline" href="#">中文 (Chinese)</a></td>
-<td class="px-4 py-4"><a class="text-blue-500" href="#">Satoshi_Dev</a></td>
-<td class="px-4 py-4 text-center">892</td><td class="px-4 py-4 text-center">24,500</td><td class="px-4 py-4 text-xs">Yesterday at 08:15 PM</td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
-</div>
-<!-- END: ForumList -->
-</main>
-<!-- END: MainContent -->
-<!-- BEGIN: Footer -->
-<footer class="border-t bg-white mt-12 py-8" data-purpose="footer">
-<div class="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
-<p>© 2023 Society Protocol. Powered by Lens Protocol.</p>
-<div class="flex justify-center gap-4 mt-4">
-<a class="hover:text-slate-900" href="#">Privacy Policy</a>
-<a class="hover:text-slate-900" href="#">Terms of Service</a>
-<a class="hover:text-slate-900" href="#">FAQ</a>
-</div>
-</div>
-</footer>
-<!-- END: Footer -->
-<script data-purpose="lucide-initialization">
-    /* Initialize icons */
-    lucide.createIcons();
-  </script>
-</body></html>
-
-
------
+---
 
 # Requirements Document
 
@@ -775,7 +310,8 @@ Transform the existing LensForum codebase into the Society Protocol Tier 1 Publi
 5. THE Public_Commons SHALL implement user session management that works across multiple tiers
 6. THE Public_Commons SHALL maintain data structures that support tier-aware content organization
 
-----
+---
+
 # Society Protocol Public Commons - Design Document
 
 ## Overview
@@ -806,25 +342,25 @@ graph TB
         C --> D[Reply Interface]
         B --> E[Search Interface]
     end
-    
+
     subgraph "Application Layer"
         F[Feed Router] --> G[Forum Adapter]
         G --> H[Commons Parser]
         I[Feed Configuration] --> F
     end
-    
+
     subgraph "Data Layer"
         J[Shadow Indexer<br/>Supabase] --> K[feeds table]
         J --> L[threads table]
         J --> M[replies table]
     end
-    
+
     subgraph "Protocol Layer"
         N[Independent Feed 1<br/>Lens Protocol]
         O[Independent Feed 2<br/>Lens Protocol]
         P[Independent Feed N<br/>Lens Protocol]
     end
-    
+
     A --> F
     G --> J
     H --> N
@@ -843,19 +379,19 @@ graph LR
         A1 --> B2[Feed 2]
         A1 --> B3[Feed N]
     end
-    
+
     subgraph "Simplified Approach (Implemented)"
         C1[Independent Feed 1]
         C2[Independent Feed 2]
         C3[Independent Feed N]
     end
-    
+
     subgraph "UI Organization"
         D1[General Discussion]
         D2[Functions]
         D3[Technical]
     end
-    
+
     C1 --> D1
     C2 --> D2
     C3 --> D3
@@ -871,14 +407,14 @@ sequenceDiagram
     participant FA as Forum Adapter
     participant SI as Shadow Indexer
     participant LF as Lens Feed
-    
+
     U->>UI: Browse feeds
     UI->>FR: Request feed categories
     FR->>SI: Query cached feed data
     SI-->>FR: Return feed listings
     FR-->>UI: Organized feed categories
     UI-->>U: Display categorized feeds
-    
+
     U->>UI: Select specific feed
     UI->>FR: Navigate to feed
     FR->>FA: Load feed content
@@ -899,6 +435,7 @@ sequenceDiagram
 **Purpose**: Manages the mapping between UI categories and independent Lens Feed addresses.
 
 **Interface**:
+
 ```typescript
 interface FeedConfiguration {
   categoryId: string;
@@ -923,6 +460,7 @@ interface FeedConfigurationManager {
 **Purpose**: Routes users to specific independent feeds and manages navigation.
 
 **Interface**:
+
 ```typescript
 interface FeedRouter {
   navigateToFeed(categoryId: string): Promise<void>;
@@ -937,6 +475,7 @@ interface FeedRouter {
 **Purpose**: Parses Lens Protocol data from independent feeds into forum objects.
 
 **Interface**:
+
 ```typescript
 interface CommonsParser {
   parseFeedPost(lensData: LensPublication): FeedPost;
@@ -951,6 +490,7 @@ interface CommonsParser {
 **Purpose**: Manages caching and indexing of independent feed data.
 
 **Interface**:
+
 ```typescript
 interface ShadowIndexerAdapter {
   indexFeedContent(feedAddress: string): Promise<void>;
@@ -967,6 +507,7 @@ interface ShadowIndexerAdapter {
 **Purpose**: Organizes and displays independent feeds in categorized sections.
 
 **Wireframe**:
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Society Protocol Public Commons                              │
@@ -1005,6 +546,7 @@ interface ShadowIndexerAdapter {
 **Purpose**: Displays threads within a specific independent feed.
 
 **Wireframe**:
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Society Protocol > Beginners & Help                         │
@@ -1034,6 +576,7 @@ interface ShadowIndexerAdapter {
 **Purpose**: Allows users to create new threads in specific independent feeds.
 
 **Wireframe**:
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Create New Thread                                           │
@@ -1071,22 +614,22 @@ flowchart TD
     B --> C{User authenticated?}
     C -->|No| D[Browse read-only]
     C -->|Yes| E[Full access]
-    
+
     D --> F[Click feed category]
     E --> F
     F --> G[View feed threads]
-    
+
     G --> H{Want to post?}
     H -->|No| I[Read threads/replies]
     H -->|Yes| J{Authenticated?}
-    
+
     J -->|No| K[Prompt to connect wallet]
     J -->|Yes| L[Create thread interface]
-    
+
     K --> M[Wallet connection flow]
     M --> N[Profile selection]
     N --> L
-    
+
     L --> O[Select feed category]
     O --> P[Write thread content]
     P --> Q[Post to independent feed]
@@ -1100,24 +643,24 @@ flowchart TD
 flowchart TD
     A[User action] --> B[Feed Router]
     B --> C{Operation type?}
-    
+
     C -->|Read| D[Query Shadow Indexer]
     C -->|Write| E[Lens Protocol Client]
-    
+
     D --> F{Cache hit?}
     F -->|Yes| G[Return cached data]
     F -->|No| H[Query independent feed]
-    
+
     H --> I[Lens Protocol V3 API]
     I --> J[Parse feed data]
     J --> K[Update cache]
     K --> G
-    
+
     E --> L[Format for Lens Protocol]
     L --> M[Post to independent feed]
     M --> N[Update Shadow Indexer]
     N --> O[Notify UI of update]
-    
+
     G --> P[Forum Adapter]
     O --> P
     P --> Q[Transform to UI objects]
@@ -1129,50 +672,52 @@ flowchart TD
 ### Core Data Structures
 
 #### FeedConfiguration
+
 ```typescript
 interface FeedConfiguration {
-  id: string;                    // Unique identifier (e.g., "beginners-help")
-  displayName: string;           // UI display name (e.g., "Beginners & Help")
-  description: string;           // Feed description
-  lensFeeds: string[];          // Independent Lens Feed addresses
-  rootSection: RootSection;      // UI organization section
-  isPinned: boolean;            // Whether to pin in UI
-  icon: string;                 // Display icon
-  moderators: string[];         // Lens profile IDs of moderators
-  tags: string[];               // Associated tags
+  id: string; // Unique identifier (e.g., "beginners-help")
+  displayName: string; // UI display name (e.g., "Beginners & Help")
+  description: string; // Feed description
+  lensFeeds: string[]; // Independent Lens Feed addresses
+  rootSection: RootSection; // UI organization section
+  isPinned: boolean; // Whether to pin in UI
+  icon: string; // Display icon
+  moderators: string[]; // Lens profile IDs of moderators
+  tags: string[]; // Associated tags
   createdAt: Date;
   updatedAt: Date;
 }
 
 enum RootSection {
   GENERAL_DISCUSSION = "general-discussion",
-  PARTNER_COMMUNITIES = "partner-communities", 
+  PARTNER_COMMUNITIES = "partner-communities",
   FUNCTIONS = "functions",
   TECHNICAL_SECTION = "technical-section",
-  OTHERS = "others"
+  OTHERS = "others",
 }
 ```
 
 #### FeedPost
+
 ```typescript
 interface FeedPost {
-  id: string;                   // Lens publication ID
-  feedCategoryId: string;       // Reference to feed category
-  lensFeeds: string;           // Independent feed address
-  authorProfile: LensProfile;   // Author's Lens profile
-  title: string;               // Thread title
-  content: string;             // Thread content (markdown)
-  tags: string[];              // Thread tags
-  metadata: PostMetadata;       // Lens metadata
+  id: string; // Lens publication ID
+  feedCategoryId: string; // Reference to feed category
+  lensFeeds: string; // Independent feed address
+  authorProfile: LensProfile; // Author's Lens profile
+  title: string; // Thread title
+  content: string; // Thread content (markdown)
+  tags: string[]; // Thread tags
+  metadata: PostMetadata; // Lens metadata
   createdAt: Date;
   updatedAt: Date;
-  
+
   // Engagement metrics
   replyCount: number;
   upvotes: number;
   downvotes: number;
   views: number;
-  
+
   // Status
   isLocked: boolean;
   isPinned: boolean;
@@ -1181,31 +726,33 @@ interface FeedPost {
 ```
 
 #### FeedReply
+
 ```typescript
 interface FeedReply {
-  id: string;                   // Lens comment ID
-  parentPostId: string;         // Parent thread ID
-  parentReplyId?: string;       // Parent reply ID (for nested replies)
-  feedCategoryId: string;       // Reference to feed category
-  authorProfile: LensProfile;   // Author's Lens profile
-  content: string;             // Reply content (markdown)
-  metadata: CommentMetadata;    // Lens metadata
+  id: string; // Lens comment ID
+  parentPostId: string; // Parent thread ID
+  parentReplyId?: string; // Parent reply ID (for nested replies)
+  feedCategoryId: string; // Reference to feed category
+  authorProfile: LensProfile; // Author's Lens profile
+  content: string; // Reply content (markdown)
+  metadata: CommentMetadata; // Lens metadata
   createdAt: Date;
   updatedAt: Date;
-  
+
   // Engagement metrics
   upvotes: number;
   downvotes: number;
-  
+
   // Status
   isHidden: boolean;
-  depth: number;               // Nesting level
+  depth: number; // Nesting level
 }
 ```
 
 ### Database Schema (Supabase)
 
 #### feeds table
+
 ```sql
 CREATE TABLE feeds (
   id TEXT PRIMARY KEY,
@@ -1223,6 +770,7 @@ CREATE TABLE feeds (
 ```
 
 #### threads table
+
 ```sql
 CREATE TABLE threads (
   id TEXT PRIMARY KEY,               -- Lens publication ID
@@ -1235,13 +783,13 @@ CREATE TABLE threads (
   metadata JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
+
   -- Engagement metrics
   reply_count INTEGER DEFAULT 0,
   upvotes INTEGER DEFAULT 0,
   downvotes INTEGER DEFAULT 0,
   views INTEGER DEFAULT 0,
-  
+
   -- Status
   is_locked BOOLEAN DEFAULT FALSE,
   is_pinned BOOLEAN DEFAULT FALSE,
@@ -1255,6 +803,7 @@ CREATE INDEX idx_threads_lens_feeds ON threads(lens_feeds);
 ```
 
 #### replies table
+
 ```sql
 CREATE TABLE replies (
   id TEXT PRIMARY KEY,               -- Lens comment ID
@@ -1266,11 +815,11 @@ CREATE TABLE replies (
   metadata JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
+
   -- Engagement metrics
   upvotes INTEGER DEFAULT 0,
   downvotes INTEGER DEFAULT 0,
-  
+
   -- Status
   is_hidden BOOLEAN DEFAULT FALSE,
   depth INTEGER DEFAULT 0
@@ -1284,77 +833,77 @@ CREATE INDEX idx_replies_feed_category ON replies(feed_category_id);
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system-essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system-essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Independent Feed Access
 
-*For any* valid independent Lens Feed address, the system should be able to query and display content without requiring group-level operations.
+_For any_ valid independent Lens Feed address, the system should be able to query and display content without requiring group-level operations.
 
 **Validates: Requirements 1.1, 1.3**
 
 ### Property 2: UI Organization Independence
 
-*For any* feed category configuration, changing the UI organization should not affect the underlying independent feed operations or data integrity.
+_For any_ feed category configuration, changing the UI organization should not affect the underlying independent feed operations or data integrity.
 
 **Validates: Requirements 2.8, 1.3**
 
 ### Property 3: Feed Configuration Validation
 
-*For any* feed configuration update, all specified independent Lens Feed addresses should be validated as accessible before the configuration is applied.
+_For any_ feed configuration update, all specified independent Lens Feed addresses should be validated as accessible before the configuration is applied.
 
 **Validates: Requirements 10.4, 1.6**
 
 ### Property 4: Cross-Feed Search Consistency
 
-*For any* search query, results should include content from all accessible independent feeds, with consistent ranking and filtering across feed boundaries.
+_For any_ search query, results should include content from all accessible independent feeds, with consistent ranking and filtering across feed boundaries.
 
 **Validates: Requirements 9.1, 9.3**
 
 ### Property 5: Authentication-Independent Read Access
 
-*For any* unauthenticated user, all feed content should be readable across all independent feeds without requiring authentication.
+_For any_ unauthenticated user, all feed content should be readable across all independent feeds without requiring authentication.
 
 **Validates: Requirements 3.1, 3.6**
 
 ### Property 6: Feed-Specific Posting
 
-*For any* authenticated user and valid feed category, posting a thread should create the content on the correct independent Lens Feed address as specified in the configuration.
+_For any_ authenticated user and valid feed category, posting a thread should create the content on the correct independent Lens Feed address as specified in the configuration.
 
 **Validates: Requirements 8.2, 5.2**
 
 ### Property 7: Shadow Indexer Consistency
 
-*For any* independent feed, the shadow indexer cache should maintain consistency with the source Lens Protocol data within the specified performance bounds.
+_For any_ independent feed, the shadow indexer cache should maintain consistency with the source Lens Protocol data within the specified performance bounds.
 
 **Validates: Requirements 6.1, 6.6**
 
 ### Property 8: Feed Navigation Routing
 
-*For any* valid feed category identifier, the feed router should generate correct URLs and navigate to the appropriate independent feed view.
+_For any_ valid feed category identifier, the feed router should generate correct URLs and navigate to the appropriate independent feed view.
 
 **Validates: Requirements 7.1, 7.2**
 
 ### Property 9: Parser Round-Trip Integrity
 
-*For any* valid FeedPost object, parsing then serializing then parsing should produce an equivalent object with all data preserved.
+_For any_ valid FeedPost object, parsing then serializing then parsing should produce an equivalent object with all data preserved.
 
 **Validates: Requirements 13.4**
 
 ### Property 10: Performance Across Independent Feeds
 
-*For any* feed browsing operation, response times should remain under 200ms regardless of which independent feed is being accessed.
+_For any_ feed browsing operation, response times should remain under 200ms regardless of which independent feed is being accessed.
 
 **Validates: Requirements 12.1, 6.6**
 
 ### Property 11: Configuration-Driven Feed Management
 
-*For any* environment configuration change, the system should dynamically update feed mappings without requiring code changes or system restarts.
+_For any_ environment configuration change, the system should dynamically update feed mappings without requiring code changes or system restarts.
 
 **Validates: Requirements 10.1, 10.3**
 
 ### Property 12: Error Isolation Between Feeds
 
-*For any* independent feed that becomes inaccessible, other feeds should continue to function normally without degradation.
+_For any_ independent feed that becomes inaccessible, other feeds should continue to function normally without degradation.
 
 **Validates: Requirements 1.6, 13.6**
 
@@ -1363,14 +912,16 @@ CREATE INDEX idx_replies_feed_category ON replies(feed_category_id);
 ### Independent Feed Error Scenarios
 
 #### 1. Individual Feed Unavailability
+
 - **Scenario**: One or more independent Lens Feeds become inaccessible
-- **Handling**: 
+- **Handling**:
   - Display specific error message for affected feed
   - Continue normal operation for accessible feeds
   - Implement retry logic with exponential backoff
   - Cache last known good state for graceful degradation
 
 #### 2. Configuration Validation Failures
+
 - **Scenario**: Invalid Lens Feed addresses in configuration
 - **Handling**:
   - Validate all addresses at startup
@@ -1379,6 +930,7 @@ CREATE INDEX idx_replies_feed_category ON replies(feed_category_id);
   - Support configuration hot-reload with validation
 
 #### 3. Shadow Indexer Inconsistencies
+
 - **Scenario**: Cache becomes out of sync with independent feeds
 - **Handling**:
   - Implement cache invalidation strategies
@@ -1387,6 +939,7 @@ CREATE INDEX idx_replies_feed_category ON replies(feed_category_id);
   - Monitor and alert on cache miss rates
 
 #### 4. Cross-Feed Search Failures
+
 - **Scenario**: Search fails across some independent feeds
 - **Handling**:
   - Return partial results with clear indication of scope
@@ -1400,13 +953,13 @@ CREATE INDEX idx_replies_feed_category ON replies(feed_category_id);
 interface ErrorRecoveryStrategy {
   // Individual feed error handling
   handleFeedUnavailable(feedAddress: string): Promise<FallbackStrategy>;
-  
+
   // Configuration error handling
   validateConfiguration(config: FeedConfiguration[]): ValidationResult;
-  
+
   // Cache error handling
   handleCacheInconsistency(feedId: string): Promise<void>;
-  
+
   // Search error handling
   handlePartialSearchFailure(failedFeeds: string[]): SearchResult;
 }
@@ -1419,6 +972,7 @@ interface ErrorRecoveryStrategy {
 The Society Protocol Public Commons will employ both unit testing and property-based testing to ensure comprehensive coverage and correctness.
 
 **Unit Testing Focus**:
+
 - Specific feed configuration examples
 - UI component rendering with mock data
 - Error handling for specific edge cases
@@ -1426,6 +980,7 @@ The Society Protocol Public Commons will employ both unit testing and property-b
 - Migration scenarios from existing data
 
 **Property-Based Testing Focus**:
+
 - Universal properties across all independent feeds
 - Configuration validation across random inputs
 - Search behavior across varied feed combinations
@@ -1437,27 +992,32 @@ The Society Protocol Public Commons will employ both unit testing and property-b
 **Testing Library**: fast-check (for TypeScript/JavaScript implementation)
 
 **Test Configuration**:
+
 - Minimum 100 iterations per property test
 - Each property test references its design document property
 - Tag format: **Feature: society-protocol-public-commons, Property {number}: {property_text}**
 
 **Example Property Test Structure**:
-```typescript
-import fc from 'fast-check';
 
-describe('Independent Feed Operations', () => {
-  it('should maintain data consistency across feeds', () => {
+```typescript
+import fc from "fast-check";
+
+describe("Independent Feed Operations", () => {
+  it("should maintain data consistency across feeds", () => {
     // Feature: society-protocol-public-commons, Property 7: Shadow Indexer Consistency
-    fc.assert(fc.property(
-      fc.array(fc.string(), { minLength: 1, maxLength: 20 }), // feed addresses
-      fc.string(), // content
-      async (feedAddresses, content) => {
-        // Test that content posted to any feed is consistently indexed
-        const result = await postToFeed(feedAddresses[0], content);
-        const cached = await shadowIndexer.query(result.id);
-        expect(cached.content).toEqual(content);
-      }
-    ), { numRuns: 100 });
+    fc.assert(
+      fc.property(
+        fc.array(fc.string(), { minLength: 1, maxLength: 20 }), // feed addresses
+        fc.string(), // content
+        async (feedAddresses, content) => {
+          // Test that content posted to any feed is consistently indexed
+          const result = await postToFeed(feedAddresses[0], content);
+          const cached = await shadowIndexer.query(result.id);
+          expect(cached.content).toEqual(content);
+        },
+      ),
+      { numRuns: 100 },
+    );
   });
 });
 ```
@@ -1465,30 +1025,35 @@ describe('Independent Feed Operations', () => {
 ### Testing Categories
 
 #### 1. Configuration Testing
+
 - Validate feed address formats
 - Test configuration hot-reload
 - Verify error handling for invalid configurations
 - Test UI organization mapping
 
 #### 2. Independent Feed Operations
+
 - Test direct feed access without group dependencies
 - Verify posting to specific feeds
 - Test feed-specific error handling
 - Validate cross-feed search functionality
 
 #### 3. Performance Testing
+
 - Response time validation across feeds
 - Concurrent user load testing
 - Cache performance verification
 - Search performance across multiple feeds
 
 #### 4. Integration Testing
+
 - Lens Protocol V3 integration
 - Supabase shadow indexer integration
 - UI component integration
 - Authentication flow integration
 
 #### 5. Migration Testing
+
 - Data preservation during migration
 - Configuration mapping validation
 - User experience continuity
@@ -1497,12 +1062,14 @@ describe('Independent Feed Operations', () => {
 ### Test Data Management
 
 **Mock Data Strategy**:
+
 - Generate realistic Lens Protocol responses
 - Create varied feed configurations for testing
 - Simulate different user authentication states
 - Mock network conditions and failures
 
 **Test Environment Setup**:
+
 - Isolated test Lens Protocol environment
 - Dedicated test Supabase instance
 - Configurable mock feed addresses
