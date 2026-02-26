@@ -25,7 +25,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body
         className={`${customFont.variable} bg-white font-custom text-gray-900 dark:bg-gray-900 dark:text-gray-100`}
         suppressHydrationWarning
-        style={{ overscrollBehavior: "none" }}
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <Web3Provider>
