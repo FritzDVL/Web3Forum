@@ -1,5 +1,5 @@
 Directory structure:
-└── lens-forum-app/
+└── fritzdvl-web3forum/
 ├── components.json
 ├── next.config.mjs
 ├── package.json
@@ -129,7 +129,10 @@ Directory structure:
 │ │ ├── toolbar.tsx
 │ │ └── upload-file.tsx
 │ ├── home/
+│ │ ├── community-grid.tsx
 │ │ ├── featured-communities.tsx
+│ │ ├── forum-category.tsx
+│ │ ├── function-grid.tsx
 │ │ ├── hero-section.tsx
 │ │ ├── stats-bar.tsx
 │ │ ├── thread-list-item.tsx
@@ -257,6 +260,8 @@ Directory structure:
 │ ├── tooltip.tsx
 │ ├── use-mobile.tsx
 │ └── user-search.tsx
+├── config/
+│ └── commons-config.ts
 ├── fragments/
 │ ├── index.ts
 │ └── notifications.ts
@@ -403,6 +408,8 @@ Directory structure:
 │ ├── constants.ts
 │ ├── payment-tokens.ts
 │ └── utils.ts
+├── MyDataSource/
+│ └── Context.md
 ├── public/
 │ └── 3534416bbfdcc9be-s.p.woff2
 ├── stores/
@@ -411,6 +418,7 @@ Directory structure:
 │ └── rich-text-content.css
 ├── supabase/
 │ ├── config.toml
+│ ├── setup-schema.sql
 │ └── migrations/
 │ ├── 20250620100640_add_community_table.sql
 │ ├── 20250620100910_add_thread_table.sql
@@ -430,8 +438,18 @@ Directory structure:
 ├── types/
 │ ├── common.ts
 │ └── supabase.ts
-└── .github/
-└── copilot-instructions.md
+├── .github/
+│ └── copilot-instructions.md
+└── .kiro/
+└── specs/
+├── society-protocol-public-commons/
+│ ├── design.md
+│ ├── requirements.md
+│ ├── tasks.md
+│ └── .config.kiro
+└── society-protocol-tier3-embassy/
+├── requirements.md
+└── .config.kiro
 
 ================================================
 FILE: components.json
@@ -685,19 +703,19 @@ foreground: "hsl(var(--destructive-foreground))",
 border: "hsl(var(--border))",
 input: "hsl(var(--input))",
 ring: "hsl(var(--ring))",
-// Brand colors (main green theme)
+// Brand colors (Society Protocol Blue theme)
 brand: {
-50: "#f0fdf4", // mint
-100: "#dcfce7", // light mint
-200: "#bbf7d0", // pale green
-300: "#86efac", // light green
-400: "#4ade80", // green
-500: "#22c55e", // brand green (logo)
-600: "#16a34a", // dark green
-700: "#15803d", // darker green
-800: "#166534", // deep green
-900: "#14532d", // forest green
-950: "#052e16", // almost black green
+50: "#eff6ff", // lightest blue
+100: "#dbeafe", // very light blue
+200: "#bfdbfe", // light blue
+300: "#93c5fd", // soft blue
+400: "#60a5fa", // medium blue
+500: "#3b82f6", // brand blue (primary)
+600: "#2563eb", // strong blue
+700: "#1d4ed8", // dark blue
+800: "#1e40af", // deeper blue
+900: "#1e3a8a", // very dark blue
+950: "#172554", // almost black blue
 },
 },
 borderRadius: {
@@ -834,7 +852,7 @@ font-display: swap;
 --card-foreground: 0 0% 3.9%; /_ almost black _/
 --popover: 0 0% 100%; /_ white _/
 --popover-foreground: 0 0% 3.9%; /_ almost black _/
---primary: 142 76% 36%; /_ brand green (#22c55e) _/
+--primary: 217 91% 60%; /_ brand blue (#3b82f6) _/
 --primary-foreground: 0 0% 98%; /_ almost white _/
 --secondary: 0 0% 96.1%; /_ light gray _/
 --secondary-foreground: 0 0% 9%; /_ dark gray _/
@@ -857,7 +875,7 @@ font-display: swap;
 --card-foreground: 0 0% 98%; /_ almost white _/
 --popover: 0 0% 3.9%; /_ almost black _/
 --popover-foreground: 0 0% 98%; /_ almost white _/
---primary: 142 76% 36%; /_ brand green (#22c55e) _/
+--primary: 217 91% 60%; /_ brand blue (#3b82f6) _/
 --primary-foreground: 0 0% 98%; /_ almost white _/
 --secondary: 0 0% 14.9%; /_ dark gray _/
 --secondary-foreground: 0 0% 98%; /_ almost white _/
@@ -873,12 +891,12 @@ font-display: swap;
 }
 
 html {
-@apply w-full max-w-full overflow-x-hidden;
+@apply w-full max-w-full overflow-x-hidden overflow-y-auto;
 overscroll-behavior: none;
 overscroll-behavior-y: none;
 }
 body {
-@apply w-full max-w-full overflow-x-hidden bg-background font-custom text-foreground;
+@apply w-full max-w-full overflow-x-hidden overflow-y-auto bg-background font-custom text-foreground;
 overscroll-behavior: none;
 overscroll-behavior-y: none;
 }
@@ -953,6 +971,7 @@ description: "Join the future of community discussions on Lens Protocol",
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
 return (
+
 <html lang="en" suppressHydrationWarning className="bg-white dark:bg-gray-900">
 <body
 className={`${customFont.variable} bg-white font-custom text-gray-900 dark:bg-gray-900 dark:text-gray-100`}
@@ -974,46 +993,50 @@ style={{ overscrollBehavior: "none" }} >
 ================================================
 FILE: app/page.tsx
 ================================================
-import { FeaturedCommunities } from "@/components/home/featured-communities";
-import { HeroSection } from "@/components/home/hero-section";
-import { StatsBar } from "@/components/home/stats-bar";
-import { ThreadsSwitcher } from "@/components/home/threads-switcher";
+import { CommunityGrid } from "@/components/home/community-grid";
+import { ForumCategory } from "@/components/home/forum-category";
+import { FunctionGrid } from "@/components/home/function-grid";
 import { getFeaturedCommunities } from "@/lib/services/community/get-featured-communities";
-import { getForumStatistics } from "@/lib/services/stats/get-forum-statistics";
-import { getFeaturedThreads } from "@/lib/services/thread/get-featured-threads";
-import { getLatestThreads } from "@/lib/services/thread/get-latest-threads";
+import { COMMONS_SECTIONS } from "@/config/commons-config";
 
 export default async function HomePage() {
-const forumStatsResult = await getForumStatistics();
-const forumStats = forumStatsResult.success && forumStatsResult.stats ? forumStatsResult.stats : null;
-const statsError = !forumStatsResult.success;
-
-const latestThreadsResult = await getLatestThreads(5);
-const latestThreads = latestThreadsResult.success ? (latestThreadsResult.threads ?? []) : [];
-
-const featuredThreadsResult = await getFeaturedThreads(5);
-const featuredThreads = featuredThreadsResult.success ? (featuredThreadsResult.threads ?? []) : [];
-
 const featuredCommunitiesResult = await getFeaturedCommunities();
 const featuredCommunities = featuredCommunitiesResult.success ? (featuredCommunitiesResult.communities ?? []) : [];
 
 return (
-<>
-<HeroSection />
-<div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-<StatsBar loadingStats={false} statsError={statsError} forumStats={forumStats ?? undefined} />
-<div className="w-full">
-<div className="flex flex-col lg:flex-row">
-<div className="w-full gap-8 lg:w-2/3 lg:pr-4">
-<ThreadsSwitcher featuredThreads={featuredThreads} latestThreads={latestThreads} />
+
+<div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+<div className="flex flex-col items-center gap-12">
+{/_ Forum Sections _/}
+{COMMONS_SECTIONS.map((section) => (
+<div key={section.sectionTitle} className="w-full max-w-5xl">
+{section.layout === "grid" ? (
+<FunctionGrid 
+                title={section.sectionTitle} 
+                feeds={section.feeds}
+                borderColor={section.borderColor}
+              />
+) : (
+<ForumCategory 
+                title={section.sectionTitle} 
+                feeds={section.feeds}
+                borderColor={section.borderColor}
+                isLocked={section.isLocked}
+              />
+)}
 </div>
-<div className="w-full gap-8 lg:w-1/3 lg:pl-4">
-<FeaturedCommunities featuredCommunities={featuredCommunities} />
-</div>
-</div>
-</div>
-</div>
-</>
+))}
+
+        {/* Featured Communities Section */}
+        <div className="w-full max-w-5xl">
+          <h2 className="mb-8 text-left text-xl font-bold text-slate-900 dark:text-gray-100">
+            LOCAL
+          </h2>
+          <CommunityGrid communities={featuredCommunities} />
+        </div>
+      </div>
+    </div>
+
 );
 }
 
@@ -1095,6 +1118,7 @@ const community = communityResult.success ? communityResult.community : null;
 
 if (!community) {
 return (
+
 <div className="flex min-h-screen items-start justify-center">
 <div className="w-full max-w-md px-4 pt-12">
 <StatusBanner
@@ -1145,6 +1169,7 @@ return <div className="text-center text-red-500">Community not found</div>;
 
 return (
 <>
+
 <div className="mx-auto mt-4 max-w-7xl px-4">
 <BackNavigationLink href={`/communities/${communityAddress}`}>Back to Community</BackNavigationLink>
 </div>
@@ -1205,6 +1230,7 @@ return <LoadingSpinner text="Loading thread form..." />;
 }
 return (
 <ProtectedRoute>
+
 <main className="mx-auto max-w-7xl px-4 py-6">
 {/_ Header _/}
 <div className="mb-6 flex items-center">
@@ -1249,6 +1275,7 @@ const { account } = useAuthStore();
 
 return (
 <ProtectedRoute>
+
 <main className="mx-auto max-w-7xl px-4 py-8">
 {/_ Header with back button and title _/}
 <div className="mb-8 flex items-center justify-between">
@@ -1289,6 +1316,7 @@ const [filter, setFilter] = useState<"all" | "mentions" | "comments" | "reaction
 const { notifications, loading, error } = useNotifications();
 
 return (
+
 <div className="mx-auto max-w-4xl px-4 py-8">
 <div className="mb-6 flex items-center justify-between">
 <div>
@@ -1337,6 +1365,7 @@ const { data: reply, isLoading: replyLoading } = useReply(replyId as string);
 if (replyLoading) {
 return (
 <ProtectedRoute>
+
 <div className="mx-auto max-w-4xl space-y-8 px-4 py-8">
 <LoadingSpinner text="Loading reply..." />
 </div>
@@ -1347,6 +1376,7 @@ return (
 if (!reply) {
 return (
 <ProtectedRoute>
+
 <div className="mx-auto max-w-4xl space-y-8 px-4 py-8">
 <StatusBanner
             type="info"
@@ -1360,6 +1390,7 @@ return (
 
 return (
 <ProtectedRoute>
+
 <div className="mx-auto max-w-4xl space-y-8 px-4 py-8">
 {/_ Reply Context: Who is answering to _/}
 {reply.post.commentOn && (
@@ -1414,6 +1445,7 @@ isRewardsAvailable,
 
 return (
 <ProtectedRoute>
+
 <div className="mx-auto max-w-4xl px-4 py-8">
 {/_ Header Section _/}
 <div className="mb-8">
@@ -1714,6 +1746,7 @@ threadResult = await getThread(slug);
 // Handle errors
 if (threadResult.error || !threadResult.thread) {
 return (
+
 <div className="flex h-32 items-center justify-center">
 <p className="text-center text-sm text-red-500">{threadResult.error || "Thread not found"}</p>
 </div>
@@ -1726,6 +1759,7 @@ const thread = threadResult.thread;
 const community = await getCommunity(thread.community);
 if (community?.error || !community?.community) {
 return (
+
 <div className="flex h-32 items-center justify-center">
 <p className="text-center text-sm text-red-500">{community?.error || "Community not found"}</p>
 </div>
@@ -1755,6 +1789,7 @@ const thread = await getThreadBySlug(params.slug);
 
 if (thread.error || !thread.thread) {
 return (
+
 <div className="flex h-32 items-center justify-center">
 <p className="text-center text-sm text-red-500">Error loading thread: {thread.error}</p>
 </div>
@@ -1762,6 +1797,7 @@ return (
 }
 
 return (
+
 <div className="mx-auto max-w-4xl space-y-8 px-4 py-8">
 <ThreadEditForm thread={thread.thread} />
 </div>
@@ -1800,6 +1836,7 @@ joinedCommunitiesResult.success && joinedCommunitiesResult.communities ? joinedC
 
 if (!lensAccount || !lensAccountStats) {
 return (
+
 <div className="mx-auto min-h-screen max-w-6xl px-3 py-4 text-center sm:px-4 sm:py-8">
 <StatusBanner
 type="info"
@@ -1993,6 +2030,7 @@ setIsLoadingAccounts(false);
 }, [status, address]);
 
 return (
+
 <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
 <DialogContent className="border-0 bg-white shadow-lg backdrop-blur-md dark:border-gray-600/60 dark:bg-gray-700 sm:max-w-md">
 <DialogHeader>
@@ -2116,12 +2154,13 @@ const DEFAULT_TIPS: Tip[] = [
 
 export function CommunityCreationTips({ className = "", tips = DEFAULT_TIPS }: CommunityCreationTipsProps) {
 const getIcon = (type: Tip["type"]) => {
-return type === "positive" ? <span className="text-green-500">✓</span> : <span className="text-red-500">×</span>;
+return type === "positive" ? <span className="text-blue-500">✓</span> : <span className="text-red-500">×</span>;
 };
 
 return (
 <Card className={`rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800 ${className}`}>
 <CardHeader>
+
 <h3 className="text-lg font-semibold text-foreground">Community Creation Tips</h3>
 </CardHeader>
 <CardContent className="space-y-3 text-sm text-foreground">
@@ -2189,6 +2228,7 @@ return null;
 }
 
 return (
+
 <div className="mt-0 flex w-full flex-row items-center justify-between gap-2 md:mt-2">
 <div className="flex flex-row items-center gap-1.5">
 <NewThreadButton community={community} />
@@ -2225,6 +2265,7 @@ return (
 <>
 <Card className="mb-8 rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardContent className="p-6 md:p-8">
+
 <div className="flex flex-col items-center space-y-4 md:flex-row md:items-start md:space-x-6 md:space-y-0">
 {/_ Logo _/}
 <div className="flex h-[80px] w-[80px] items-center justify-center md:mr-6 md:h-[100px] md:w-[100px]">
@@ -2333,6 +2374,7 @@ return (
 Leave community?
 </AlertDialogTitle>
 </AlertDialogHeader>
+
 <div className="py-4 text-base text-muted-foreground">Are you sure you want to leave this community?</div>
 <AlertDialogFooter className="mt-6 flex flex-row justify-end gap-3">
 <AlertDialogCancel className="rounded-full bg-muted px-6 py-2 font-semibold text-muted-foreground transition-all duration-300 hover:scale-105 hover:bg-muted/80">
@@ -2370,6 +2412,7 @@ if (moderators.length === 0) {
 return (
 <Card className="motion-preset-fade-in rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardHeader>
+
 <h3 className="text-lg font-semibold">Moderators</h3>
 </CardHeader>
 <CardContent>
@@ -2382,6 +2425,7 @@ return (
 return (
 <Card className="motion-preset-fade-in rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardHeader>
+
 <h3 className="text-lg font-semibold">Moderators</h3>
 </CardHeader>
 <CardContent className="space-y-3">
@@ -2425,6 +2469,7 @@ export function CommunityNavActions({ community }: { community: Community }) {
 const { isModerator } = useIsModerator(community);
 
 return (
+
 <div className="mx-auto mb-4 flex max-w-7xl items-center justify-between px-4">
 <BackNavigationLink href="/communities">Back to Communities</BackNavigationLink>
 {isModerator && (
@@ -2489,6 +2534,7 @@ const picture = account?.metadata?.picture;
 return (
 <Card className="motion-preset-fade-in rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardHeader>
+
 <h3 className="text-lg font-semibold">Owner</h3>
 </CardHeader>
 <CardContent>
@@ -2542,6 +2588,7 @@ export function CommunitySidebar({ community }: { community: Community }) {
 if (!community) return null;
 
 return (
+
 <div className="space-y-8">
 <CommunityOwner owner={community.group.owner} />
 <CommunityModerators moderators={community.moderators} />
@@ -2596,6 +2643,7 @@ return null;
 
 if (operations.isBanned) {
 return (
+
 <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 shadow-sm dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-400">
 <ShieldX className="h-4 w-4 flex-shrink-0" />
 <span className="hidden md:inline">Banned from community</span>
@@ -2701,7 +2749,7 @@ router.push(`/communities/${community.group.address}/new-thread`);
 }}
 variant="default"
 size="sm"
-className="h-8 bg-green-600 px-3 text-xs font-medium text-white shadow-sm transition-all duration-150 hover:bg-green-700 hover:shadow-md" >
+className="h-8 bg-blue-600 px-3 text-xs font-medium text-white shadow-sm transition-all duration-150 hover:bg-blue-700 hover:shadow-md" >
 <PenTool className="mr-1.5 h-3 w-3" />
 <span className="hidden md:inline">New Thread</span>
 <span className="md:hidden">New</span>
@@ -2744,6 +2792,7 @@ return;
 }
 
 return (
+
 <div className="space-y-6">
 <Card className="rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardHeader>
@@ -2938,6 +2987,7 @@ onCommunityRuleChange(rule);
 return (
 <>
 {/_ Community Access Toggle _/}
+
 <div className="space-y-2">
 <div className="flex items-center justify-between">
 <Label className="text-base font-medium text-foreground">Community Access</Label>
@@ -2997,6 +3047,7 @@ membershipApprovalRule: { enable: true },
 }, []);
 
 return (
+
 <div className="space-y-8 rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
 <div className="space-y-2">
 <p className="text-base text-muted-foreground">
@@ -3024,6 +3075,7 @@ onChange: (value: string) => void;
 
 export function RuleTypeSelect({ value, onChange }: RuleTypeSelectProps) {
 return (
+
 <div className="mb-4 space-y-2 overflow-visible">
 <Label className="text-base font-medium text-foreground">Access Type</Label>
 <Select value={value} onValueChange={onChange}>
@@ -3036,7 +3088,7 @@ return (
             className="rounded-xl px-4 py-2 text-sm font-medium transition-all hover:bg-brand-50/80 focus:bg-brand-50/80 data-[highlighted]:bg-brand-50/80 data-[state=checked]:bg-brand-500 data-[state=checked]:text-white dark:hover:bg-brand-900/30 dark:focus:bg-brand-900/30 dark:data-[highlighted]:bg-brand-900/30 dark:data-[state=checked]:bg-brand-600"
           >
 <div className="flex items-center gap-2">
-<Coins className="h-4 w-4 text-green-500 data-[state=checked]:text-white" />
+<Coins className="h-4 w-4 text-blue-500 data-[state=checked]:text-white" />
 <span>Paid Access</span>
 </div>
 </CustomSelectItem>
@@ -3088,6 +3140,7 @@ const [recipient, setRecipient] = useState<Address>(rule.simplePaymentRule.recip
 const tokenOptions = getPaymentTokens();
 
 return (
+
 <div className="space-y-8 rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
 <div className="grid gap-8 md:grid-cols-2">
 <div className="space-y-3">
@@ -3223,6 +3276,7 @@ value: e.target.value,
 };
 
 return (
+
 <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
 <h5 className="mb-3 font-medium text-foreground">Token Gated Configuration</h5>
 <div className="space-y-4">
@@ -3285,6 +3339,7 @@ export function CommunitiesHeader({ total }: CommunitiesHeaderProps) {
 return (
 <Card className="mb-8 rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardContent className="p-8">
+
 <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
 <div>
 <div className="mb-3 inline-flex items-center rounded-full border border-brand-300/30 bg-gradient-to-r from-brand-500/20 to-brand-400/20 px-3 py-1">
@@ -3294,7 +3349,7 @@ return (
 <h1 className="text-3xl font-bold text-foreground">Communities</h1>
 <p className="mt-1 text-muted-foreground">Discover and join communities in the Lens ecosystem</p>
 </div>
-<Link href="/communities/new">
+<Link href="/communities/new" className="hidden">
 <Button>Create Community</Button>
 </Link>
 </div>
@@ -3379,6 +3434,7 @@ const hasNext = communities.length === COMMUNITIES_PER_PAGE;
 return (
 <Card className="rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardHeader className="pb-4">
+
 <div className="border-b border-slate-200/80 bg-gradient-to-r from-slate-100/90 to-white px-4 py-4 dark:border-gray-700/50 dark:from-gray-800/50 dark:to-gray-800 sm:px-8 sm:py-6">
 <div className="flex items-center justify-between">
 <h2 className="flex items-center text-2xl font-bold text-foreground">
@@ -3457,6 +3513,7 @@ communities: Community[];
 
 export function CommunitiesStats({ communities }: CommunitiesStatsProps) {
 return (
+
 <div className="space-y-8">
 {/_ Community Stats _/}
 <Card className="rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
@@ -3501,6 +3558,7 @@ communities: Community[];
 
 export function Communities({ communities }: CommunitiesProps) {
 return (
+
 <main className="mx-auto max-w-7xl px-4 py-8">
 <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
 {/_ Main Content _/}
@@ -3540,6 +3598,7 @@ community: Community;
 export function CommunityCard({ community }: CommunityCardProps) {
 const ruleType = community.group.rules?.required?.[0]?.type;
 return (
+
 <Link key={community.id} href={`/communities/${community.group.address}`} className="group">
 <Card className="group w-full min-w-0 cursor-pointer rounded-2xl border bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg dark:bg-gray-800 sm:p-6">
 <CardContent className="p-6">
@@ -3608,6 +3667,7 @@ const symbol = symbolElement ? (symbolElement as any).string : "GHO";
 const amountElement = currentRule.config.find(e => e.key === "amount" && e.**typename === "BigDecimalKeyValue");
 const amount = amountElement ? (amountElement as any).bigDecimal : "0";
 return (
+
 <div
 className={`flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-gray-700 dark:text-slate-200 ${className}`} >
 {" "}
@@ -3662,6 +3722,7 @@ export const CommunityRuleMessage: React.FC<CommunityRuleMessageProps> = ({ rule
 switch (ruleType) {
 case GroupRuleType.SimplePayment:
 return (
+
 <div
 className={`flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-gray-700 dark:text-slate-200`} >
 <DollarSign className="mr-1 h-4 w-4 text-yellow-500" />
@@ -3744,12 +3805,13 @@ if (!ruleInfo) return null;
 return (
 <Card className="rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardHeader>
+
 <h3 className="text-lg font-semibold text-foreground">{ruleInfo.title}</h3>
 </CardHeader>
 <CardContent className="space-y-3 text-sm text-foreground">
 {ruleInfo.tips.map((tip, index) => (
 <div key={index} className="flex items-start space-x-2">
-<span className="text-green-500">✓</span>
+<span className="text-blue-500">✓</span>
 <span>{tip}</span>
 </div>
 ))}
@@ -3786,6 +3848,7 @@ const [selectedRule, setSelectedRule] = useState<GroupRuleType | "none">(current
 const { removeRule, loading, error } = useCommunityRules(community, currentRule?.id);
 
 return (
+
 <div className="space-y-6">
 <div>
 <h3 className="mb-2 text-lg font-semibold text-foreground">Current Rule</h3>
@@ -3979,6 +4042,7 @@ updateRules(newRule);
 };
 
 return (
+
 <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
 <h5 className="mb-3 font-medium text-foreground">Membership Approval Configuration</h5>
 <div className="space-y-4">
@@ -4045,6 +4109,7 @@ updateRules(newRule);
 };
 
 return (
+
 <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
 <h5 className="mb-3 font-medium text-foreground">Payment Configuration</h5>
 <div className="space-y-4">
@@ -4154,6 +4219,7 @@ updateRules(newRule as any);
 };
 
 return (
+
 <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
 <h5 className="mb-3 font-medium text-foreground">Token Gated Configuration</h5>
 <div className="space-y-4">
@@ -4216,6 +4282,7 @@ message?: string;
 
 export function CommunityAccessDenied({ message }: CommunityAccessDeniedProps) {
 return (
+
 <div className="mx-auto max-w-2xl">
 <Card className="rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardContent className="p-8 text-center">
@@ -4251,6 +4318,7 @@ export function CommunityEditForm({ community }: CommunityEditFormProps) {
 const { formData, loading, handleChange, handleSubmit } = useCommunityEditForm(community);
 
 return (
+
 <form onSubmit={handleSubmit} className="space-y-6">
 {/_ Community Name _/}
 <div className="space-y-2">
@@ -4341,6 +4409,7 @@ const { isModerator, isLoading } = useIsModerator(community);
 
 if (isLoading) {
 return (
+
 <div className="flex w-full justify-center py-12">
 <LoadingSpinner />
 </div>
@@ -4352,6 +4421,7 @@ return <CommunityAccessDenied />;
 }
 
 return (
+
 <div className="space-y-8">
 {/_ Header _/}
 <div className="text-center">
@@ -4457,6 +4527,7 @@ children: React.ReactNode;
 
 export function CommunitySettingsTabPanel({ icon: Icon, title, children }: CommunitySettingsTabPanelProps) {
 return (
+
 <div className="space-y-6">
 <Card className="rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardHeader>
@@ -4540,6 +4611,7 @@ return <div className="text-center text-muted-foreground">No banned accounts fou
 }
 
 return (
+
 <div className="py-6">
 <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 {banned.map(ban => {
@@ -4556,10 +4628,10 @@ username={username}
 actionButton={
 <button
 type="button"
-className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 shadow-sm transition-all hover:bg-green-100 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-400 dark:border-green-900/30 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40 dark:hover:text-green-300"
+className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-all hover:bg-blue-100 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 dark:hover:text-blue-300"
 disabled={isLoading}
 onClick={() => handleUnbanClick(ban)} >
-<UserCheck className="mr-1 h-4 w-4 text-green-500" />
+<UserCheck className="mr-1 h-4 w-4 text-blue-500" />
 Unban
 </button>
 }
@@ -4616,6 +4688,7 @@ const showRequestsTab = !!community.group?.membershipApprovalEnabled;
 const canRemove = true;
 
 return (
+
 <div>
 {/_ Sub-tabs _/}
 <div className="mb-6 flex items-center justify-center gap-1">
@@ -4705,6 +4778,7 @@ return <div className="text-center text-muted-foreground">No members found.</div
 
 return (
 <>
+
 <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 {members.map(member => {
 const avatarUrl = member.account.metadata?.picture || "/logo.png";
@@ -4768,6 +4842,7 @@ const { requests, loading, error, pageInfo, fetchRequests, handleApprove, handle
 useCommunityMembershipManagement(community);
 
 return (
+
 <div className="py-6">
 <div className="mb-6 flex items-center gap-3">
 <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">
@@ -4824,7 +4899,7 @@ Membership Requests
                     variant="outline"
                     onClick={() => handleApprove(account)}
                     // disabled={processingAccount === account}
-                    className="gap-1 border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-900/20"
+                    className="gap-1 border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/20"
                   >
                     <Check className="h-4 w-4" />
                     Approve
@@ -4874,6 +4949,7 @@ meta?: ReactNode;
 
 export function CommunityMemberCard({ avatarUrl, name, username, actionButton, meta }: CommunityMemberCardProps) {
 return (
+
 <li className="flex items-center gap-4 rounded-xl border bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
 <Image
         src={avatarUrl}
@@ -5042,7 +5118,7 @@ return (
 <AlertDialogContent className="w-full max-w-md rounded-3xl bg-white p-8 backdrop-blur-sm dark:border-gray-600/60 dark:bg-gray-700">
 <AlertDialogHeader>
 <AlertDialogTitle className="flex items-center gap-2 text-2xl font-bold text-foreground">
-<span className="inline-block rounded-full bg-gradient-to-br from-green-500 to-green-600 p-2 text-white">
+<span className="inline-block rounded-full bg-gradient-to-br from-blue-500 to-blue-600 p-2 text-white">
 <UserCheck className="h-6 w-6" />
 </span>
 Unban member
@@ -5060,7 +5136,7 @@ Unban member
           <AlertDialogAction
             onClick={onConfirm}
             disabled={isLoading}
-            className="rounded-full bg-gradient-to-r from-green-500 to-green-600 px-6 py-2 font-semibold text-white transition-all duration-300 hover:scale-105 hover:from-green-600 hover:to-green-700"
+            className="rounded-full bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-2 font-semibold text-white transition-all duration-300 hover:scale-105 hover:from-blue-600 hover:to-blue-700"
           >
             {isLoading ? "Unbanning..." : "Unban member"}
           </AlertDialogAction>
@@ -5149,6 +5225,7 @@ setModerators(prev => prev.filter(mod => mod.address !== moderator.address));
 const loading = addLoading || removeLoading;
 
 return (
+
 <div className="space-y-6">
 {/_ Add New Moderator _/}
 <div className="rounded-2xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
@@ -5270,6 +5347,7 @@ onClick={() => {
 router.push(`/thread/${thread.slug}`);
 }} >
 <CardContent className="p-4 sm:p-6">
+
 <div className="flex flex-col">
 {/_ MOBILE VERSION _/}
 <div className="flex w-full items-start sm:hidden">
@@ -5403,6 +5481,7 @@ return (title && title.toLowerCase().includes(query)) || (summary && summary.toL
 return (
 <Card className="rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardHeader className="pb-4">
+
 <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
 <h2 className="mb-3 flex items-center text-2xl font-bold text-foreground">
 <MessageCircle className="mr-3 h-6 w-6 text-brand-500" />
@@ -5481,6 +5560,7 @@ initialCrosspostEnabled,
 });
 
 return (
+
 <main className="mx-auto max-w-7xl px-4 py-8">
 <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
 <div className="lg:col-span-3">
@@ -5519,6 +5599,7 @@ onCheckedChange?: (checked: boolean) => void;
 
 export function CrosspostSwitch({ checked, onCheckedChange }: CrosspostSwitchProps) {
 return (
+
 <div className="mb-6 rounded-2xl border border-brand-200/40 bg-gray-50/80 p-4 backdrop-blur-sm dark:border-gray-700/60 dark:bg-slate-800/90">
 <div className="flex items-center justify-between gap-4">
 <div className="flex-1">
@@ -5577,6 +5658,7 @@ props.setAttrs(attrs);
 
 return (
 <>
+
 <div className="relative top-3 mx-2 h-0 select-none overflow-visible text-xs" contentEditable={false}>
 <select
 className="outline-unset focus:outline-unset relative box-border w-auto cursor-pointer select-none appearance-none rounded border-none bg-transparent px-2 py-1 text-xs text-[var(--prosemirror-highlight)] opacity-0 transition hover:opacity-80 [div[data-node-view-root]:hover*&]:opacity-50 [div[data-node-view-root]:hover*&]:hover:opacity-80"
@@ -6021,6 +6103,7 @@ alt="Image"
 />
 )}
 {uploading && !error && (
+
 <div className="absolute bottom-0 left-0 m-1 flex content-center items-center gap-2 rounded bg-gray-800/60 p-1.5 text-xs text-white/80 transition">
 <LoaderCircle className="h-4 w-4 animate-spin" />
 <div>{Math.round(progress \* 100)}%</div>
@@ -6260,6 +6343,7 @@ return (
       className="group flex w-full max-w-xs cursor-pointer items-center gap-2 rounded-md border border-transparent bg-white/60 px-1.5 py-1 transition-all duration-150 hover:border-brand-200/60 hover:bg-brand-50/70 hover:shadow-sm data-[focused]:border-brand-300/80 data-[selected]:border-brand-400 data-[focused]:bg-brand-50 data-[selected]:bg-brand-100/80 data-[selected]:text-brand-900 data-[focused]:shadow-md dark:bg-gray-800/60 dark:hover:border-brand-400/30 dark:hover:bg-gray-700/70 dark:data-[focused]:border-brand-400/50 dark:data-[selected]:border-brand-400 dark:data-[focused]:bg-gray-700/80 dark:data-[selected]:bg-brand-900/60 dark:data-[selected]:text-brand-100"
       onSelect={onSelect}
     >
+
 <div className="relative flex-shrink-0">
 {account.picture ? (
 <Image
@@ -6319,6 +6403,7 @@ return (
 <AutocompleteList className="max-h-80 space-y-1 overflow-y-auto">
 {queryString.length > 0 && result.length === 0 ? (
 isSearching ? (
+
 <div className="flex items-center justify-center rounded-xl bg-brand-50/30 py-8 text-sm text-brand-600 dark:bg-brand-900/20 dark:text-brand-400">
 <div className="flex flex-col items-center gap-3">
 <div className="relative">
@@ -6380,6 +6465,7 @@ children: React.ReactNode;
 function MentionPopoverContent({ username }: { username: string }) {
 const { lensAccount: profile, stats, isLoading } = useProfileAccount(username);
 return (
+
 <div className="h-full w-full">
 {isLoading ? (
 <div className="flex items-center justify-center p-6">
@@ -6495,6 +6581,7 @@ const display = username.replace(/^@lens\//, "");
 
 return (
 <MentionPopover username={display}>
+
 <Link href={`/u/${display}`} className={className || "font-semibold text-brand-600 hover:underline"}>
 @{display}
 </Link>
@@ -6851,6 +6938,7 @@ onChange(record);
 
 return (
 <ProseKit editor={editor}>
+
 <div className="color-black dark:color-white box-border flex h-full min-h-36 w-full flex-col overflow-x-hidden overflow-y-hidden rounded-2xl border border-brand-200/40 bg-gray-50/80 ring-offset-background backdrop-blur-sm focus-within:ring-2 focus-within:ring-brand-200/40 focus-within:ring-offset-2 dark:border-gray-700/60 dark:bg-slate-800/90">
 <Toolbar />
 <div className="relative box-border w-full flex-1 overflow-y-scroll">
@@ -7054,6 +7142,7 @@ export default function Toolbar() {
 const items = useEditorDerivedValue(getToolbarItems);
 
 return (
+
 <div className="z-2 box-border flex flex-wrap items-center gap-1 border-b border-l-0 border-r-0 border-t-0 border-solid border-gray-300 bg-gray-50/50 p-2 dark:border-gray-600 dark:bg-gray-900/50">
 <Button pressed={items.undo.isActive} disabled={!items.undo.canExec} onClick={items.undo.command} tooltip="Undo">
 <Undo2 className="h-4 w-4" />
@@ -7255,6 +7344,59 @@ import { defineFileDropHandler, defineFilePasteHandler } from "prosekit/extensio
   }
 
 ================================================
+FILE: components/home/community-grid.tsx
+================================================
+import Image from "next/image";
+import Link from "next/link";
+import { Community } from "@/lib/domain/communities/types";
+import { groveLensUrlToHttp } from "@/lib/shared/utils";
+
+interface CommunityGridProps {
+communities: Community[];
+}
+
+export function CommunityGrid({ communities }: CommunityGridProps) {
+return (
+
+<div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+{communities.map(community => (
+<Link
+key={community.id}
+href={`/communities/${community.group.address}`}
+className="group block rounded-2xl border border-slate-200/60 bg-white p-6 transition-all hover:-translate-y-1 hover:border-brand-300/60 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800" >
+<div className="flex flex-col items-center text-center">
+<div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-100 text-2xl font-semibold text-slate-600">
+{community.group.metadata?.icon ? (
+<Image
+                  src={groveLensUrlToHttp(community.group.metadata.icon)}
+                  alt={community.name}
+                  width={80}
+                  height={80}
+                  className="h-20 w-20 rounded-2xl object-cover"
+                />
+) : (
+community.name.charAt(0).toUpperCase()
+)}
+</div>
+<h3 className="mb-2 text-lg font-semibold text-slate-900 transition-colors group-hover:text-brand-600 dark:text-gray-100">
+{community.name}
+</h3>
+<p className="mb-3 text-sm text-slate-500">
+{community.memberCount.toLocaleString()} members
+</p>
+{community.group.metadata?.description && (
+<p className="line-clamp-2 text-sm text-muted-foreground">
+{community.group.metadata.description}
+</p>
+)}
+</div>
+</Link>
+))}
+</div>
+);
+}
+
+================================================
 FILE: components/home/featured-communities.tsx
 ================================================
 import Image from "next/image";
@@ -7269,6 +7411,7 @@ featuredCommunities: Community[];
 
 export function FeaturedCommunities({ featuredCommunities }: FeaturedCommunitiesProps) {
 return (
+
 <div className="w-full max-w-none overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800">
 <div className="border-b border-slate-200/80 bg-gradient-to-r from-slate-100/90 to-white px-4 py-4 dark:border-gray-700/50 dark:from-gray-800/50 dark:to-gray-800 sm:px-6">
 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -7329,53 +7472,190 @@ community.name.charAt(0).toUpperCase()
 }
 
 ================================================
-FILE: components/home/hero-section.tsx
+FILE: components/home/forum-category.tsx
 ================================================
-import Image from "next/image";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Compass, Sparkles } from "lucide-react";
+"use client";
 
-export function HeroSection() {
+import Link from "next/link";
+import { CommonsFeed } from "@/config/commons-config";
+import { Lock } from "lucide-react";
+
+interface ForumCategoryProps {
+title: string;
+feeds: CommonsFeed[];
+borderColor?: string;
+isLocked?: boolean;
+}
+
+export function ForumCategory({ title, feeds, borderColor = "blue", isLocked = false }: ForumCategoryProps) {
+const borderColorClass = borderColor === "green" ? "border-blue-600" : "border-blue-600";
+
+const handleLockedClick = (e: React.MouseEvent) => {
+if (isLocked) {
+e.preventDefault();
+alert("Token Required: You must hold a Society Protocol Pass to enter this research lab");
+}
+};
+
 return (
-<section className="my-6 mb-12 text-center">
-<div className="mb-6 inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
-<Sparkles className="mr-2 h-4 w-4 text-brand-500" />
-Powered by Lens Protocol
+
+<div className={`w-full overflow-hidden rounded-lg border ${isLocked ? "border-yellow-600/50 bg-[#1a1b4b]" : "border-slate-200 bg-white dark:border-gray-700 dark:bg-gray-800"}`}>
+{/_ Header _/}
+<div className={`border-l-4 ${borderColorClass} ${isLocked ? "bg-[#252663]" : "bg-slate-100 dark:bg-gray-700"} px-4 py-3`}>
+<div className="flex items-center gap-2">
+{isLocked && <Lock className="h-4 w-4 text-yellow-500" />}
+<h3 className={`text-sm font-bold uppercase tracking-wide ${isLocked ? "text-yellow-100" : "text-slate-700 dark:text-gray-200"}`}>
+{title}
+</h3>
+</div>
 </div>
 
-      <div className="mb-8 flex justify-center">
-        <Image
-          src="/logo.png"
-          alt="LensForum Logo"
-          width={80}
-          height={80}
-          className="rounded-2xl border border-gray-200 bg-white shadow-md dark:border-gray-700 dark:bg-gray-800"
-        />
+      {/* Forum List */}
+      <div className={`divide-y ${isLocked ? "divide-slate-600/50" : "divide-slate-200 dark:divide-gray-700"}`}>
+        {feeds.map((feed) => (
+          <Link
+            key={feed.address}
+            href={`/commons/${feed.address}`}
+            onClick={handleLockedClick}
+            className={`block transition-colors ${isLocked ? "hover:bg-[#252663]" : "hover:bg-slate-50 dark:hover:bg-gray-700/50"}`}
+          >
+            <div className="flex items-center justify-between px-4 py-4">
+              {/* Subject Column */}
+              <div className="flex-1 min-w-0">
+                <h4 className={`font-semibold hover:underline ${isLocked ? "text-yellow-400" : "text-blue-600 dark:text-blue-400"}`}>
+                  {feed.title}
+                </h4>
+                <p className={`mt-1 text-xs ${isLocked ? "text-slate-300" : "text-gray-500 dark:text-gray-400"}`}>
+                  {feed.description}
+                </p>
+              </div>
+
+              {/* Stats Columns (Desktop Only) */}
+              <div className="hidden md:flex items-center gap-8 ml-4">
+                <div className="text-center min-w-[60px]">
+                  <div className={`text-xs ${isLocked ? "text-slate-400" : "text-gray-500 dark:text-gray-400"}`}>Replies</div>
+                  <div className={`text-sm font-semibold ${isLocked ? "text-slate-200" : "text-slate-700 dark:text-gray-200"}`}>0</div>
+                </div>
+                <div className="text-center min-w-[60px]">
+                  <div className={`text-xs ${isLocked ? "text-slate-400" : "text-gray-500 dark:text-gray-400"}`}>Views</div>
+                  <div className={`text-sm font-semibold ${isLocked ? "text-slate-200" : "text-slate-700 dark:text-gray-200"}`}>0</div>
+                </div>
+                <div className="text-center min-w-[100px]">
+                  <div className={`text-xs ${isLocked ? "text-slate-400" : "text-gray-500 dark:text-gray-400"}`}>Last Post</div>
+                  <div className={`text-xs ${isLocked ? "text-slate-300" : "text-slate-600 dark:text-gray-300"}`}>Never</div>
+                </div>
+              </div>
+            </div>
+          </Link>
+        ))}
       </div>
-
-      <h1 className="mb-6 text-5xl font-bold tracking-tight text-gray-900 dark:text-gray-100 md:text-6xl">
-        Lens
-        <span className="bg-gradient-to-r from-brand-600 to-brand-700 bg-clip-text text-transparent dark:from-brand-400 dark:to-brand-500">
-          Forum
-        </span>
-      </h1>
-
-      <p className="mx-auto mb-8 max-w-2xl text-xl leading-relaxed text-gray-600 dark:text-gray-400">
-        Connect, create, and contribute to the future of decentralized communities
-      </p>
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-        <Link href="/communities">
-          <Button variant="default" className="rounded-full px-8 py-4 text-lg font-bold shadow-lg">
-            <Compass className="mr-2 h-5 w-5" />
-            Explore Communities
-          </Button>
-        </Link>
-      </div>
-    </section>
+    </div>
 
 );
+}
+
+================================================
+FILE: components/home/function-grid.tsx
+================================================
+import Link from "next/link";
+import { CommonsFeed } from "@/config/commons-config";
+import { Sparkles } from "lucide-react";
+
+interface FunctionGridProps {
+title: string;
+feeds: CommonsFeed[];
+borderColor?: string;
+}
+
+export function FunctionGrid({ title, feeds, borderColor = "blue" }: FunctionGridProps) {
+const borderColorClass = borderColor === "green" ? "border-blue-600" : "border-blue-600";
+
+return (
+
+<div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+{/_ Header _/}
+<div className={`border-l-4 ${borderColorClass} bg-slate-100 px-4 py-3 dark:bg-gray-700`}>
+<h3 className="text-sm font-bold uppercase tracking-wide text-slate-700 dark:text-gray-200">
+{title}
+</h3>
+</div>
+
+      {/* Grid Layout */}
+      <div className="p-4 space-y-3">
+        {/* Row 1: Two large cards (50/50) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {feeds.slice(0, 2).map((feed) => (
+            <Link
+              key={feed.address}
+              href={`/commons/${feed.address}`}
+              className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+            >
+              <Sparkles className="h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+              <span className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+                {feed.title}
+              </span>
+            </Link>
+          ))}
+        </div>
+
+        {/* Row 2: Three cards (33/33/33) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {feeds.slice(2, 5).map((feed) => (
+            <Link
+              key={feed.address}
+              href={`/commons/${feed.address}`}
+              className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+            >
+              <Sparkles className="h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+              <span className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+                {feed.title}
+              </span>
+            </Link>
+          ))}
+        </div>
+
+        {/* Row 3: Three cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {feeds.slice(5, 8).map((feed) => (
+            <Link
+              key={feed.address}
+              href={`/commons/${feed.address}`}
+              className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+            >
+              <Sparkles className="h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+              <span className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+                {feed.title}
+              </span>
+            </Link>
+          ))}
+        </div>
+
+        {/* Row 4: Three cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {feeds.slice(8, 11).map((feed) => (
+            <Link
+              key={feed.address}
+              href={`/commons/${feed.address}`}
+              className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+            >
+              <Sparkles className="h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+              <span className="font-semibold text-blue-600 hover:underline dark:text-blue-400">
+                {feed.title}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+
+);
+}
+
+================================================
+FILE: components/home/hero-section.tsx
+================================================
+export function HeroSection() {
+return null;
 }
 
 ================================================
@@ -7395,6 +7675,7 @@ communities?: number;
 
 export function StatsBar({ loadingStats, statsError, forumStats }: StatsBarProps) {
 return (
+
 <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
 <div className="group cursor-pointer rounded-2xl border border-border bg-white p-4 backdrop-blur-sm transition-all hover:scale-105 hover:border-primary/60 dark:bg-gray-800">
 <div className="flex flex-col items-center text-center">
@@ -7413,10 +7694,10 @@ return (
 </p>
 </div>
 </div>
-<div className="group cursor-pointer rounded-2xl border border-border bg-white p-4 backdrop-blur-sm transition-all hover:scale-105 hover:border-green-300/60 dark:bg-gray-800">
+<div className="group cursor-pointer rounded-2xl border border-border bg-white p-4 backdrop-blur-sm transition-all hover:scale-105 hover:border-blue-300/60 dark:bg-gray-800">
 <div className="flex flex-col items-center text-center">
-<div className="mb-2 rounded-full bg-green-100 p-2 transition-all group-hover:bg-green-200 dark:bg-green-900/30 dark:group-hover:bg-green-800/50">
-<MessageCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+<div className="mb-2 rounded-full bg-blue-100 p-2 transition-all group-hover:bg-blue-200 dark:bg-blue-900/30 dark:group-hover:bg-blue-800/50">
+<MessageCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
 </div>
 <p className="mb-1 text-xs text-muted-foreground">Active Threads</p>
 <p className="text-lg font-bold text-foreground">
@@ -7469,6 +7750,7 @@ const { data: communityResult } = useCommunity(thread.community);
 const community = communityResult?.community;
 
 return (
+
 <Link
 href={`/thread/${thread.slug}`}
 className="group block w-full min-w-0 cursor-pointer rounded-2xl border p-4 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 sm:p-6"
@@ -7559,6 +7841,7 @@ const { scoreState, isLoading } = useVoting({ postid: validPostId as any });
 if (!validPostId) return null;
 
 return (
+
 <div className="flex cursor-pointer items-center gap-2">
 <ArrowUp className="h-4 w-4 transition-colors hover:text-primary" />
 <span className="mx-1 min-w-[1.5rem] text-center text-sm font-semibold text-foreground">
@@ -7592,6 +7875,7 @@ setActiveCategory: (category: string) => void;
 
 export function ThreadsList({ threads, loadingThreads, error, activeCategory, setActiveCategory }: LatestThreadsProps) {
 return (
+
 <div className="mb-8 w-full max-w-none overflow-hidden rounded-3xl border border-slate-300/60 bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800 md:max-w-none">
 <div className="border-b border-slate-200/80 bg-gradient-to-r from-slate-100/90 to-white px-4 py-4 dark:border-gray-700/50 dark:from-gray-800/50 dark:to-gray-800 sm:px-8 sm:py-6">
 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -7599,8 +7883,8 @@ return (
 <div className="flex items-center gap-2">
 <h2 className="text-2xl font-bold text-slate-900 dark:text-gray-100">Active threads</h2>
 <div className="relative">
-<div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
-<div className="absolute inset-0 h-2 w-2 animate-ping rounded-full bg-green-400 opacity-75"></div>
+<div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+<div className="absolute inset-0 h-2 w-2 animate-ping rounded-full bg-blue-400 opacity-75"></div>
 </div>
 </div>
 <p className="mt-1 text-sm text-slate-600 dark:text-gray-400">
@@ -7708,7 +7992,8 @@ import { Navbar } from "@/components/layout/navbar";
 
 export function Container({ children }: { children: React.ReactNode }) {
 return (
-<div className="w-full max-w-full overflow-x-hidden bg-slate-100 dark:bg-gray-900">
+
+<div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-100 dark:bg-gray-900">
 <Navbar />
 {children}
 <Footer />
@@ -7719,62 +8004,13 @@ return (
 ================================================
 FILE: components/layout/footer.tsx
 ================================================
-import { HeyLogo } from "@/components/assets/hey-logo";
-
 export function Footer() {
 return (
+
 <footer className="mt-12 flex flex-col items-center gap-2 bg-slate-100 pb-6 pt-5 text-xs text-gray-500 dark:bg-gray-900 dark:text-gray-400">
-<span>
-Made with <span className="text-pink-500">&lt;3</span> by{" "}
-<a
-          href="https://hey.xyz/u/meketom"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-semibold text-brand-700 hover:underline dark:text-brand-400"
-        >
-@meketom
-</a>
-</span>
-<div className="flex gap-4">
-<a
-          href="https://github.com/lens-forum"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="GitHub"
-          className="flex items-center transition-colors hover:text-[##181717] dark:hover:text-gray-200"
-        >
-<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-<path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path>
-</svg>
-</a>
-<a
-          href="https://hey.xyz/u/meketom"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Hey Profile"
-          className="flex items-center transition-colors hover:text-green-500 dark:hover:text-green-400"
-        >
-<HeyLogo size={16} />
-</a>
-<a
-          href="https://x.com/lensforum"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="X (Twitter)"
-          className="flex items-center transition-colors hover:text-black dark:hover:text-gray-200"
-        >
-<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
-</svg>
-</a>
-</div>
-<div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center">
 <a href="/terms" className="transition-colors hover:text-slate-700 dark:hover:text-gray-200">
 Terms
 </a>
-<span>•</span>
-<span>Powered by Lens Protocol</span>
-</div>
 </footer>
 );
 }
@@ -7785,7 +8021,6 @@ FILE: components/layout/navbar-desktop.tsx
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LoginConnectButton } from "@/components/auth/login-connect-button";
@@ -7803,7 +8038,7 @@ DropdownMenuTrigger,
 import { useLogout } from "@/hooks/auth/use-logout";
 import { useSwitchAccount } from "@/hooks/auth/use-switch-account";
 import { useAuthStore } from "@/stores/auth-store";
-import { Bell, Gift, Home, LogOut, RefreshCw, User, Users } from "lucide-react";
+import { Bell, Gift, Home, LogOut, RefreshCw, User } from "lucide-react";
 
 export function NavbarDesktop() {
 const [showLensDialog, setShowLensDialog] = useState(false);
@@ -7826,21 +8061,13 @@ setSwitchingAccount(null);
 };
 
 return (
+
 <nav className="sticky top-0 z-50 w-full max-w-full overflow-x-hidden border-b border-gray-200 bg-white/80 px-4 py-3 shadow-xl backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/80">
 <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
 {/_ Logo _/}
-<Link href="/" className="group flex items-center space-x-2">
-<div className="flex h-8 w-8 items-center justify-center">
-<Image
-              src="/logo.png"
-              alt="LensForum Logo"
-              width={32}
-              height={32}
-              className="rounded-lg transition-all duration-300 group-hover:shadow-brand-200/50"
-            />
-</div>
-<span className="bg-gradient-to-r from-brand-600 to-brand-700 bg-clip-text text-xl font-bold text-transparent transition-all duration-300 group-hover:from-brand-500 group-hover:to-brand-600 group-hover:drop-shadow-sm dark:from-brand-400 dark:to-brand-500">
-LensForum
+<Link href="/" className="group flex items-center">
+<span className="font-custom text-xl font-bold uppercase tracking-wide text-slate-900 dark:text-gray-100">
+SOCIETY PROTOCOL
 </span>
 </Link>
 {/_ Desktop Actions _/}
@@ -7852,15 +8079,6 @@ size="sm"
 className="rounded-full px-4 py-2 transition-all duration-300" >
 <Home className="mr-2 h-4 w-4" />
 Home
-</Button>
-</Link>
-<Link href="/communities">
-<Button
-variant={pathname === "/communities" ? "default" : "yellow"}
-size="sm"
-className="rounded-full px-4 py-2 transition-all duration-300" >
-<Users className="mr-2 h-4 w-4" />
-Communities
 </Button>
 </Link>
 <div className="flex items-center gap-3">
@@ -7949,7 +8167,6 @@ FILE: components/layout/navbar-mobile.tsx
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LoginConnectButton } from "@/components/auth/login-connect-button";
@@ -7959,7 +8176,7 @@ import { Button } from "@/components/ui/button";
 import { useLogout } from "@/hooks/auth/use-logout";
 import { useSwitchAccount } from "@/hooks/auth/use-switch-account";
 import { useAuthStore } from "@/stores/auth-store";
-import { Bell, Gift, Home, LogOut, Menu, RefreshCw, User, Users, X } from "lucide-react";
+import { Bell, Gift, Home, LogOut, Menu, RefreshCw, User, X } from "lucide-react";
 
 export function NavbarMobile() {
 const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -7984,21 +8201,13 @@ setSwitchingAccount(null);
 };
 
 return (
+
 <nav className="sticky top-0 z-50 w-full max-w-full overflow-x-hidden border-b border-gray-200 bg-white/80 px-4 py-3 shadow-xl backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/80">
 <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
 {/_ Logo _/}
-<Link href="/" className="group flex items-center space-x-2">
-<div className="flex h-8 w-8 items-center justify-center">
-<Image
-              src="/logo.png"
-              alt="LensForum Logo"
-              width={32}
-              height={32}
-              className="rounded-lg transition-all duration-300 group-hover:shadow-brand-200/50"
-            />
-</div>
-<span className="bg-gradient-to-r from-brand-600 to-brand-700 bg-clip-text text-xl font-bold text-transparent transition-all duration-300 group-hover:from-brand-500 group-hover:to-brand-600 group-hover:drop-shadow-sm dark:from-brand-400 dark:to-brand-500">
-LensForum
+<Link href="/" className="group flex items-center">
+<span className="font-custom text-lg font-bold uppercase tracking-wide text-slate-900 dark:text-gray-100 sm:text-xl">
+SOCIETY PROTOCOL
 </span>
 </Link>
 <div className="flex items-center space-x-2">
@@ -8045,18 +8254,6 @@ className={`w-full justify-start rounded-full transition-all duration-300 ${
                   }`} >
 <Home className="mr-2 h-4 w-4" />
 Home
-</Button>
-</Link>
-<Link href="/communities" className="block px-3">
-<Button
-variant="ghost"
-className={`w-full justify-start rounded-full transition-all duration-300 ${
-                    pathname === "/communities"
-                      ? "bg-brand-600 text-white shadow-md hover:bg-brand-700"
-                      : "hover:bg-accent hover:text-accent-foreground"
-                  }`} >
-<Users className="mr-2 h-4 w-4" />
-Communities
 </Button>
 </Link>
 </div>
@@ -8199,6 +8396,7 @@ const resolvedAvatarUrl = author?.metadata?.picture || undefined;
 const resolvedName = author?.metadata?.name || author?.username?.localName;
 
 return (
+
 <Link
 href={resolvedProfileUrl}
 onClick={e => {
@@ -8253,6 +8451,7 @@ const replyNavigationUrl = isReply ? `/reply/${post.id}` : navigationUrl;
 
 return (
 <NotificationCard href={isReply ? replyNavigationUrl : navigationUrl}>
+
 <div className="flex items-start gap-4">
 {author && <AvatarProfileLink author={author} />}
 <div className="min-w-0 flex-1">
@@ -8303,6 +8502,7 @@ children: React.ReactNode;
 
 export function NotificationCard({ href, children }: NotificationCardProps) {
 return (
+
 <Link
       href={href}
       className="group block rounded-xl border border-gray-200 bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-brand-400/30 hover:bg-brand-50 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-400 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-brand-500/40 dark:hover:bg-brand-900/20"
@@ -8376,6 +8576,7 @@ const filters = [
 ];
 
 return (
+
 <div className="flex flex-wrap gap-2">
 {filters.map(filter => {
 const Icon = filter.icon;
@@ -8447,6 +8648,7 @@ icon={<Bell className="h-8 w-8 text-gray-400" />}
 }
 
 return (
+
 <div className="space-y-2">
 {filteredNotifications.map((notification: Notification, idx: number) => (
 <NotificationItem key={idx} notification={notification} />
@@ -8531,6 +8733,7 @@ const replyNavigationUrl = isReply ? `/reply/${post.id}` : navigationUrl;
 
 return (
 <NotificationCard href={isReply ? replyNavigationUrl : navigationUrl}>
+
 <div className="flex items-start gap-4">
 <AvatarProfileLink author={firstAuthor} />
 <div className="min-w-0 flex-1">
@@ -8539,10 +8742,10 @@ return (
 <div className="flex items-center gap-1">
 {/_ Show reaction icons based on what types we have _/}
 {hasUpvotes && (
-<div className="rounded-full bg-green-100 p-1.5 dark:bg-green-900/30">
-<ArrowUp className="h-4 w-4 text-green-500" />
+<div className="rounded-full bg-blue-100 p-1.5 dark:bg-blue-900/30">
+<ArrowUp className="h-4 w-4 text-blue-500" />
 {upvoteReactions.length > 1 && (
-<span className="ml-1 text-xs font-medium text-green-600 dark:text-green-400">
+<span className="ml-1 text-xs font-medium text-blue-600 dark:text-blue-400">
 {upvoteReactions.length}
 </span>
 )}
@@ -8615,13 +8818,14 @@ const viewReplyUrl = `/reply/${replyId}`;
 
 return (
 <NotificationCard href={viewReplyUrl}>
+
 <div className="flex items-start gap-4">
 {author && <AvatarProfileLink author={author} />}
 <div className="min-w-0 flex-1">
 <div className="mb-2 flex items-start justify-between">
 <div className="flex items-center gap-2">
-<div className="rounded-full bg-green-100 p-1.5 dark:bg-green-900/30">
-<MessageCircle className="h-4 w-4 text-green-500" />
+<div className="rounded-full bg-blue-100 p-1.5 dark:bg-blue-900/30">
+<MessageCircle className="h-4 w-4 text-blue-500" />
 </div>
 <div>
 <h3 className="font-semibold text-gray-900 group-hover:text-brand-600 dark:text-gray-100">
@@ -8683,6 +8887,7 @@ const blockTimestamp = new Date(notification.actionDate as string);
 
 return (
 <NotificationCard href="/rewards">
+
 <div className="flex items-start gap-4">
 {/_ Avatar of recipient (the user) _/}
 <AvatarProfileLink author={recipient} />
@@ -8747,6 +8952,7 @@ username: string;
 
 export function ProfileHeader({ lensAccount, username }: ProfileHeaderProps) {
 return (
+
 <div className="relative">
 {/_ Cover Image _/}
 <div className="relative h-32 overflow-hidden rounded-2xl sm:h-48 sm:rounded-3xl md:h-64">
@@ -8759,11 +8965,11 @@ return (
               width={300}
               height={100}
             />
-<div className="absolute inset-0 bg-green-900/20"></div>
+<div className="absolute inset-0 bg-blue-900/20"></div>
 </>
 ) : (
 <>
-<div className="h-full w-full bg-gradient-to-r from-green-600 via-green-500 to-green-400"></div>
+<div className="h-full w-full bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400"></div>
 <div className="absolute inset-0 bg-black/20"></div>
 </>
 )}
@@ -8771,9 +8977,9 @@ return (
 {/_ Profile Info _/}
 <div className="relative -mt-12 px-3 sm:-mt-20 sm:px-6">
 <div className="flex flex-col items-start space-y-3 sm:space-y-4 md:flex-row md:items-end md:space-x-6 md:space-y-0">
-<Avatar className="h-20 w-20 border-2 border-white ring-2 ring-green-100 sm:h-32 sm:w-32 sm:border-4">
+<Avatar className="h-20 w-20 border-2 border-white ring-2 ring-blue-100 sm:h-32 sm:w-32 sm:border-4">
 <AvatarImage src={lensAccount?.metadata?.picture || "/placeholder.svg"} />
-<AvatarFallback className="bg-gradient-to-r from-green-400 to-green-600 text-2xl text-white sm:text-4xl">
+<AvatarFallback className="bg-gradient-to-r from-blue-400 to-blue-600 text-2xl text-white sm:text-4xl">
 {(lensAccount?.metadata?.name || lensAccount?.username?.localName || username)[0].toUpperCase()}
 </AvatarFallback>
 </Avatar>
@@ -8785,7 +8991,7 @@ return (
 {lensAccount?.metadata?.name || lensAccount?.username?.localName || username}
 </h1>
 </div>
-<p className="mb-2 text-sm font-medium text-green-600 sm:text-base">
+<p className="mb-2 text-sm font-medium text-blue-600 sm:text-base">
 @{lensAccount?.username?.localName || username}
 </p>
 <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
@@ -8813,7 +9019,7 @@ href={
 lensAccount?.metadata?.attributes?.find(attr => attr.key === "website" || attr.key === "url")
 ?.value || "#"
 }
-className="text-green-600 hover:text-green-700 hover:underline"
+className="text-blue-600 hover:text-blue-700 hover:underline"
 target="\_blank"
 rel="noopener noreferrer" >
 {lensAccount?.metadata?.attributes?.find(attr => attr.key === "website" || attr.key === "url")
@@ -8845,6 +9051,7 @@ communities: Community[];
 export function ProfileJoinedCommunities({ communities }: ProfileJoinedCommunitiesProps) {
 if (communities.length > 0) {
 return (
+
 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 {communities.map(function (community) {
 return (
@@ -8864,7 +9071,7 @@ className="h-12 w-12 rounded-xl object-cover"
 <div className="ml-4 flex flex-col justify-center">
 <div className="flex items-center space-x-2">
 <h3 className="text-lg font-bold text-foreground">{community.name}</h3>
-<Badge className="bg-green-100 text-green-700">Member</Badge>
+<Badge className="bg-blue-100 text-blue-700">Member</Badge>
 </div>
 <div className="text-sm text-muted-foreground">
 {(() => {
@@ -8892,6 +9099,7 @@ return community.group.metadata?.description;
 }
 
 return (
+
 <div className="flex flex-col items-center justify-center py-16 text-center">
 <Users className="mb-4 h-12 w-12 text-slate-300" />
 <h3 className="mb-2 text-lg font-medium text-foreground">No joined communities</h3>
@@ -8938,6 +9146,7 @@ return content.length > 200 ? content.slice(0, 200) + "..." : content;
 
 if (replies.length > 0) {
 return (
+
 <div className="space-y-3">
 {replies.map((reply: Reply) => (
 <div
@@ -8952,7 +9161,7 @@ return (
 <div className="flex items-center justify-between text-sm">
 <div className="flex items-center space-x-4 text-slate-500">
 <span className="flex items-center gap-1">
-<ArrowUp className="h-4 w-4 text-green-500" />
+<ArrowUp className="h-4 w-4 text-blue-500" />
 <span>{reply.post.stats.upvotes || 0}</span>
 </span>
 <span className="flex items-center gap-1">
@@ -9032,6 +9241,7 @@ icon: <LensReputationLogo size={16} />,
 ];
 
 return (
+
 <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
 {stats.map(stat => (
 <div
@@ -9084,6 +9294,7 @@ if (tab === "recent" || tab === "forums") setActiveTabState(tab);
 };
 
 return (
+
 <div className="space-y-4 sm:space-y-8">
 <div className="mb-4">
 <ProfileTabs activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -9104,6 +9315,7 @@ setActiveTab: (tab: string) => void;
 
 export function ProfileTabs({ activeTab, setActiveTab }: ProfileTabsProps) {
 return (
+
 <div className="flex items-center justify-center">
 <div className="flex items-center space-x-1 rounded-xl bg-white p-1 shadow-sm dark:border-gray-700/60 dark:bg-gray-800 sm:rounded-2xl">
 <button
@@ -9148,6 +9360,7 @@ joinedCommunities: Community[];
 
 export function Profile({ account, stats, userReplies, joinedCommunities }: ProfileProps) {
 return (
+
 <div className="mx-auto max-w-6xl space-y-4 px-3 py-4 sm:space-y-8 sm:px-4 sm:py-8">
 {/_ Profile Header _/}
 <ProfileHeader lensAccount={account as Account} username={account.username?.value} />
@@ -9172,6 +9385,7 @@ import { Toaster } from "@/components/ui/sonner";
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
 return (
+
 <div className="min-h-screen">
 {children}
 <Toaster position="bottom-right" />
@@ -9352,6 +9566,7 @@ break;
 return (
 <Card className="rounded-lg bg-white shadow-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardContent className="p-3 sm:p-4">
+
 <div className="flex items-start gap-2 sm:gap-3">
 <div className="min-w-0 flex-1">
 {/_ Top row: author info _/}
@@ -9425,16 +9640,17 @@ postid,
 const { isLoggedIn } = useAuthStore();
 
 return (
+
 <div className={`flex flex-col items-center space-y-1`}>
 <Button
 variant={hasUserUpvoted ? "secondary" : "ghost"}
 size="sm"
-className={`rounded-full p-1 transition-all duration-300 hover:scale-110 hover:bg-green-100 hover:text-green-600 ${hasUserUpvoted ? "bg-green-100 text-green-600" : ""}`}
+className={`rounded-full p-1 transition-all duration-300 hover:scale-110 hover:bg-blue-100 hover:text-blue-600 ${hasUserUpvoted ? "bg-blue-100 text-blue-600" : ""}`}
 onClick={handleUpvote}
 disabled={isLoading === "up" || isLoading === "down" || hasUserDownvoted || !isLoggedIn}
 aria-pressed={hasUserUpvoted} >
 {isLoading === "up" ? (
-<span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
+<span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
 ) : (
 <ArrowUp className="h-4 w-4" />
 )}
@@ -9473,6 +9689,7 @@ isRewardsAvailable: boolean;
 export function RewardsHistory({ distributions, loading, isRewardsAvailable }: RewardsHistoryProps) {
 if (loading) {
 return (
+
 <div className="py-8 text-center">
 <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-brand-500" />
 <p className="mt-3 text-gray-600 dark:text-gray-400">Loading history...</p>
@@ -9482,6 +9699,7 @@ return (
 
 if (!isRewardsAvailable || distributions.length === 0) {
 return (
+
 <div className="py-12 text-center">
 <Calendar className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
 <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">No rewards history yet</h3>
@@ -9493,6 +9711,7 @@ Your rewards transactions will appear here once the system is live.
 }
 
 return (
+
 <div>
 {/_ Show only last 50 distributions for performance _/}
 <div className="space-y-3">
@@ -9501,8 +9720,8 @@ return (
 key={distribution.id || index}
 className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-600 dark:bg-gray-700" >
 <div className="flex items-center gap-3">
-<div className="rounded-full bg-green-100 p-2 dark:bg-green-900/30">
-<Calendar className="h-4 w-4 text-green-600 dark:text-green-400" />
+<div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900/30">
+<Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
 </div>
 <div>
 <p className="font-medium text-gray-900 dark:text-gray-100">{distribution.type}</p>
@@ -9518,7 +9737,7 @@ minute: "2-digit",
 </div>
 </div>
 <div className="text-right">
-<p className="font-semibold text-green-700 dark:text-green-300">
+<p className="font-semibold text-blue-700 dark:text-blue-300">
 +{parseFloat(distribution.amount).toFixed(5)} {distribution.token}
 </p>
 </div>
@@ -9577,6 +9796,7 @@ return <p>{processedChildren}</p>;
 
 export function ContentRenderer({ content, className }: ContentRendererProps) {
 return (
+
 <div className={className}>
 <ReactMarkdown
 remarkPlugins={[remarkBreaks]}
@@ -9639,6 +9859,7 @@ loading?: boolean;
 export function Pagination({ onPrev, onNext, hasPrev, hasNext, loading }: PaginationProps) {
 if (!hasPrev && !hasNext) return null;
 return (
+
 <nav role="navigation" aria-label="pagination" className="mx-auto mt-8 flex w-full justify-center">
 <PaginationComponent>
 <PaginationContent>
@@ -9717,7 +9938,7 @@ typeof rule === "string" ? { text: rule, type: "neutral" } : rule,
 const getIcon = (type: Rule["type"]) => {
 switch (type) {
 case "positive":
-return <span className="text-green-600">✓</span>;
+return <span className="text-blue-600">✓</span>;
 case "negative":
 return <span className="text-red-500">×</span>;
 default:
@@ -9730,6 +9951,7 @@ const getNumberIcon = (index: number) => <span className="mt-0.5 text-sm font-bo
 return (
 <Card className={`rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800 ${className}`}>
 <CardHeader className="pb-3">
+
 <h3 className="text-lg font-medium text-foreground">{title || defaultTitle}</h3>
 </CardHeader>
 <CardContent>
@@ -9775,7 +9997,7 @@ color: "border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-800 dark:bg-gr
 icon: <Info className="h-8 w-8" />,
 },
 success: {
-color: "border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400",
+color: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
 icon: <CheckCircle2 className="h-8 w-8" />,
 },
 warning: {
@@ -9789,6 +10011,7 @@ export function StatusBanner({ type = "info", title, message, icon }: StatusBann
 const { color, icon: defaultIcon } = typeStyles[type] ?? typeStyles.info;
 
 return (
+
 <div className={`rounded-xl border p-8 text-center ${color}`}>
 <div>
 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-opacity-10">
@@ -9898,7 +10121,7 @@ return (
 <Button
 variant="ghost"
 size="sm"
-className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
 disabled={!isLoggedIn || !canTip} >
 <Coins className="h-4 w-4" />
 Tip
@@ -9908,6 +10131,7 @@ Tip
         align="end"
         className="w-72 border border-gray-200 bg-white p-4 text-gray-800 shadow-xl dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
       >
+
 <div className="mb-3 text-center text-sm font-semibold text-gray-800 dark:text-gray-100">
 Send a tip in $GHO
 </div>
@@ -9919,7 +10143,7 @@ Send a tip in $GHO
 key={val}
 size="sm"
 variant={tipAmount === val && !customMode ? "default" : "outline"}
-className={`flex-1 px-0 py-2 font-semibold transition-all duration-150 ${tipAmount === val && !customMode ? "scale-105 ring-2 ring-green-200 dark:ring-green-700" : "hover:scale-105"} dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100`}
+className={`flex-1 px-0 py-2 font-semibold transition-all duration-150 ${tipAmount === val && !customMode ? "scale-105 ring-2 ring-blue-200 dark:ring-blue-700" : "hover:scale-105"} dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100`}
 onClick={() => {
 setTipAmount(val);
 setCustomMode(false);
@@ -9930,7 +10154,7 @@ setCustomMode(false);
 <Button
 size="sm"
 variant={customMode ? "default" : "outline"}
-className={`flex-1 px-0 py-2 font-semibold transition-all duration-150 ${customMode ? "scale-105 ring-2 ring-green-200 dark:ring-green-700" : "hover:scale-105"} dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100`}
+className={`flex-1 px-0 py-2 font-semibold transition-all duration-150 ${customMode ? "scale-105 ring-2 ring-blue-200 dark:ring-blue-700" : "hover:scale-105"} dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100`}
 onClick={() => {
 setCustomMode(true);
 setTipAmount(parseFloat(customValue) || 1);
@@ -9968,7 +10192,7 @@ setTipAmount(1);
 }
 }}
 placeholder="Amount (GHO)"
-className="mb-2 border-gray-200 bg-gray-50 text-center text-lg font-semibold focus:ring-green-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:ring-green-700"
+className="mb-2 border-gray-200 bg-gray-50 text-center text-lg font-semibold focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:focus:ring-blue-700"
 />
 </div>
 {/_ Send button _/}
@@ -10036,6 +10260,7 @@ onJoinCommunity: () => void;
 
 export function JoinCommunityAnnouncement({ isLoading, onJoinCommunity }: JoinCommunityAnnouncementProps) {
 return (
+
 <div className="mb-4 flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-brand-800 dark:border-brand-900/30 dark:bg-brand-900/20 dark:text-brand-200">
 <span className="flex items-center gap-2">
 <LogIn className="h-4 w-4" />
@@ -10074,6 +10299,7 @@ export function ThreadActions({ thread }: ThreadActionsProps) {
 const { canEdit } = useCanEditThread(thread);
 
 return (
+
 <div className="mb-4 flex items-center justify-between">
 <BackNavigationLink href={thread?.community ? `/communities/${thread.community}` : "/communities"}>
 Back to Community
@@ -10193,6 +10419,7 @@ if (!thread) return;
 const threadUrl = `${APP_URL}/thread/${thread.rootPost.slug}`;
 
 return (
+
 <div>
 <div className="mt-6 flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
 {/_ Left: Stats Tips _/}
@@ -10212,7 +10439,7 @@ return (
 <Button
 variant="ghost"
 size="sm"
-className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
 onClick={() => setReplyingTo("main")}
 disabled={!isLoggedIn} >
 <ReplyIcon className="mr-2 h-4 w-4" />
@@ -10228,7 +10455,7 @@ Reply
             variant="ghost"
             size="sm"
             onClick={handleShare}
-            className="min-w-0 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+            className="min-w-0 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
           >
 <Share className="mr-2 h-4 w-4" />
 <span className="truncate">Share</span>
@@ -10298,13 +10525,14 @@ doFetchTags();
 }, [thread.rootPost]);
 
 return (
+
 <div className="space-y-3">
 {/_ Header row with avatar+name on left and timestamp on right _/}
 <div className="flex items-center justify-between">
 <div className="flex items-center gap-2">
 <Avatar className="h-8 w-8 text-sm font-bold">
 <AvatarImage src={thread.author.metadata?.picture || undefined} alt={thread.author.username?.value} />
-<AvatarFallback className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+<AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
 {thread.author.username?.localName[0].toUpperCase()}
 </AvatarFallback>
 </Avatar>
@@ -10405,11 +10633,12 @@ revalidateCommunityPath(thread.community);
 };
 
 return (
+
 <div className="mt-4">
 <Button
 variant="ghost"
 size="sm"
-className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
 onClick={() => setReplyingTo("main")}
 disabled={!isLoggedIn} >
 <ReplyIcon className="mr-2 h-4 w-4" />
@@ -10512,6 +10741,7 @@ e.preventDefault();
 return (
 <Card className="rounded-3xl border border-brand-200/60 bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardHeader className="pb-4">
+
 <h1 className="text-2xl font-medium text-foreground">Create New Thread</h1>
 <p className="text-muted-foreground">Share your thoughts with the community</p>
 </CardHeader>
@@ -10657,6 +10887,7 @@ const controlLabel = loadingContext
 const chainId = `in-reply-to-${parentId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
 return (
+
 <div>
 {/_ Minimal disguised control: subtle inline button with chevron; improved accessibility _/}
 <div>
@@ -10745,6 +10976,7 @@ const { data: replies = [], loading } = useThreadReplies(thread);
 
 if (loading) {
 return (
+
 <div className="flex justify-center py-8">
 <LoadingSpinner text="Loading replies..." />
 </div>
@@ -10752,6 +10984,7 @@ return (
 }
 
 return (
+
 <div className="mt-6 space-y-4">
 <h3 className="text-xl font-bold text-foreground">{replies.length} Replies</h3>
 {replies.map(reply => (
@@ -10795,12 +11028,13 @@ setTimeout(() => setCopied(false), 1200);
 };
 
 return (
+
 <div className="flex items-center gap-1 sm:gap-2">
 {setReplyingTo && canReply && (
 <Button
           variant="ghost"
           size="sm"
-          className="h-7 px-2 text-xs text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 sm:h-8 sm:px-3 sm:text-sm"
+          className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 sm:h-8 sm:px-3 sm:text-sm"
           onClick={handleReply}
           disabled={!canReply}
         >
@@ -10813,7 +11047,7 @@ return (
 <Button
 variant="ghost"
 size="sm"
-className={`h-7 px-2 text-xs text-green-600 hover:text-green-700 focus:outline-none dark:text-green-400 dark:hover:text-green-300 sm:h-8 sm:px-2 sm:text-sm ${copied ? "text-green-500" : ""}`}
+className={`h-7 px-2 text-xs text-blue-600 hover:text-blue-700 focus:outline-none dark:text-blue-400 dark:hover:text-blue-300 sm:h-8 sm:px-2 sm:text-sm ${copied ? "text-blue-500" : ""}`}
 title="Copy reply link"
 onClick={handleCopyLink} >
 <svg
@@ -10867,6 +11101,7 @@ setIsSubmitting(false);
 };
 
 return (
+
 <div className="mt-3 flex w-full min-w-0 items-start space-x-3">
 <Avatar className="h-8 w-8 flex-shrink-0">
 <AvatarImage src={account?.metadata?.picture} />
@@ -10887,7 +11122,7 @@ className="gradient-button h-8 text-sm"
 disabled={!value.trim() || isSubmitting} >
 {isSubmitting ? (
 <span className="flex items-center">
-<span className="loader mr-2 h-3 w-3 animate-spin rounded-full border-2 border-t-2 border-gray-300 border-t-green-500" />
+<span className="loader mr-2 h-3 w-3 animate-spin rounded-full border-2 border-t-2 border-gray-300 border-t-blue-500" />
 Replying...
 </span>
 ) : (
@@ -11000,6 +11235,7 @@ const canReply = reply.post.operations?.canComment.\_\_typename === "PostOperati
 const canTip = reply.post.operations?.canTip;
 
 return (
+
 <div className="space-y-2" id={reply.id}>
 <Card className="rounded-lg bg-white shadow-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardContent className="p-3 sm:p-4">
@@ -11043,7 +11279,7 @@ className="flex items-center gap-2 hover:text-gray-900" >
                         animate={{ opacity: 1, y: 0, scale: 1.1 }}
                         exit={{ opacity: 0, y: 24, scale: 0.8 }}
                         transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
-                        className="pointer-events-none absolute -top-4 left-1/2 -translate-x-1/2 text-xs font-bold text-green-500"
+                        className="pointer-events-none absolute -top-4 left-1/2 -translate-x-1/2 text-xs font-bold text-blue-500"
                         style={{ zIndex: 10 }}
                       >
                         +1
@@ -11173,7 +11409,7 @@ disabled
 variant="ghost"
 size="sm"
 onClick={() => setShowHideDialog(true)}
-className="h-7 px-2 text-xs text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 sm:h-8 sm:px-2 sm:text-sm"
+className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 sm:h-8 sm:px-2 sm:text-sm"
 title="Unhide reply" >
 <EyeOff className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
 <span className="hidden sm:inline">Unhide</span>
@@ -11216,7 +11452,7 @@ title="Unhide reply" >
               disabled={isLoading}
               className={`rounded-full px-6 py-2 font-semibold text-white transition-all duration-300 hover:scale-105 ${
                 isHidden
-                  ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                  ? "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
                   : "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
               }`}
             >
@@ -11278,6 +11514,7 @@ setPosting(false);
 };
 
 return (
+
 <Dialog open={open} onOpenChange={open => !open && onClose()}>
 <DialogContent className="border-0 bg-white shadow-lg backdrop-blur-md dark:border-gray-600/60 dark:bg-gray-700 sm:max-w-md">
 <DialogHeader>
@@ -11334,6 +11571,7 @@ const description = rawDescription
 : "No description available.";
 
 return (
+
 <Link
 href={`/communities/${community.group.address}`}
 aria-label={`View community ${community.name}`}
@@ -11391,6 +11629,7 @@ export function ThreadSimpleMainCard({ thread }: { thread: Thread }) {
 const { title } = getThreadTitleAndSummary(thread.rootPost);
 
 return (
+
 <div>
 <Card className="rounded-lg bg-gray-50/50 shadow-sm dark:border-gray-700/40 dark:bg-gray-800/50">
 <CardContent className="p-4">
@@ -11483,6 +11722,7 @@ postid,
 const { isLoggedIn } = useAuthStore();
 
 return (
+
 <div
 className={`inline-flex items-center gap-1 rounded-full border border-gray-300/60 bg-white/80 px-2 py-1 shadow-md shadow-gray-200/60 backdrop-blur-sm dark:border-gray-600/60 dark:bg-gray-800/80 dark:shadow-gray-900/40 ${className || ""}`} >
 <Button
@@ -11490,15 +11730,15 @@ variant="ghost"
 size="sm"
 className={`h-7 w-7 rounded-full p-0 transition-all duration-200 hover:scale-110 hover:shadow-sm ${
           hasUserUpvoted
-            ? "bg-green-100 text-green-600 shadow-sm hover:bg-green-200"
-            : "hover:bg-green-50 hover:text-green-600"
+            ? "bg-blue-100 text-blue-600 shadow-sm hover:bg-blue-200"
+            : "hover:bg-blue-50 hover:text-blue-600"
         }`}
 onClick={handleUpvote}
 disabled={isLoading === "up" || isLoading === "down" || hasUserDownvoted || !isLoggedIn}
 aria-pressed={hasUserUpvoted}
 aria-label="Upvote thread" >
 {isLoading === "up" ? (
-<span className="inline-block h-3 w-3 animate-spin rounded-full border border-green-600 border-t-transparent" />
+<span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-600 border-t-transparent" />
 ) : (
 <ArrowUp className="h-3.5 w-3.5" />
 )}
@@ -11578,6 +11818,7 @@ setIsJoinLoading(false);
 };
 
 return (
+
 <div className="mx-auto max-w-7xl px-4 py-8">
 <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
 <div className="lg:col-span-3">
@@ -11655,6 +11896,7 @@ return (
 <BackNavigationLink href={`/thread/${thread.slug}`}>Back to Thread</BackNavigationLink>
 <Card className="rounded-3xl bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
 <CardHeader className="pb-4">
+
 <div className="flex items-center justify-between">
 <h2 className="text-xl font-bold text-foreground">Edit Thread</h2>
 </div>
@@ -11966,6 +12208,7 @@ Alert.displayName = "Alert";
 
 const AlertTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
 ({ className, ...props }, ref) => (
+
 <h5 ref={ref} className={cn("mb-1 font-medium leading-none tracking-tight", className)} {...props} />
 ),
 );
@@ -11973,6 +12216,7 @@ AlertTitle.displayName = "AlertTitle";
 
 const AlertDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
 ({ className, ...props }, ref) => (
+
 <div ref={ref} className={cn("text-sm [&_p]:leading-relaxed", className)} {...props} />
 ),
 );
@@ -12049,6 +12293,7 @@ import Link from "next/link";
 
 export function BackNavigationLink({ href, children }: { href: string; children: React.ReactNode }) {
 return (
+
 <Link
       href={href}
       className="inline-flex items-center rounded-full bg-white/80 px-4 py-2 text-sm text-slate-600 backdrop-blur-sm hover:bg-white hover:text-slate-900"
@@ -12119,6 +12364,7 @@ separator?: React.ReactNode;
 
 const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWithoutRef<"ol">>(
 ({ className, ...props }, ref) => (
+
 <ol
 ref={ref}
 className={cn(
@@ -12133,6 +12379,7 @@ BreadcrumbList.displayName = "BreadcrumbList";
 
 const BreadcrumbItem = React.forwardRef<HTMLLIElement, React.ComponentPropsWithoutRef<"li">>(
 ({ className, ...props }, ref) => (
+
 <li ref={ref} className={cn("inline-flex items-center gap-1.5", className)} {...props} />
 ),
 );
@@ -12323,6 +12570,7 @@ Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
 ({ className, ...props }, ref) => (
+
 <div ref={ref} className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />
 ),
 );
@@ -12330,6 +12578,7 @@ CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
 ({ className, ...props }, ref) => (
+
 <div ref={ref} className={cn("text-2xl font-semibold leading-none tracking-tight", className)} {...props} />
 ),
 );
@@ -12337,6 +12586,7 @@ CardTitle.displayName = "CardTitle";
 
 const CardDescription = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
 ({ className, ...props }, ref) => (
+
 <div ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
 ),
 );
@@ -12349,6 +12599,7 @@ CardContent.displayName = "CardContent";
 
 const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
 ({ className, ...props }, ref) => (
+
 <div ref={ref} className={cn("flex items-center p-6 pt-0", className)} {...props} />
 ),
 );
@@ -12638,6 +12889,7 @@ children: React.ComponentProps<typeof RechartsPrimitive.ResponsiveContainer>["ch
 
 return (
 <ChartContext.Provider value={{ config }}>
+
 <div
 data-chart={chartId}
 ref={ref}
@@ -12662,6 +12914,7 @@ return null;
 }
 
 return (
+
 <style
 dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
@@ -16233,7 +16486,7 @@ disabled={tags.length >= maxTags}
 type="button"
 size="sm"
 variant="ghost"
-className="h-6 w-6 rounded-full p-0 text-green-600 hover:bg-green-100"
+className="h-6 w-6 rounded-full p-0 text-blue-600 hover:bg-blue-100"
 onClick={() => addTag(tagInput)} >
 <Plus className="h-3 w-3" />
 </Button>
@@ -16762,6 +17015,205 @@ disabled={disabled}
 
 );
 }
+
+================================================
+FILE: config/commons-config.ts
+================================================
+export interface CommonsFeed {
+title: string;
+address: string;
+description: string;
+}
+
+export interface CommonsSection {
+sectionTitle: string;
+feeds: CommonsFeed[];
+borderColor?: string;
+layout?: "list" | "grid";
+isLocked?: boolean;
+}
+
+export const COMMONS_SECTIONS: CommonsSection[] = [
+{
+sectionTitle: "GENERAL DISCUSSION",
+borderColor: "blue",
+layout: "list",
+feeds: [
+{
+title: "Beginners & Help",
+address: "feed-1",
+description: "New to the forum? Start here with questions and introductions.",
+},
+{
+title: "4 Key Concepts (Energy, Timeline, state, Actors, accounts, Lifeline, Death, etc...)",
+address: "feed-2",
+description: "Core concepts and fundamental principles of the system.",
+},
+{
+title: "Web3 Outpost (Outpod, Badges, Spec)",
+address: "feed-3",
+description: "Web3 integration, badges, and technical specifications.",
+},
+{
+title: "DAO Governance",
+address: "feed-4",
+description: "Decentralized governance discussions and proposals.",
+},
+],
+},
+{
+sectionTitle: "PARTNER COMMUNITIES",
+borderColor: "green",
+layout: "list",
+feeds: [
+{
+title: "General Discussion",
+address: "feed-5",
+description: "Discussion about Society Protocol partner communities.",
+},
+{
+title: "Announcements",
+address: "feed-6",
+description: "Official partner news and updates.",
+},
+{
+title: "Network States Communities",
+address: "feed-7",
+description: "Discussion about current and upcoming network states.",
+},
+{
+title: "Partner Badges & SPEC",
+address: "feed-8",
+description: "Technical specs and badge systems for partners.",
+},
+],
+},
+{
+sectionTitle: "FUNCTIONS (VALUE SYSTEM)",
+borderColor: "blue",
+layout: "grid",
+feeds: [
+{
+title: "Economic Game Theory",
+address: "feed-9",
+description: "Economic models and game theory discussions.",
+},
+{
+title: "Function Ideas",
+address: "feed-10",
+description: "Propose and discuss new function concepts.",
+},
+{
+title: "Hunting",
+address: "feed-11",
+description: "Resource discovery and acquisition strategies.",
+},
+{
+title: "Property",
+address: "feed-12",
+description: "Property rights and ownership discussions.",
+},
+{
+title: "Parenting",
+address: "feed-13",
+description: "Community growth and mentorship.",
+},
+{
+title: "Governance",
+address: "feed-14",
+description: "Decision-making and governance structures.",
+},
+{
+title: "Organizations",
+address: "feed-15",
+description: "Organizational design and coordination.",
+},
+{
+title: "Curation",
+address: "feed-16",
+description: "Content and quality curation systems.",
+},
+{
+title: "Farming",
+address: "feed-17",
+description: "Value creation and cultivation strategies.",
+},
+{
+title: "Portal",
+address: "feed-18",
+description: "Gateway and integration discussions.",
+},
+{
+title: "Communication",
+address: "feed-19",
+description: "Communication protocols and systems.",
+},
+],
+},
+{
+sectionTitle: "SOCIETY PROTOCOL TECHNICAL SECTION",
+borderColor: "blue",
+layout: "list",
+isLocked: true,
+feeds: [
+{
+title: "General Architecture Discussion",
+address: "feed-20",
+description: "High-level system architecture and design patterns.",
+},
+{
+title: "State Machine",
+address: "feed-21",
+description: "State transitions and machine logic discussions.",
+},
+{
+title: "Consensus (Proof of Hunt)",
+address: "feed-22",
+description: "Consensus mechanisms and proof systems.",
+},
+{
+title: "Cryptography",
+address: "feed-23",
+description: "Cryptographic primitives and security protocols.",
+},
+],
+},
+{
+sectionTitle: "OTHERS",
+borderColor: "blue",
+layout: "list",
+feeds: [
+{
+title: "Meta-discussion",
+address: "feed-24",
+description: "Discussion about the Society Protocol Forum itself.",
+},
+{
+title: "Politics & Society",
+address: "feed-25",
+description: "Political impacts on society and optimization.",
+},
+{
+title: "Economics",
+address: "feed-26",
+description: "Economic models and theories.",
+},
+{
+title: "Cryptocurrencies & Web3",
+address: "feed-27",
+description: "The broader crypto and web3 landscape.",
+},
+{
+title: "Off-topic",
+address: "feed-28",
+description: "Anything unrelated to the protocol.",
+},
+],
+},
+];
+
+// Legacy export for backward compatibility
+export const COMMONS_FEEDS = COMMONS_SECTIONS[0].feeds;
 
 ================================================
 FILE: fragments/index.ts
@@ -23724,6 +24176,1088 @@ return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
 ================================================
+FILE: MyDataSource/Context.md
+================================================
+This is a significant data dump, but the architecture here is actually quite elegant. You’re building a decentralized "Discourse" that balances the "Source of Truth" (Lens V3) with a high-performance "Read Layer" (Supabase).
+
+I’ve synthesized your notes into a clean, structured **Project Manifesto & Technical Specification**. This structure moves from the "High-Level Vision" down to the "Gritty Implementation" details.
+
+---
+
+# Society Protocol Forum: Master Specification
+
+## 1. The 3-Tier Architecture
+
+The forum is organized into three distinct "Tiers" to balance global discovery with regional and technical sovereignty.
+
+| Tier       | Name                | Governance Logic            | Visibility & Access                       |
+| ---------- | ------------------- | --------------------------- | ----------------------------------------- |
+| **Tier 1** | **Public Commons**  | One Lens Group / Many Feeds | Public; Open Join; Unified Indexing       |
+| **Tier 2** | **Technical Vault** | Isolated Lens Group         | Gated (Token NFT); Client-side Encryption |
+| **Tier 3** | **Local Embassies** | Regional Lens Groups        | Sovereign; Language-based Routing         |
+
+---
+
+## 2. Technical Mapping (The "Plumbing")
+
+This table maps how a user action in the UI translates to blockchain primitives and database entries.
+
+### **Core Primitive Mapping**
+
+| UI Component       | Business Logic     | Lens V3 Primitive       | Supabase Entity   |
+| ------------------ | ------------------ | ----------------------- | ----------------- |
+| **Root Category**  | Unit of Governance | **Lens Group**          | `root_categories` |
+| **Sub-Category**   | Segmented Stream   | **Lens Feed**           | `sub_categories`  |
+| **Topic / Thread** | Main Discussion    | **Article Publication** | `threads`         |
+| **Reply / Post**   | Engagement         | **Comment Publication** | `replies`         |
+| **User Profile**   | Identity           | **Lens Account**        | `profiles_cache`  |
+
+---
+
+## 3. Engineering Guardrails
+
+Based on previous project "scar tissue," these rules are non-negotiable for stability.
+
+### **The "Goldilocks" Stack**
+
+- **Framework**: Next.js 14.2.x & React 18 (Avoid Next 15/React 19 due to Web3 library incompatibilities).
+- **Transpilation**: Must include `connectkit` and `walletconnect` in `transpilePackages` in `next.config.mjs`.
+- **Polyfills**: Manually disable Node.js modules (`fs`, `net`, `tls`) in Webpack to prevent browser crashes.
+
+### **The 3-Step Handshake (Identity Flow)**
+
+1. **Wallet Connected**: EOA is detected via Wagmi/ConnectKit.
+2. **Profile Selected**: User chooses which Lens Profile they want to act as.
+3. **Session Active**: A JWT is generated and stored in a **Zustand AuthStore** with persistence.
+
+---
+
+## 4. Shadow Indexing Strategy
+
+To ensure the UI is "instant," we use Supabase as a cache.
+
+- **The Metadata Prefix**: Every Lens post is prefixed with `LearningLens: [Tier]`. This allows the indexer to verify the post belongs to the forum.
+- **The Fallback Rule**: If a post is missing from Supabase, the UI must fetch directly from the Lens API to ensure 100% data availability.
+- **Flat Replies**: Avoid deep-nested UI bugs. Use a chronological list with "In reply to" badges (quotes) using Markdown references.
+
+---
+
+## 5. Implementation Roadmap
+
+### **Phase 1: Foundations**
+
+- Deploy `SOCIETY_COMMONS_GROUP` and `SOCIETY_VAULT_GROUP` on ZKsync.
+- Initialize 15-20 static Lens Feeds for Tier 1.
+- Setup `lib/adapters/forum-adapter.ts` to transform raw Lens data into clean UI objects.
+
+### **Phase 2: Authentication**
+
+- Build the **ConnectMonitor** (headless state sync).
+- Implement the **Account Picker Dialog** for multi-profile users.
+
+### **Phase 3: The Content Loop**
+
+- Build the **Thread Composer** with Markdown support.
+- Deploy **Supabase Edge Functions** to listen for `PostCreated` events.
+- Implement the **Vault Service** (Lit Protocol) for decryption.
+
+---
+
+### **Next Step Recommendation**
+
+This organized view clarifies that your **AuthStore** and **Data Adapters** are the most critical "first-build" items.
+
+---
+
+# Requirements Document
+
+## Introduction
+
+Transform the existing LensForum codebase into the Society Protocol Tier 1 Public Commons system - the foundational layer of the 3-tier forum architecture. This system replaces the current multi-community structure with 15-20 independent Lens Feeds, creating a unified public space for global discovery and conversation. The Public Commons serves as the entry point and foundation for the entire Society Protocol Forum ecosystem, with all organization handled at the UI layer for maximum simplicity and flexibility.
+
+## Glossary
+
+- **Public_Commons**: The Tier 1 forum system using independent Lens Feeds with UI-driven organization for discussions
+- **Feed_Category**: A predefined discussion topic within the Public Commons, mapped to an independent Lens Feed
+- **Root_Section**: Top-level UI organizational grouping of related Feed_Category entries (General Discussion, Functions, etc.)
+- **Lens_Feed**: Independent Lens Protocol V3 primitive representing a content stream (no group container needed)
+- **Shadow_Indexer**: Supabase-based caching system that mirrors Lens Protocol data for instant UI performance
+- **Forum_Adapter**: Service layer that transforms raw Lens Protocol data into forum UI objects
+- **Feed_Router**: System component that routes users to specific independent feeds
+- **Commons_Parser**: Parser component that processes Lens Protocol data for the Public Commons structure
+- **Feed_Configuration**: Environment-based mapping of Feed_Category names to independent Lens Feed addresses
+
+## Requirements
+
+### Requirement 1: Independent Feed Architecture Implementation
+
+**User Story:** As a forum architect, I want to implement independent Lens Feeds with UI-driven organization, so that the system is simple, flexible, and performant.
+
+#### Acceptance Criteria
+
+1. THE Public_Commons SHALL use 15-20 independent Lens_Feed addresses with no group container
+2. THE Public_Commons SHALL replace the existing multi-community system with independent feed architecture
+3. THE Public_Commons SHALL organize feeds through UI-layer categorization only
+4. THE Public_Commons SHALL prevent user creation of new feeds (admin-configured only)
+5. THE Public_Commons SHALL maintain admin-only control over Feed_Category configuration through environment variables
+6. WHERE individual Lens_Feed addresses are not accessible, THE Public_Commons SHALL display appropriate error messages for that specific feed
+
+### Requirement 2: UI-Driven Feed Organization System
+
+**User Story:** As a user, I want to browse organized discussion feeds, so that I can find conversations on specific topics within the unified commons interface.
+
+#### Acceptance Criteria
+
+1. THE Public_Commons SHALL implement predefined Feed_Category entries mapped to independent Lens_Feed addresses
+2. THE Public_Commons SHALL organize feeds into Root_Section groupings through UI presentation: General Discussion, Partner Communities, Functions, Technical Section, and Others
+3. THE Public_Commons SHALL display "Beginners & Help" as a pinned feed in the General Discussion section
+4. THE Public_Commons SHALL implement "4 Key Concepts" feed covering Energy, Timeline, State, Actors, Accounts, Lifeline, and Death
+5. THE Public_Commons SHALL create "Web3 Outpost" feed for Outpost, Badges, and SPEC discussions
+6. THE Public_Commons SHALL establish "DAO Governance" feed for governance-related discussions
+7. THE Public_Commons SHALL configure Functions section feeds: Economic Game Theory, Function Ideas, Hunting, Property, Parenting, Organizations, Curation, Farming, Portal, and Communication
+8. THE Public_Commons SHALL maintain all organizational logic in the UI layer with no protocol-level grouping
+
+### Requirement 3: Public Access and Open Participation
+
+**User Story:** As any internet user, I want to access and participate in the Public Commons, so that I can engage in Society Protocol discussions without barriers.
+
+#### Acceptance Criteria
+
+1. THE Public_Commons SHALL provide public read access to all Feed_Category content across all independent feeds
+2. THE Public_Commons SHALL allow open joining without token requirements or gatekeeping
+3. THE Public_Commons SHALL implement unified indexing across all independent Lens_Feed addresses
+4. THE Public_Commons SHALL enable any authenticated Lens user to post in any Feed_Category
+5. THE Public_Commons SHALL maintain public visibility for all discussions and replies across independent feeds
+6. WHERE users are not authenticated, THE Public_Commons SHALL still allow read access to all content
+
+### Requirement 4: UI Transformation to Feed Layout
+
+**User Story:** As a user, I want to see feeds instead of communities in the interface, so that I can navigate the new feed-based structure intuitively.
+
+#### Acceptance Criteria
+
+1. THE Public_Commons SHALL replace community listings with Feed_Category listings in the main interface
+2. THE Public_Commons SHALL display feeds using the table layout from the HTML mockup with Subject, Replies, Views, and Last Post columns
+3. THE Public_Commons SHALL organize the Functions section in a grid layout as specified in the mockup
+4. THE Public_Commons SHALL show feed names as clickable links that navigate to feed-specific discussion views
+5. THE Public_Commons SHALL display feed statistics (post count, activity) for each Feed_Category
+6. THE Public_Commons SHALL implement the exact styling and icons from the provided HTML mockup
+7. THE Public_Commons SHALL maintain responsive design for mobile and desktop viewing
+
+### Requirement 5: Lens Protocol Integration Adaptation
+
+**User Story:** As a developer, I want to adapt the existing Lens integration for independent feeds, so that all forum functionality works with the simplified architecture.
+
+#### Acceptance Criteria
+
+1. THE Public_Commons SHALL modify the existing Lens Protocol V3 client to work with independent Lens_Feed addresses
+2. THE Public_Commons SHALL update thread creation to post directly to specific independent Lens_Feed addresses
+3. THE Public_Commons SHALL adapt reply functionality to work with independent feed structure
+4. THE Public_Commons SHALL maintain the existing authentication flow: wallet connection → profile selection → session management
+5. THE Public_Commons SHALL preserve the metadata prefix "LearningLens: [Tier1]" for post identification
+6. THE Public_Commons SHALL update the Forum_Adapter to transform independent feed Lens data into UI objects
+7. THE Public_Commons SHALL eliminate any group-level Lens Protocol operations
+
+### Requirement 6: Shadow Indexing System Adaptation
+
+**User Story:** As a user, I want instant forum performance, so that browsing feeds and discussions is responsive and fast.
+
+#### Acceptance Criteria
+
+1. THE Public_Commons SHALL adapt the existing Supabase shadow indexing for independent feed structure
+2. THE Public_Commons SHALL update the `feeds` table to store Feed_Category configurations and independent Lens_Feed address mappings
+3. THE Public_Commons SHALL modify the `threads` table to reference Feed_Category and independent feed addresses
+4. THE Public_Commons SHALL maintain the `replies` table structure with independent feed-aware indexing
+5. THE Public_Commons SHALL implement efficient queries for independent feed-specific content loading
+6. THE Public_Commons SHALL maintain sub-200ms response times for feed browsing across independent feeds
+7. WHERE Supabase data is missing, THE Public_Commons SHALL fall back to direct Lens Protocol queries to individual feed addresses
+
+### Requirement 7: Feed Navigation and Routing
+
+**User Story:** As a user, I want to navigate between different feeds seamlessly, so that I can explore various discussion topics within the commons.
+
+#### Acceptance Criteria
+
+1. WHEN a user clicks a Feed_Category link, THE Feed_Router SHALL navigate to that feed's discussion view
+2. THE Feed_Router SHALL maintain URL structure like `/feed/beginners-help` for specific feeds
+3. THE Public_Commons SHALL display breadcrumb navigation showing current feed context
+4. THE Public_Commons SHALL provide "Back to Commons" navigation from individual feed views
+5. THE Public_Commons SHALL implement feed-specific posting interfaces within each feed view
+6. THE Public_Commons SHALL show related feeds or suggested navigation within feed views
+
+### Requirement 8: Content Creation and Management
+
+**User Story:** As a user, I want to create threads and replies within specific feeds, so that I can contribute to organized discussions in the commons.
+
+#### Acceptance Criteria
+
+1. WHEN creating a thread, THE Public_Commons SHALL allow users to select the target Feed_Category
+2. THE Public_Commons SHALL post new threads as Article Publications directly to the appropriate independent Lens_Feed
+3. THE Public_Commons SHALL post replies as Comment Publications linked to the parent thread on the independent feed
+4. THE Public_Commons SHALL maintain thread organization within each independent Feed_Category
+5. THE Public_Commons SHALL preserve existing voting and engagement functionality across independent feeds
+6. THE Public_Commons SHALL implement feed-aware content moderation and management tools for independent feeds
+
+### Requirement 9: Search and Discovery Enhancement
+
+**User Story:** As a user, I want to search across all feeds in the commons, so that I can find relevant discussions regardless of which independent feed they're in.
+
+#### Acceptance Criteria
+
+1. THE Public_Commons SHALL implement unified search across all Feed_Category content from independent Lens_Feed addresses
+2. THE Public_Commons SHALL support filtering search results by specific Feed_Category
+3. THE Public_Commons SHALL provide feed-aware search suggestions and autocomplete across independent feeds
+4. THE Public_Commons SHALL highlight search terms in results with feed context
+5. THE Public_Commons SHALL maintain search performance under 1 second for typical queries across independent feeds
+6. THE Public_Commons SHALL implement trending topics discovery across all independent feeds
+
+### Requirement 10: Configuration and Environment Management
+
+**User Story:** As a system administrator, I want to configure independent feed mappings through environment variables, so that I can manage the Public Commons without code changes.
+
+#### Acceptance Criteria
+
+1. THE Public_Commons SHALL support configuration of individual independent Lens_Feed addresses for each Feed_Category
+2. THE Public_Commons SHALL allow configuration of Root_Section to Feed_Category mappings through environment variables
+3. THE Public_Commons SHALL support easy addition/removal of independent feeds through configuration
+4. THE Public_Commons SHALL validate all independent Lens_Feed addresses at startup
+5. THE Public_Commons SHALL provide clear error messages for invalid feed configurations
+6. THE Public_Commons SHALL maintain backward compatibility with existing environment variable patterns
+7. THE Public_Commons SHALL eliminate any group-level configuration requirements
+
+### Requirement 11: Migration from Community System
+
+**User Story:** As a system administrator, I want to migrate existing LensForum data to the independent feed structure, so that historical content is preserved in the new Public Commons.
+
+#### Acceptance Criteria
+
+1. THE Public_Commons SHALL provide migration tools to map existing communities to appropriate independent Feed_Category entries
+2. THE Public_Commons SHALL preserve all existing thread and reply data during the transformation to independent feeds
+3. THE Public_Commons SHALL maintain user profiles and authentication data without changes
+4. THE Public_Commons SHALL update the Shadow_Indexer database schema to reflect independent feed structure
+5. THE Public_Commons SHALL validate data integrity after migration completion
+6. WHERE automatic mapping is not possible, THE Public_Commons SHALL provide manual assignment interfaces for independent feed mapping
+
+### Requirement 12: Performance and Scalability
+
+**User Story:** As a user, I want the Public Commons to handle high traffic efficiently, so that the forum remains responsive as the community grows.
+
+#### Acceptance Criteria
+
+1. THE Public_Commons SHALL maintain existing Supabase caching performance for independent feed-based queries
+2. THE Public_Commons SHALL implement efficient pagination for independent feed content loading
+3. THE Public_Commons SHALL cache Feed_Category configurations and independent feed addresses for fast access
+4. THE Public_Commons SHALL optimize database queries for the independent feeds structure
+5. THE Public_Commons SHALL implement proper loading states during independent feed navigation
+6. THE Public_Commons SHALL maintain responsive performance with up to 10,000 concurrent users across independent feeds
+
+### Requirement 13: Parser and Serializer Requirements
+
+**User Story:** As a developer, I want robust parsing of independent feed Lens Protocol data, so that Public Commons content is correctly processed and displayed.
+
+#### Acceptance Criteria
+
+1. WHEN Lens Protocol data is received from independent feeds, THE Commons_Parser SHALL parse it into Feed_Post objects
+2. WHEN invalid feed data is received from any independent feed, THE Commons_Parser SHALL return descriptive error messages with specific feed context
+3. THE Feed_Serializer SHALL format Feed_Post objects back into valid Lens Protocol format for independent Lens_Feed addresses
+4. FOR ALL valid Feed_Post objects, parsing then serializing then parsing SHALL produce equivalent objects (round-trip property)
+5. THE Public_Commons SHALL validate all parsed content against the independent feed schema
+6. WHERE parsing fails for any independent feed, THE Public_Commons SHALL log errors with specific feed identification and gracefully degrade functionality
+
+### Requirement 14: Brand Integration and Identity
+
+**User Story:** As a user, I want to see clear Society Protocol branding, so that I understand this is the official Public Commons for the Society Protocol community.
+
+#### Acceptance Criteria
+
+1. THE Public_Commons SHALL display "Society Protocol" as the primary brand name in the header
+2. THE Public_Commons SHALL use the shield icon as specified in the UI mockup
+3. THE Public_Commons SHALL update all page titles to reference "Society Protocol Public Commons"
+4. THE Public_Commons SHALL replace any LensForum branding with Society Protocol branding
+5. THE Public_Commons SHALL maintain the color scheme and visual identity from the provided HTML mockup
+6. THE Public_Commons SHALL include "Powered by Lens Protocol" attribution in the footer
+
+### Requirement 15: Foundation for Multi-Tier Architecture
+
+**User Story:** As a system architect, I want the Public Commons to serve as the foundation for Tier 2 and Tier 3 systems, so that the multi-tier forum architecture can be built upon this base.
+
+#### Acceptance Criteria
+
+1. THE Public_Commons SHALL implement extensible architecture patterns that support additional tiers
+2. THE Public_Commons SHALL maintain clear separation between Tier 1 functionality and future tier integrations
+3. THE Public_Commons SHALL provide APIs and interfaces that Tier 2 (Technical Vault) can integrate with
+4. THE Public_Commons SHALL support cross-tier content discovery and linking mechanisms
+5. THE Public_Commons SHALL implement user session management that works across multiple tiers
+6. THE Public_Commons SHALL maintain data structures that support tier-aware content organization
+
+---
+
+# Society Protocol Public Commons - Design Document
+
+## Overview
+
+The Society Protocol Public Commons represents a fundamental architectural simplification of the existing LensForum system. By eliminating the complexity of Lens Groups and implementing independent Lens Feeds with UI-driven organization, we create a more flexible, performant, and maintainable foundation for the 3-tier forum architecture.
+
+### Key Architectural Insight
+
+**Independent Lens Feeds are primitives** - they don't require grouping under a single Lens Group. All organization and categorization happens at the UI layer, dramatically simplifying the technical implementation while maintaining the desired user experience.
+
+### Core Benefits
+
+- **Simplified Implementation**: No complex group management or governance overhead
+- **Enhanced Performance**: Direct feed access without group-level queries
+- **Maximum Flexibility**: Easy addition/removal of feeds through configuration
+- **Clean Architecture**: Clear separation between protocol (feeds) and presentation (UI organization)
+- **Reduced Complexity**: Eliminates group-level error handling and edge cases
+
+## Architecture
+
+### High-Level Architecture
+
+```mermaid
+graph TB
+    subgraph "UI Layer"
+        A[Landing Page] --> B[Feed Categories UI]
+        B --> C[Thread View]
+        C --> D[Reply Interface]
+        B --> E[Search Interface]
+    end
+
+    subgraph "Application Layer"
+        F[Feed Router] --> G[Forum Adapter]
+        G --> H[Commons Parser]
+        I[Feed Configuration] --> F
+    end
+
+    subgraph "Data Layer"
+        J[Shadow Indexer<br/>Supabase] --> K[feeds table]
+        J --> L[threads table]
+        J --> M[replies table]
+    end
+
+    subgraph "Protocol Layer"
+        N[Independent Feed 1<br/>Lens Protocol]
+        O[Independent Feed 2<br/>Lens Protocol]
+        P[Independent Feed N<br/>Lens Protocol]
+    end
+
+    A --> F
+    G --> J
+    H --> N
+    H --> O
+    H --> P
+```
+
+### Independent Feed Architecture
+
+Unlike the previous single-group approach, each feed operates independently:
+
+```mermaid
+graph LR
+    subgraph "Traditional Approach (Removed)"
+        A1[Lens Group] --> B1[Feed 1]
+        A1 --> B2[Feed 2]
+        A1 --> B3[Feed N]
+    end
+
+    subgraph "Simplified Approach (Implemented)"
+        C1[Independent Feed 1]
+        C2[Independent Feed 2]
+        C3[Independent Feed N]
+    end
+
+    subgraph "UI Organization"
+        D1[General Discussion]
+        D2[Functions]
+        D3[Technical]
+    end
+
+    C1 --> D1
+    C2 --> D2
+    C3 --> D3
+```
+
+### Data Flow Architecture
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant UI as UI Layer
+    participant FR as Feed Router
+    participant FA as Forum Adapter
+    participant SI as Shadow Indexer
+    participant LF as Lens Feed
+
+    U->>UI: Browse feeds
+    UI->>FR: Request feed categories
+    FR->>SI: Query cached feed data
+    SI-->>FR: Return feed listings
+    FR-->>UI: Organized feed categories
+    UI-->>U: Display categorized feeds
+
+    U->>UI: Select specific feed
+    UI->>FR: Navigate to feed
+    FR->>FA: Load feed content
+    FA->>LF: Query independent feed
+    LF-->>FA: Return feed data
+    FA->>SI: Cache feed data
+    FA-->>FR: Formatted content
+    FR-->>UI: Feed content
+    UI-->>U: Display feed threads
+```
+
+## Components and Interfaces
+
+### Core Components
+
+#### 1. Feed Configuration Manager
+
+**Purpose**: Manages the mapping between UI categories and independent Lens Feed addresses.
+
+**Interface**:
+
+```typescript
+interface FeedConfiguration {
+  categoryId: string;
+  displayName: string;
+  description: string;
+  lensFeeds: string[];
+  rootSection: RootSection;
+  isPinned?: boolean;
+  icon?: string;
+}
+
+interface FeedConfigurationManager {
+  getFeedCategories(): FeedConfiguration[];
+  getFeedByCategory(categoryId: string): FeedConfiguration;
+  validateFeedAddresses(): Promise<ValidationResult>;
+  updateFeedConfiguration(config: FeedConfiguration[]): void;
+}
+```
+
+#### 2. Independent Feed Router
+
+**Purpose**: Routes users to specific independent feeds and manages navigation.
+
+**Interface**:
+
+```typescript
+interface FeedRouter {
+  navigateToFeed(categoryId: string): Promise<void>;
+  getCurrentFeed(): FeedConfiguration | null;
+  generateFeedUrl(categoryId: string): string;
+  handleFeedNavigation(path: string): Promise<RouteResult>;
+}
+```
+
+#### 3. Commons Parser
+
+**Purpose**: Parses Lens Protocol data from independent feeds into forum objects.
+
+**Interface**:
+
+```typescript
+interface CommonsParser {
+  parseFeedPost(lensData: LensPublication): FeedPost;
+  parseReply(lensData: LensComment): FeedReply;
+  serializeFeedPost(post: FeedPost): LensPublication;
+  validateFeedData(data: unknown): ValidationResult;
+}
+```
+
+#### 4. Shadow Indexer Adapter
+
+**Purpose**: Manages caching and indexing of independent feed data.
+
+**Interface**:
+
+```typescript
+interface ShadowIndexerAdapter {
+  indexFeedContent(feedAddress: string): Promise<void>;
+  queryFeedThreads(categoryId: string, pagination: Pagination): Promise<Thread[]>;
+  cacheThreadReplies(threadId: string): Promise<void>;
+  searchAcrossFeeds(query: string, filters?: SearchFilters): Promise<SearchResult[]>;
+}
+```
+
+### UI Components
+
+#### 1. Feed Categories Display
+
+**Purpose**: Organizes and displays independent feeds in categorized sections.
+
+**Wireframe**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Society Protocol Public Commons                              │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│ 📋 General Discussion                                       │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ 📌 Beginners & Help          │ 45 │ 1.2k │ 2h ago      │ │
+│ │ 🧠 4 Key Concepts           │ 23 │ 890  │ 4h ago      │ │
+│ │ 🌐 Web3 Outpost             │ 67 │ 2.1k │ 1h ago      │ │
+│ │ 🏛️  DAO Governance           │ 34 │ 756  │ 3h ago      │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ⚙️ Functions                                                │
+│ ┌─────────────────┬─────────────────┬─────────────────────┐ │
+│ │ 💰 Economic     │ 💡 Ideas        │ 🎯 Hunting          │ │
+│ │ Game Theory     │                 │                     │ │
+│ │ 12 threads      │ 8 threads       │ 15 threads          │ │
+│ ├─────────────────┼─────────────────┼─────────────────────┤ │
+│ │ 🏠 Property     │ 👶 Parenting    │ 🏢 Organizations    │ │
+│ │ 6 threads       │ 4 threads       │ 9 threads           │ │
+│ ├─────────────────┼─────────────────┼─────────────────────┤ │
+│ │ 🎨 Curation     │ 🌾 Farming      │ 🌀 Portal           │ │
+│ │ 11 threads      │ 7 threads       │ 3 threads           │ │
+│ └─────────────────┴─────────────────┴─────────────────────┘ │
+│                                                             │
+│ 🔧 Technical Section                                        │
+│ │ 📡 Protocol Development      │ 18 │ 445  │ 6h ago      │ │
+│ │ 🐛 Bug Reports              │ 7  │ 123  │ 12h ago     │ │
+│ └─────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 2. Individual Feed View
+
+**Purpose**: Displays threads within a specific independent feed.
+
+**Wireframe**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Society Protocol > Beginners & Help                         │
+├─────────────────────────────────────────────────────────────┤
+│ [← Back to Commons] [🔍 Search this feed] [✏️ New Thread]   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│ 📌 Welcome to Society Protocol - Start Here!               │
+│ │ By @alice • 3 days ago • 45 replies • 892 views         │ │
+│ │ A comprehensive guide for newcomers...                   │ │
+│ ├─────────────────────────────────────────────────────────┤ │
+│ │ How do I create my first function?                      │ │
+│ │ By @bob • 2 hours ago • 8 replies • 156 views          │ │
+│ │ I'm trying to understand the basics...                  │ │
+│ ├─────────────────────────────────────────────────────────┤ │
+│ │ Energy system explanation needed                        │ │
+│ │ By @charlie • 5 hours ago • 12 replies • 234 views     │ │
+│ │ Can someone explain how energy works...                 │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ [Load More Threads]                                         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 3. Thread Creation Interface
+
+**Purpose**: Allows users to create new threads in specific independent feeds.
+
+**Wireframe**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Create New Thread                                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│ Feed Category: [Beginners & Help ▼]                        │
+│                                                             │
+│ Thread Title:                                               │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ How do I get started with Society Protocol?            │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ Content:                                                    │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ I'm new to Society Protocol and would like to          │ │
+│ │ understand the basic concepts. Can someone point me     │ │
+│ │ to the right resources?                                 │ │
+│ │                                                         │ │
+│ │ [Markdown formatting supported]                         │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ Tags: [beginner] [getting-started] [help]                  │
+│                                                             │
+│ [Cancel] [Preview] [Post Thread]                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### App Flow Diagrams
+
+#### 1. User Journey: Landing to Posting
+
+```mermaid
+flowchart TD
+    A[User visits Public Commons] --> B[View categorized feeds]
+    B --> C{User authenticated?}
+    C -->|No| D[Browse read-only]
+    C -->|Yes| E[Full access]
+
+    D --> F[Click feed category]
+    E --> F
+    F --> G[View feed threads]
+
+    G --> H{Want to post?}
+    H -->|No| I[Read threads/replies]
+    H -->|Yes| J{Authenticated?}
+
+    J -->|No| K[Prompt to connect wallet]
+    J -->|Yes| L[Create thread interface]
+
+    K --> M[Wallet connection flow]
+    M --> N[Profile selection]
+    N --> L
+
+    L --> O[Select feed category]
+    O --> P[Write thread content]
+    P --> Q[Post to independent feed]
+    Q --> R[Thread appears in feed]
+    R --> S[User can reply/engage]
+```
+
+#### 2. Technical Flow: Independent Feed Operations
+
+```mermaid
+flowchart TD
+    A[User action] --> B[Feed Router]
+    B --> C{Operation type?}
+
+    C -->|Read| D[Query Shadow Indexer]
+    C -->|Write| E[Lens Protocol Client]
+
+    D --> F{Cache hit?}
+    F -->|Yes| G[Return cached data]
+    F -->|No| H[Query independent feed]
+
+    H --> I[Lens Protocol V3 API]
+    I --> J[Parse feed data]
+    J --> K[Update cache]
+    K --> G
+
+    E --> L[Format for Lens Protocol]
+    L --> M[Post to independent feed]
+    M --> N[Update Shadow Indexer]
+    N --> O[Notify UI of update]
+
+    G --> P[Forum Adapter]
+    O --> P
+    P --> Q[Transform to UI objects]
+    Q --> R[Update user interface]
+```
+
+## Data Models
+
+### Core Data Structures
+
+#### FeedConfiguration
+
+```typescript
+interface FeedConfiguration {
+  id: string; // Unique identifier (e.g., "beginners-help")
+  displayName: string; // UI display name (e.g., "Beginners & Help")
+  description: string; // Feed description
+  lensFeeds: string[]; // Independent Lens Feed addresses
+  rootSection: RootSection; // UI organization section
+  isPinned: boolean; // Whether to pin in UI
+  icon: string; // Display icon
+  moderators: string[]; // Lens profile IDs of moderators
+  tags: string[]; // Associated tags
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+enum RootSection {
+  GENERAL_DISCUSSION = "general-discussion",
+  PARTNER_COMMUNITIES = "partner-communities",
+  FUNCTIONS = "functions",
+  TECHNICAL_SECTION = "technical-section",
+  OTHERS = "others",
+}
+```
+
+#### FeedPost
+
+```typescript
+interface FeedPost {
+  id: string; // Lens publication ID
+  feedCategoryId: string; // Reference to feed category
+  lensFeeds: string; // Independent feed address
+  authorProfile: LensProfile; // Author's Lens profile
+  title: string; // Thread title
+  content: string; // Thread content (markdown)
+  tags: string[]; // Thread tags
+  metadata: PostMetadata; // Lens metadata
+  createdAt: Date;
+  updatedAt: Date;
+
+  // Engagement metrics
+  replyCount: number;
+  upvotes: number;
+  downvotes: number;
+  views: number;
+
+  // Status
+  isLocked: boolean;
+  isPinned: boolean;
+  isHidden: boolean;
+}
+```
+
+#### FeedReply
+
+```typescript
+interface FeedReply {
+  id: string; // Lens comment ID
+  parentPostId: string; // Parent thread ID
+  parentReplyId?: string; // Parent reply ID (for nested replies)
+  feedCategoryId: string; // Reference to feed category
+  authorProfile: LensProfile; // Author's Lens profile
+  content: string; // Reply content (markdown)
+  metadata: CommentMetadata; // Lens metadata
+  createdAt: Date;
+  updatedAt: Date;
+
+  // Engagement metrics
+  upvotes: number;
+  downvotes: number;
+
+  // Status
+  isHidden: boolean;
+  depth: number; // Nesting level
+}
+```
+
+### Database Schema (Supabase)
+
+#### feeds table
+
+```sql
+CREATE TABLE feeds (
+  id TEXT PRIMARY KEY,
+  display_name TEXT NOT NULL,
+  description TEXT,
+  lens_feeds TEXT[] NOT NULL,        -- Array of independent feed addresses
+  root_section TEXT NOT NULL,
+  is_pinned BOOLEAN DEFAULT FALSE,
+  icon TEXT,
+  moderators TEXT[],                 -- Array of Lens profile IDs
+  tags TEXT[],
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+#### threads table
+
+```sql
+CREATE TABLE threads (
+  id TEXT PRIMARY KEY,               -- Lens publication ID
+  feed_category_id TEXT NOT NULL REFERENCES feeds(id),
+  lens_feeds TEXT NOT NULL,         -- Independent feed address
+  author_profile_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  tags TEXT[],
+  metadata JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+  -- Engagement metrics
+  reply_count INTEGER DEFAULT 0,
+  upvotes INTEGER DEFAULT 0,
+  downvotes INTEGER DEFAULT 0,
+  views INTEGER DEFAULT 0,
+
+  -- Status
+  is_locked BOOLEAN DEFAULT FALSE,
+  is_pinned BOOLEAN DEFAULT FALSE,
+  is_hidden BOOLEAN DEFAULT FALSE
+);
+
+-- Indexes for performance
+CREATE INDEX idx_threads_feed_category ON threads(feed_category_id);
+CREATE INDEX idx_threads_created_at ON threads(created_at DESC);
+CREATE INDEX idx_threads_lens_feeds ON threads(lens_feeds);
+```
+
+#### replies table
+
+```sql
+CREATE TABLE replies (
+  id TEXT PRIMARY KEY,               -- Lens comment ID
+  parent_post_id TEXT NOT NULL REFERENCES threads(id),
+  parent_reply_id TEXT REFERENCES replies(id),
+  feed_category_id TEXT NOT NULL REFERENCES feeds(id),
+  author_profile_id TEXT NOT NULL,
+  content TEXT NOT NULL,
+  metadata JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+  -- Engagement metrics
+  upvotes INTEGER DEFAULT 0,
+  downvotes INTEGER DEFAULT 0,
+
+  -- Status
+  is_hidden BOOLEAN DEFAULT FALSE,
+  depth INTEGER DEFAULT 0
+);
+
+-- Indexes for performance
+CREATE INDEX idx_replies_parent_post ON replies(parent_post_id);
+CREATE INDEX idx_replies_created_at ON replies(created_at DESC);
+CREATE INDEX idx_replies_feed_category ON replies(feed_category_id);
+```
+
+## Correctness Properties
+
+_A property is a characteristic or behavior that should hold true across all valid executions of a system-essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
+
+### Property 1: Independent Feed Access
+
+_For any_ valid independent Lens Feed address, the system should be able to query and display content without requiring group-level operations.
+
+**Validates: Requirements 1.1, 1.3**
+
+### Property 2: UI Organization Independence
+
+_For any_ feed category configuration, changing the UI organization should not affect the underlying independent feed operations or data integrity.
+
+**Validates: Requirements 2.8, 1.3**
+
+### Property 3: Feed Configuration Validation
+
+_For any_ feed configuration update, all specified independent Lens Feed addresses should be validated as accessible before the configuration is applied.
+
+**Validates: Requirements 10.4, 1.6**
+
+### Property 4: Cross-Feed Search Consistency
+
+_For any_ search query, results should include content from all accessible independent feeds, with consistent ranking and filtering across feed boundaries.
+
+**Validates: Requirements 9.1, 9.3**
+
+### Property 5: Authentication-Independent Read Access
+
+_For any_ unauthenticated user, all feed content should be readable across all independent feeds without requiring authentication.
+
+**Validates: Requirements 3.1, 3.6**
+
+### Property 6: Feed-Specific Posting
+
+_For any_ authenticated user and valid feed category, posting a thread should create the content on the correct independent Lens Feed address as specified in the configuration.
+
+**Validates: Requirements 8.2, 5.2**
+
+### Property 7: Shadow Indexer Consistency
+
+_For any_ independent feed, the shadow indexer cache should maintain consistency with the source Lens Protocol data within the specified performance bounds.
+
+**Validates: Requirements 6.1, 6.6**
+
+### Property 8: Feed Navigation Routing
+
+_For any_ valid feed category identifier, the feed router should generate correct URLs and navigate to the appropriate independent feed view.
+
+**Validates: Requirements 7.1, 7.2**
+
+### Property 9: Parser Round-Trip Integrity
+
+_For any_ valid FeedPost object, parsing then serializing then parsing should produce an equivalent object with all data preserved.
+
+**Validates: Requirements 13.4**
+
+### Property 10: Performance Across Independent Feeds
+
+_For any_ feed browsing operation, response times should remain under 200ms regardless of which independent feed is being accessed.
+
+**Validates: Requirements 12.1, 6.6**
+
+### Property 11: Configuration-Driven Feed Management
+
+_For any_ environment configuration change, the system should dynamically update feed mappings without requiring code changes or system restarts.
+
+**Validates: Requirements 10.1, 10.3**
+
+### Property 12: Error Isolation Between Feeds
+
+_For any_ independent feed that becomes inaccessible, other feeds should continue to function normally without degradation.
+
+**Validates: Requirements 1.6, 13.6**
+
+## Error Handling
+
+### Independent Feed Error Scenarios
+
+#### 1. Individual Feed Unavailability
+
+- **Scenario**: One or more independent Lens Feeds become inaccessible
+- **Handling**:
+  - Display specific error message for affected feed
+  - Continue normal operation for accessible feeds
+  - Implement retry logic with exponential backoff
+  - Cache last known good state for graceful degradation
+
+#### 2. Configuration Validation Failures
+
+- **Scenario**: Invalid Lens Feed addresses in configuration
+- **Handling**:
+  - Validate all addresses at startup
+  - Provide detailed error messages with specific feed identification
+  - Prevent system startup with invalid configuration
+  - Support configuration hot-reload with validation
+
+#### 3. Shadow Indexer Inconsistencies
+
+- **Scenario**: Cache becomes out of sync with independent feeds
+- **Handling**:
+  - Implement cache invalidation strategies
+  - Fall back to direct Lens Protocol queries
+  - Provide manual cache refresh capabilities
+  - Monitor and alert on cache miss rates
+
+#### 4. Cross-Feed Search Failures
+
+- **Scenario**: Search fails across some independent feeds
+- **Handling**:
+  - Return partial results with clear indication of scope
+  - Retry failed feeds with timeout limits
+  - Maintain search performance even with partial failures
+  - Log search failures for monitoring
+
+### Error Recovery Strategies
+
+```typescript
+interface ErrorRecoveryStrategy {
+  // Individual feed error handling
+  handleFeedUnavailable(feedAddress: string): Promise<FallbackStrategy>;
+
+  // Configuration error handling
+  validateConfiguration(config: FeedConfiguration[]): ValidationResult;
+
+  // Cache error handling
+  handleCacheInconsistency(feedId: string): Promise<void>;
+
+  // Search error handling
+  handlePartialSearchFailure(failedFeeds: string[]): SearchResult;
+}
+```
+
+## Testing Strategy
+
+### Dual Testing Approach
+
+The Society Protocol Public Commons will employ both unit testing and property-based testing to ensure comprehensive coverage and correctness.
+
+**Unit Testing Focus**:
+
+- Specific feed configuration examples
+- UI component rendering with mock data
+- Error handling for specific edge cases
+- Integration points between components
+- Migration scenarios from existing data
+
+**Property-Based Testing Focus**:
+
+- Universal properties across all independent feeds
+- Configuration validation across random inputs
+- Search behavior across varied feed combinations
+- Performance characteristics under load
+- Data consistency across feed operations
+
+### Property-Based Testing Configuration
+
+**Testing Library**: fast-check (for TypeScript/JavaScript implementation)
+
+**Test Configuration**:
+
+- Minimum 100 iterations per property test
+- Each property test references its design document property
+- Tag format: **Feature: society-protocol-public-commons, Property {number}: {property_text}**
+
+**Example Property Test Structure**:
+
+```typescript
+import fc from "fast-check";
+
+describe("Independent Feed Operations", () => {
+  it("should maintain data consistency across feeds", () => {
+    // Feature: society-protocol-public-commons, Property 7: Shadow Indexer Consistency
+    fc.assert(
+      fc.property(
+        fc.array(fc.string(), { minLength: 1, maxLength: 20 }), // feed addresses
+        fc.string(), // content
+        async (feedAddresses, content) => {
+          // Test that content posted to any feed is consistently indexed
+          const result = await postToFeed(feedAddresses[0], content);
+          const cached = await shadowIndexer.query(result.id);
+          expect(cached.content).toEqual(content);
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+});
+```
+
+### Testing Categories
+
+#### 1. Configuration Testing
+
+- Validate feed address formats
+- Test configuration hot-reload
+- Verify error handling for invalid configurations
+- Test UI organization mapping
+
+#### 2. Independent Feed Operations
+
+- Test direct feed access without group dependencies
+- Verify posting to specific feeds
+- Test feed-specific error handling
+- Validate cross-feed search functionality
+
+#### 3. Performance Testing
+
+- Response time validation across feeds
+- Concurrent user load testing
+- Cache performance verification
+- Search performance across multiple feeds
+
+#### 4. Integration Testing
+
+- Lens Protocol V3 integration
+- Supabase shadow indexer integration
+- UI component integration
+- Authentication flow integration
+
+#### 5. Migration Testing
+
+- Data preservation during migration
+- Configuration mapping validation
+- User experience continuity
+- Performance impact assessment
+
+### Test Data Management
+
+**Mock Data Strategy**:
+
+- Generate realistic Lens Protocol responses
+- Create varied feed configurations for testing
+- Simulate different user authentication states
+- Mock network conditions and failures
+
+**Test Environment Setup**:
+
+- Isolated test Lens Protocol environment
+- Dedicated test Supabase instance
+- Configurable mock feed addresses
+- Automated test data cleanup
+
+This comprehensive testing strategy ensures that the simplified independent feed architecture maintains reliability, performance, and correctness across all user scenarios and system conditions.
+
+================================================
 FILE: public/3534416bbfdcc9be-s.p.woff2
 ================================================
 [Binary file]
@@ -24568,16 +26102,181 @@ s3_access_key = "env(S3_ACCESS_KEY)"
 s3_secret_key = "env(S3_SECRET_KEY)"
 
 ================================================
+FILE: supabase/setup-schema.sql
+================================================
+-- ============================================
+-- Web3Forum Complete Database Schema
+-- Run this in your Supabase SQL Editor
+-- ============================================
+
+-- ============================================
+-- 1. COMMUNITIES TABLE
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS communities (
+id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+lens_group_address TEXT UNIQUE NOT NULL,
+name TEXT NOT NULL,
+feed TEXT,
+members_count INTEGER NOT NULL DEFAULT 0,
+featured INTEGER NOT NULL DEFAULT 0,
+visible BOOLEAN NOT NULL DEFAULT TRUE,
+created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+CONSTRAINT chk_communities_featured CHECK (featured IN (0, 1))
+);
+
+-- Indexes for communities
+CREATE INDEX IF NOT EXISTS idx_communities_lens_group_address ON communities(lens_group_address);
+CREATE INDEX IF NOT EXISTS idx_communities_created_at ON communities(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_communities_featured ON communities(featured) WHERE featured = 1;
+CREATE INDEX IF NOT EXISTS idx_communities_feed ON communities(feed);
+
+-- Enable Row Level Security
+ALTER TABLE communities ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for communities
+DROP POLICY IF EXISTS "Allow public read access" ON communities;
+CREATE POLICY "Allow public read access" ON communities
+FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow authenticated insert" ON communities;
+CREATE POLICY "Allow authenticated insert" ON communities
+FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow authenticated update" ON communities;
+CREATE POLICY "Allow authenticated update" ON communities
+FOR UPDATE USING (true);
+
+DROP POLICY IF EXISTS "Allow authenticated delete" ON communities;
+CREATE POLICY "Allow authenticated delete" ON communities
+FOR DELETE USING (true);
+
+-- ============================================
+-- 2. COMMUNITY_THREADS TABLE
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS community_threads (
+id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+community_id UUID NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+lens_feed_address TEXT NOT NULL,
+author TEXT NOT NULL,
+root_post_id TEXT,
+slug TEXT,
+title TEXT NOT NULL DEFAULT '',
+summary TEXT NOT NULL DEFAULT '',
+replies_count INTEGER NOT NULL DEFAULT 0,
+featured BOOLEAN DEFAULT FALSE,
+visible BOOLEAN NOT NULL DEFAULT TRUE,
+created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Indexes for community_threads
+CREATE INDEX IF NOT EXISTS idx_community_threads_community_id ON community_threads(community_id);
+CREATE INDEX IF NOT EXISTS idx_community_threads_lens_feed_address ON community_threads(lens_feed_address);
+CREATE INDEX IF NOT EXISTS idx_community_threads_created_at ON community_threads(created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_community_threads_slug ON community_threads(slug);
+
+-- Enable Row Level Security
+ALTER TABLE community_threads ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for community_threads
+DROP POLICY IF EXISTS "Allow public read access" ON community_threads;
+CREATE POLICY "Allow public read access" ON community_threads
+FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow authenticated insert" ON community_threads;
+CREATE POLICY "Allow authenticated insert" ON community_threads
+FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow authenticated update" ON community_threads;
+CREATE POLICY "Allow authenticated update" ON community_threads
+FOR UPDATE USING (true);
+
+DROP POLICY IF EXISTS "Allow authenticated delete" ON community_threads;
+CREATE POLICY "Allow authenticated delete" ON community_threads
+FOR DELETE USING (true);
+
+-- ============================================
+-- 3. HELPER FUNCTIONS
+-- ============================================
+
+-- Function: Get community thread count
+CREATE OR REPLACE FUNCTION get_community_thread_count(community_uuid UUID)
+RETURNS INTEGER AS $$
+BEGIN
+RETURN (
+SELECT COUNT(\*)::INTEGER
+FROM community_threads
+WHERE community_id = community_uuid
+);
+END;
+
+$$
+LANGUAGE plpgsql;
+
+-- Function: Increment replies count
+CREATE OR REPLACE FUNCTION increment_replies_count(thread_id UUID)
+RETURNS VOID AS
+$$
+
+BEGIN
+UPDATE community_threads
+SET replies_count = replies_count + 1
+WHERE id = thread_id;
+END;
+
+$$
+LANGUAGE plpgsql;
+
+-- Function: Increment community members count
+CREATE OR REPLACE FUNCTION increment_community_members_count(comm_id UUID)
+RETURNS VOID AS
+$$
+
+BEGIN
+UPDATE communities
+SET members_count = members_count + 1
+WHERE id = comm_id;
+END;
+
+$$
+LANGUAGE plpgsql;
+
+-- Function: Decrement community members count
+CREATE OR REPLACE FUNCTION decrement_community_members_count(comm_id UUID)
+RETURNS VOID AS
+$$
+
+BEGIN
+UPDATE communities
+SET members_count = GREATEST(members_count - 1, 0)
+WHERE id = comm_id;
+END;
+
+$$
+LANGUAGE plpgsql;
+
+-- ============================================
+-- SETUP COMPLETE
+-- ============================================
+-- You can now run your Web3Forum application
+-- ============================================
+
+
+
+================================================
 FILE: supabase/migrations/20250620100640_add_community_table.sql
 ================================================
 -- Communities Table
 -- This table stores basic information about Lens Protocol communities
 
 CREATE TABLE communities (
-id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-lens_group_address TEXT UNIQUE NOT NULL,
-created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  lens_group_address TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Indexes for better performance
@@ -24589,17 +26288,19 @@ ALTER TABLE communities ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for public read access
 CREATE POLICY "Allow public read access" ON communities
-FOR SELECT USING (true);
+  FOR SELECT USING (true);
 
 -- Create policies for authenticated insert/update/delete
 CREATE POLICY "Allow authenticated insert" ON communities
-FOR INSERT WITH CHECK (true);
+  FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "Allow authenticated update" ON communities
-FOR UPDATE USING (true);
+  FOR UPDATE USING (true);
 
 CREATE POLICY "Allow authenticated delete" ON communities
-FOR DELETE USING (true);
+  FOR DELETE USING (true);
+
+
 
 ================================================
 FILE: supabase/migrations/20250620100910_add_thread_table.sql
@@ -24608,12 +26309,12 @@ FILE: supabase/migrations/20250620100910_add_thread_table.sql
 -- This table maps Lens Protocol posts to communities and stores thread metadata
 
 CREATE TABLE community_threads (
-id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-community_id UUID NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
-lens_feed_address TEXT NOT NULL,
-created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-UNIQUE(community_id, lens_feed_address)
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  community_id UUID NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+  lens_feed_address TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(community_id, lens_feed_address)
 );
 
 -- Indexes for better performance
@@ -24626,21 +26327,23 @@ ALTER TABLE community_threads ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for public read access
 CREATE POLICY "Allow public read access" ON community_threads
-FOR SELECT USING (true);
+  FOR SELECT USING (true);
 
 -- Create policies for authenticated insert/update/delete
 CREATE POLICY "Allow authenticated insert" ON community_threads
-FOR INSERT WITH CHECK (true);
+  FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "Allow authenticated update" ON community_threads
-FOR UPDATE USING (true);
+  FOR UPDATE USING (true);
 
 CREATE POLICY "Allow authenticated delete" ON community_threads
-FOR DELETE USING (true);
+  FOR DELETE USING (true);
 
 -- Function to get community thread count
 CREATE OR REPLACE FUNCTION get_community_thread_count(community_uuid UUID)
-RETURNS INTEGER AS $$
+RETURNS INTEGER AS
+$$
+
 BEGIN
 RETURN (
 SELECT COUNT(\*)::INTEGER
@@ -25283,3 +26986,532 @@ pnpm fix-all              # Auto-fix formatting and linting issues
 - `hooks/auth/use-login.ts` - Authentication patterns
 - `components/providers/web3-provider.tsx` - Web3 setup
 - `lib/adapters/thread-adapter.ts` - Data transformation patterns
+
+================================================
+FILE: .kiro/specs/society-protocol-public-commons/design.md
+================================================
+
+1. IDs: Use placeholders for now (SPANISH_ID, CHINESE_ID, JAPANESE_ID). I will swap the actual addresses in the code myself.
+2. FEEDS: Use a mock array of 15 strings ('feed-1' through 'feed-15') in a config file.
+3. NAV: Put the 'Commons' link in the main Navbar next to 'Communities'.
+4. DISPLAY: Grid cards (reuse the existing community card styling for consistency).
+5. INTERACTION: Navigate to a dedicated feed page (just create a boilerplate page for now).
+
+================================================
+FILE: .kiro/specs/society-protocol-public-commons/requirements.md
+================================================
+
+1. The previous design.md has been cleared. This is the new source of truth.
+2. OBJECTIVE: UI-only 'Curation' of the existing LensForum. No architectural changes.
+3. NOMENCLATURE: Retain all 'Community' and 'Group' naming in the code and UI.
+4. UI RESTRICTION: Locate the 'Create Community' button and hide it (CSS or conditional rendering). We want to restrict creation at the UX level.
+5. LANDING PAGE: Modify the landing page to fetch/display ONLY 3 specific communities (Spanish, Chinese, Japanese).
+6. ADDITION: Create a new 'Commons' area for 15 Lens Feeds.
+7. SAFETY: Do not modify /lib, /services, or database schemas. Focus strictly on /app and /components."
+
+================================================
+FILE: .kiro/specs/society-protocol-public-commons/tasks.md
+================================================
+
+# Society Protocol Public Commons - Implementation Tasks
+
+## Project Scope
+
+UI-only curation layer for existing LensForum. No architectural changes, no modifications to `/lib`, `/services`, or database schemas.
+
+---
+
+## Task 1: Hide "Create Community" Button
+
+**Objective**: Restrict community creation at the UX level
+
+**Files to Modify**:
+
+- `components/layout/navbar-desktop.tsx`
+- `components/layout/navbar-mobile.tsx`
+- `components/communities/list/communities-header.tsx` (if button exists here)
+
+**Implementation**:
+
+- Locate "Create Community" or "New Community" buttons
+- Add `className="hidden"` or conditional rendering `{false && ...}`
+- Verify button is hidden on all screen sizes
+
+**Acceptance Criteria**:
+
+- [ ] Create Community button not visible in desktop navbar
+- [ ] Create Community button not visible in mobile navbar
+- [ ] Create Community button not visible on communities list page
+- [ ] No console errors or warnings
+
+---
+
+## Task 2: Create Commons Configuration
+
+**Objective**: Define 15 mock Lens Feeds for Commons area
+
+**Files to Create**:
+
+- `config/commons-feeds.ts`
+
+**Implementation**:
+
+```typescript
+export const COMMONS_FEEDS = [
+  "feed-1",
+  "feed-2",
+  "feed-3",
+  "feed-4",
+  "feed-5",
+  "feed-6",
+  "feed-7",
+  "feed-8",
+  "feed-9",
+  "feed-10",
+  "feed-11",
+  "feed-12",
+  "feed-13",
+  "feed-14",
+  "feed-15",
+];
+```
+
+**Acceptance Criteria**:
+
+- [ ] Config file created with 15 feed strings
+- [ ] Exportable array for use in components
+
+---
+
+## Task 3: Create Curated Communities Configuration
+
+**Objective**: Define 3 specific community IDs for landing page
+
+**Files to Create**:
+
+- `config/curated-communities.ts`
+
+**Implementation**:
+
+```typescript
+export const CURATED_COMMUNITY_IDS = {
+  SPANISH: "SPANISH_ID",
+  CHINESE: "CHINESE_ID",
+  JAPANESE: "JAPANESE_ID",
+};
+
+export const CURATED_COMMUNITIES = [
+  CURATED_COMMUNITY_IDS.SPANISH,
+  CURATED_COMMUNITY_IDS.CHINESE,
+  CURATED_COMMUNITY_IDS.JAPANESE,
+];
+```
+
+**Acceptance Criteria**:
+
+- [ ] Config file created with placeholder IDs
+- [ ] Easy to swap actual addresses later
+- [ ] Exportable for use in components
+
+---
+
+## Task 4: Modify Landing Page - Featured Communities
+
+**Objective**: Display only 3 curated communities on landing page
+
+**Files to Modify**:
+
+- `components/home/featured-communities.tsx`
+
+**Implementation**:
+
+- Import `CURATED_COMMUNITIES` from config
+- Filter fetched communities to only include the 3 curated IDs
+- Maintain existing UI/styling
+
+**Acceptance Criteria**:
+
+- [ ] Landing page shows exactly 3 communities
+- [ ] Communities match Spanish, Chinese, Japanese IDs
+- [ ] Existing styling and layout preserved
+- [ ] No errors if communities not found (graceful handling)
+
+---
+
+## Task 5: Create Commons Feed Card Component
+
+**Objective**: Reusable card component for displaying individual feeds
+
+**Files to Create**:
+
+- `components/commons/commons-feed-card.tsx`
+
+**Implementation**:
+
+- Reuse existing community card styling for consistency
+- Accept feed ID as prop
+- Display feed name/ID
+- Link to `/commons/[feedId]` route
+- Minimal placeholder content
+
+**Acceptance Criteria**:
+
+- [ ] Component renders feed information
+- [ ] Matches community card visual style
+- [ ] Clickable and navigates to feed detail page
+- [ ] Responsive design
+
+---
+
+## Task 6: Create Commons Feed List Component
+
+**Objective**: Display grid of 15 feeds
+
+**Files to Create**:
+
+- `components/commons/commons-feed-list.tsx`
+
+**Implementation**:
+
+- Import `COMMONS_FEEDS` from config
+- Map over feeds and render `CommonsFeedCard` for each
+- Use grid layout (similar to communities list)
+- Responsive grid (adjust columns for mobile/tablet/desktop)
+
+**Acceptance Criteria**:
+
+- [ ] Displays all 15 feeds in grid layout
+- [ ] Responsive across screen sizes
+- [ ] Consistent spacing and alignment
+- [ ] Matches existing design patterns
+
+---
+
+## Task 7: Create Commons Landing Page
+
+**Objective**: Main page for Commons area
+
+**Files to Create**:
+
+- `app/commons/page.tsx`
+
+**Implementation**:
+
+- Page title: "Commons"
+- Brief description/header
+- Render `CommonsFeedList` component
+- Use existing layout patterns from communities page
+
+**Acceptance Criteria**:
+
+- [ ] Page accessible at `/commons` route
+- [ ] Displays header and description
+- [ ] Shows 15 feeds in grid
+- [ ] Consistent with app styling
+
+---
+
+## Task 8: Create Commons Feed Detail Page
+
+**Objective**: Boilerplate page for individual feed view
+
+**Files to Create**:
+
+- `app/commons/[feedId]/page.tsx`
+
+**Implementation**:
+
+- Dynamic route for feed ID
+- Display feed ID/name in header
+- Placeholder content: "Feed content coming soon"
+- Back button to Commons
+- Basic layout structure
+
+**Acceptance Criteria**:
+
+- [ ] Page accessible at `/commons/[feedId]` route
+- [ ] Displays correct feed ID from URL
+- [ ] Back navigation works
+- [ ] No errors or warnings
+
+---
+
+## Task 9: Add Commons Navigation Link
+
+**Objective**: Add "Commons" link to main navbar
+
+**Files to Modify**:
+
+- `components/layout/navbar-desktop.tsx`
+- `components/layout/navbar-mobile.tsx`
+
+**Implementation**:
+
+- Add "Commons" link next to "Communities" link
+- Link to `/commons` route
+- Match existing nav link styling
+- Ensure proper active state highlighting
+
+**Acceptance Criteria**:
+
+- [ ] Commons link visible in desktop navbar
+- [ ] Commons link visible in mobile navbar
+- [ ] Link navigates to `/commons` page
+- [ ] Active state works correctly
+- [ ] Consistent styling with other nav links
+
+---
+
+## Task 10: Testing & Verification
+
+**Objective**: Ensure all changes work correctly
+
+**Testing Checklist**:
+
+- [ ] Landing page shows only 3 curated communities
+- [ ] Create Community button hidden everywhere
+- [ ] Commons link appears in navbar (desktop & mobile)
+- [ ] Commons page displays 15 feeds in grid
+- [ ] Clicking feed navigates to detail page
+- [ ] Feed detail page displays correctly
+- [ ] Back navigation works from feed detail
+- [ ] No console errors or warnings
+- [ ] Responsive design works on mobile/tablet/desktop
+- [ ] No changes to `/lib`, `/services`, or database schemas
+- [ ] All existing functionality still works
+
+---
+
+## Implementation Order
+
+1. Task 2: Create Commons Configuration
+2. Task 3: Create Curated Communities Configuration
+3. Task 1: Hide Create Community Button
+4. Task 4: Modify Landing Page
+5. Task 5: Create Commons Feed Card Component
+6. Task 6: Create Commons Feed List Component
+7. Task 7: Create Commons Landing Page
+8. Task 8: Create Commons Feed Detail Page
+9. Task 9: Add Commons Navigation Link
+10. Task 10: Testing & Verification
+
+---
+
+## Safety Constraints
+
+**DO NOT MODIFY**:
+
+- `/lib/**` - All library code
+- `/services/**` - All service layer code
+- Database schemas
+- API routes (unless creating new ones for Commons)
+- Authentication logic
+- Data fetching logic (only filter results in components)
+
+**ONLY MODIFY**:
+
+- `/app/**` - Pages and routes
+- `/components/**` - UI components
+- `/config/**` - Configuration files (create new)
+- CSS/styling files
+
+---
+
+## Notes
+
+- All community IDs are placeholders (SPANISH_ID, CHINESE_ID, JAPANESE_ID)
+- All feed IDs are mock strings (feed-1 through feed-15)
+- Actual addresses will be swapped manually later
+- Focus on UI structure and navigation flow
+- Reuse existing components and styling patterns where possible
+
+================================================
+FILE: .kiro/specs/society-protocol-public-commons/.config.kiro
+================================================
+{"specId": "b842c3ed-d4ba-443c-b4e8-ad9225c472f6", "workflowType": "requirements-first", "specType": "feature"}
+
+================================================
+FILE: .kiro/specs/society-protocol-tier3-embassy/requirements.md
+================================================
+
+# Requirements Document
+
+## Introduction
+
+Transform the existing LensForum codebase into the Society Protocol Tier 3 Embassy system - a language-based regional forum architecture that maintains the existing Lens Protocol V3 integration while restructuring the community system to support predefined language embassies instead of user-created communities. This system serves as the "Local Embassies" tier in the 3-tier Society Protocol Forum architecture, providing sovereign, language-based routing for global discussions.
+
+## Glossary
+
+- **Embassy_System**: The transformed forum system that organizes discussions by language-based regional groups
+- **Language_Embassy**: A predefined Lens Group representing a specific language community (Arabic, Spanish, Chinese, etc.)
+- **Root_Category**: Top-level organizational unit that groups related discussion feeds (General Discussion, Partner Communities, etc.)
+- **Sub_Category**: Individual discussion feeds within a root category, mapped to specific Lens Feeds
+- **Lens_Group**: Lens Protocol V3 primitive representing a community with its own governance
+- **Lens_Feed**: Lens Protocol V3 primitive representing a stream of content within a group
+- **Shadow_Indexer**: Supabase-based caching system that mirrors Lens Protocol data for performance
+- **Forum_Adapter**: Service layer that transforms raw Lens Protocol data into forum UI objects
+- **Auth_Store**: Zustand-based authentication state management with wallet and Lens profile integration
+- **Embassy_Router**: System component that routes users to appropriate language-based embassies
+
+## Requirements
+
+### Requirement 1: Brand Transformation
+
+**User Story:** As a user visiting the forum, I want to see Society Protocol branding instead of LensForum branding, so that I understand this is the Society Protocol Tier 3 Embassy system.
+
+#### Acceptance Criteria
+
+1. THE Embassy_System SHALL display "Society Protocol" as the primary brand name in the header
+2. THE Embassy_System SHALL replace all "LensForum" references with "Society Protocol Forum" in the UI
+3. THE Embassy_System SHALL update the page title to "Society Protocol Forum"
+4. THE Embassy_System SHALL display the shield icon as specified in the UI mockup
+5. THE Embassy_System SHALL maintain the existing color scheme and layout structure from the HTML mockup
+
+### Requirement 2: Language Embassy Configuration
+
+**User Story:** As a forum administrator, I want to configure predefined language embassies, so that users can participate in discussions in their preferred language.
+
+#### Acceptance Criteria
+
+1. THE Embassy_System SHALL support configuration of predefined Language_Embassy entries
+2. WHEN configuring embassies, THE Embassy_System SHALL map each Language_Embassy to a specific Lens_Group address
+3. THE Embassy_System SHALL support at minimum Arabic, Spanish, and Chinese language embassies
+4. THE Embassy_System SHALL store embassy configurations in environment variables or configuration files
+5. THE Embassy_System SHALL prevent user creation of new embassies (admin-only configuration)
+6. WHERE additional languages are configured, THE Embassy_System SHALL display them in the Local section
+
+### Requirement 3: Root Category Structure Implementation
+
+**User Story:** As a user browsing the forum, I want to see organized root categories, so that I can easily find relevant discussions.
+
+#### Acceptance Criteria
+
+1. THE Embassy_System SHALL display six predefined root categories: General Discussion, Partner Communities, Functions, Technical Section, Others, and Local
+2. THE Embassy_System SHALL map each Root_Category to one or more Lens_Feed addresses
+3. THE Embassy_System SHALL display categories with the exact styling from the HTML mockup including border colors and icons
+4. THE Embassy_System SHALL make the Technical Section visually distinct with dark theme and lock icon
+5. THE Embassy_System SHALL organize the Functions category in the grid layout as specified in the mockup
+6. THE Embassy_System SHALL display the Local category with language-based embassies
+
+### Requirement 4: Technical Section Access Control
+
+**User Story:** As a technical contributor, I want to access the gated Technical Section, so that I can participate in technical discussions with verified members.
+
+#### Acceptance Criteria
+
+1. THE Embassy_System SHALL implement access control for the Technical Section Root_Category
+2. WHEN a user attempts to access the Technical Section, THE Embassy_System SHALL verify token NFT ownership
+3. IF the user lacks required tokens, THEN THE Embassy_System SHALL display an access denied message
+4. THE Embassy_System SHALL apply client-side encryption to Technical Section content
+5. THE Embassy_System SHALL display the Technical Section with the dark theme styling from the mockup
+6. THE Embassy_System SHALL show the padlock icon with glow effect for the Technical Section
+
+### Requirement 5: Lens Protocol Integration Preservation
+
+**User Story:** As a developer maintaining the system, I want to preserve all existing Lens Protocol functionality, so that the forum continues to work with the decentralized backend.
+
+#### Acceptance Criteria
+
+1. THE Embassy_System SHALL maintain all existing Lens Protocol V3 client integrations
+2. THE Embassy_System SHALL preserve the existing authentication flow: wallet connection → profile selection → session management
+3. THE Embassy_System SHALL continue using the shadow indexing strategy with Supabase
+4. THE Embassy_System SHALL maintain the Forum_Adapter for transforming Lens data to UI objects
+5. THE Embassy_System SHALL preserve the metadata prefix "LearningLens: [Tier]" for post identification
+6. THE Embassy_System SHALL maintain the fallback rule for missing Supabase data
+
+### Requirement 6: Embassy Routing System
+
+**User Story:** As a user, I want to be routed to the appropriate language embassy, so that I can participate in discussions in my preferred language.
+
+#### Acceptance Criteria
+
+1. WHEN a user selects a Language_Embassy, THE Embassy_Router SHALL navigate to that embassy's discussion space
+2. THE Embassy_Router SHALL maintain separate discussion threads for each Language_Embassy
+3. THE Embassy_System SHALL display embassy-specific content using the configured Lens_Group
+4. THE Embassy_System SHALL show language names in both native script and English as per the mockup
+5. THE Embassy_System SHALL display embassy administrators and activity statistics
+6. WHERE a user posts in an embassy, THE Embassy_System SHALL tag the content with the appropriate language identifier
+
+### Requirement 7: UI Layout Transformation
+
+**User Story:** As a user, I want to see the traditional forum table layout, so that I can easily browse discussions in a familiar format.
+
+#### Acceptance Criteria
+
+1. THE Embassy_System SHALL implement the exact table layout from the HTML mockup
+2. THE Embassy_System SHALL display columns for Subject, Replies, Views, and Last Post
+3. THE Embassy_System SHALL show pinned posts with pin icons
+4. THE Embassy_System SHALL display pagination indicators as "(1 2 3 ... 5)" format
+5. THE Embassy_System SHALL implement hover effects on table rows
+6. THE Embassy_System SHALL maintain responsive design for mobile devices
+7. THE Embassy_System SHALL use the Inter font family as specified in the mockup
+
+### Requirement 8: Configuration Management
+
+**User Story:** As a system administrator, I want to configure embassy settings through environment variables, so that I can manage the system without code changes.
+
+#### Acceptance Criteria
+
+1. THE Embassy_System SHALL support configuration of Lens_Group addresses for each Language_Embassy
+2. THE Embassy_System SHALL allow configuration of Root_Category to Lens_Feed mappings
+3. THE Embassy_System SHALL support configuration of Technical Section access token requirements
+4. THE Embassy_System SHALL maintain backward compatibility with existing LensForum environment variables
+5. THE Embassy_System SHALL validate all configuration values at startup
+6. IF configuration is invalid, THEN THE Embassy_System SHALL display clear error messages
+
+### Requirement 9: Content Migration Strategy
+
+**User Story:** As a system administrator, I want to migrate existing LensForum content, so that historical discussions are preserved in the new embassy structure.
+
+#### Acceptance Criteria
+
+1. THE Embassy_System SHALL provide a migration path for existing community data to Root_Category mappings
+2. THE Embassy_System SHALL preserve existing thread and reply data during transformation
+3. THE Embassy_System SHALL maintain user profile associations and authentication data
+4. THE Embassy_System SHALL update the Shadow_Indexer to reflect the new category structure
+5. WHERE content cannot be automatically categorized, THE Embassy_System SHALL provide manual assignment tools
+6. THE Embassy_System SHALL validate data integrity after migration
+
+### Requirement 10: Performance and Caching
+
+**User Story:** As a user, I want fast forum performance, so that I can browse discussions without delays.
+
+#### Acceptance Criteria
+
+1. THE Embassy_System SHALL maintain the existing Supabase shadow indexing performance
+2. THE Embassy_System SHALL cache Language_Embassy configurations for fast access
+3. THE Embassy_System SHALL implement efficient queries for Root_Category data loading
+4. THE Embassy_System SHALL maintain sub-200ms response times for category browsing
+5. THE Embassy_System SHALL implement proper loading states during data fetching
+6. WHERE Supabase data is unavailable, THE Embassy_System SHALL fall back to direct Lens Protocol queries within 500ms
+
+### Requirement 11: Search and Discovery
+
+**User Story:** As a user, I want to search across all embassies and categories, so that I can find relevant discussions regardless of language or category.
+
+#### Acceptance Criteria
+
+1. THE Embassy_System SHALL implement global search across all Language_Embassy content
+2. THE Embassy_System SHALL support filtering search results by Root_Category
+3. THE Embassy_System SHALL support filtering search results by Language_Embassy
+4. THE Embassy_System SHALL highlight search terms in results
+5. THE Embassy_System SHALL maintain search performance under 1 second for typical queries
+6. THE Embassy_System SHALL provide search suggestions based on popular topics
+
+### Requirement 12: Parser and Serializer Requirements
+
+**User Story:** As a developer, I want robust parsing of Lens Protocol data, so that forum content is correctly processed and displayed.
+
+#### Acceptance Criteria
+
+1. WHEN Lens Protocol post data is received, THE Lens_Parser SHALL parse it into Forum_Post objects
+2. WHEN invalid Lens Protocol data is received, THE Lens_Parser SHALL return descriptive error messages
+3. THE Forum_Serializer SHALL format Forum_Post objects back into valid Lens Protocol format
+4. FOR ALL valid Forum_Post objects, parsing then serializing then parsing SHALL produce equivalent objects (round-trip property)
+5. THE Embassy_System SHALL validate all parsed content against the expected schema
+6. WHERE parsing fails, THE Embassy_System SHALL log errors and gracefully degrade functionality
+
+================================================
+FILE: .kiro/specs/society-protocol-tier3-embassy/.config.kiro
+================================================
+{"specId": "b842c3ed-d4ba-443c-b4e8-ad9225c472f6", "workflowType": "requirements-first", "specType": "feature"}
