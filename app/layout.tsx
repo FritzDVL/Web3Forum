@@ -21,9 +21,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className="bg-slate-100 dark:bg-gray-900">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta name="theme-color" content="#f1f5f9" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
+      </head>
       <body
-        className={`${customFont.variable} bg-slate-100 font-custom text-gray-900 dark:bg-gray-900 dark:text-gray-100`}
+        className={`${customFont.variable} min-h-screen bg-slate-100 font-custom text-gray-900 dark:bg-gray-900 dark:text-gray-100`}
         suppressHydrationWarning
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
