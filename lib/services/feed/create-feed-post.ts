@@ -30,6 +30,8 @@ export async function createFeedPost(
     const summary = formData.get("summary") as string;
     const tags = formData.get("tags") as string | null;
 
+    console.log("[createFeedPost] Starting post creation:", { title, feedAddress, author });
+
     // 1. Create article in Lens feed
     const articleFormData = {
       title,
@@ -41,9 +43,11 @@ export async function createFeedPost(
       slug: `${Date.now()}-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
     };
 
+    console.log("[createFeedPost] Calling createThreadArticle...");
     const articleResult = await createThreadArticle(articleFormData, sessionClient, walletClient);
     
     if (!articleResult.success || !articleResult.post) {
+      console.error("[createFeedPost] Article creation failed:", articleResult.error);
       return {
         success: false,
         error: articleResult.error || "Failed to create post",
@@ -51,10 +55,13 @@ export async function createFeedPost(
     }
 
     const rootPost = articleResult.post;
+    console.log("[createFeedPost] Article created successfully:", rootPost.id);
 
     // 2. Fetch author account
+    console.log("[createFeedPost] Fetching author account...");
     const authorAccount = await fetchAccountFromLens(author);
     if (!authorAccount) {
+      console.error("[createFeedPost] Failed to fetch author account");
       return {
         success: false,
         error: "Failed to fetch author account",
@@ -62,6 +69,7 @@ export async function createFeedPost(
     }
 
     // 3. Save in database
+    console.log("[createFeedPost] Persisting to database...");
     const authorDb = authorAccount.username?.localName || authorAccount.address;
     const persistedPost = await persistFeedPost(
       feedId,
@@ -72,18 +80,21 @@ export async function createFeedPost(
     );
 
     // 4. Transform to FeedPost
+    console.log("[createFeedPost] Adapting to FeedPost...");
     const feedPost = await adaptLensPostToFeedPost(feedId, feedAddress, rootPost, persistedPost);
 
     // 5. Revalidate paths
+    console.log("[createFeedPost] Revalidating paths...");
     revalidatePath(`/commons/${feedAddress}`);
     revalidatePath("/");
 
+    console.log("[createFeedPost] Post creation complete!");
     return {
       success: true,
       post: feedPost,
     };
   } catch (error) {
-    console.error("Failed to create feed post:", error);
+    console.error("[createFeedPost] Unexpected error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

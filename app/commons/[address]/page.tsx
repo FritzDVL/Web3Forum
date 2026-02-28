@@ -2,7 +2,7 @@ import { fetchFeedByAddress } from "@/lib/external/supabase/feeds";
 import { getFeedPosts } from "@/lib/services/feed/get-feed-posts";
 import { StatusBanner } from "@/components/shared/status-banner";
 import { FeedNavActions } from "@/components/commons/feed-nav-actions";
-import { FeedPostsList } from "@/components/commons/feed-posts-list";
+import { PaginatedFeedPostsList } from "@/components/commons/paginated-feed-posts-list";
 import { Lock } from "lucide-react";
 
 export default async function FeedPage({ params }: { params: Promise<{ address: string }> }) {
@@ -27,6 +27,7 @@ export default async function FeedPage({ params }: { params: Promise<{ address: 
   // Fetch real posts from Lens Protocol
   const postsResult = await getFeedPosts(feed.id, address, { limit: 10 });
   const posts = postsResult.success ? (postsResult.posts || []) : [];
+  const nextCursor = postsResult.success ? postsResult.nextCursor : null;
   
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -49,7 +50,7 @@ export default async function FeedPage({ params }: { params: Promise<{ address: 
               <span className="rounded-full bg-blue-100 px-3 py-1 font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
                 {feed.category}
               </span>
-              <span>{posts.length} posts</span>
+              <span>{posts.length}+ posts</span>
             </div>
           </div>
         </div>
@@ -63,8 +64,13 @@ export default async function FeedPage({ params }: { params: Promise<{ address: 
         )}
       </div>
 
-      {/* Feed Posts */}
-      <FeedPostsList feedAddress={address} posts={posts} />
+      {/* Feed Posts with Pagination */}
+      <PaginatedFeedPostsList
+        feedId={feed.id}
+        feedAddress={address}
+        initialPosts={posts}
+        initialNextCursor={nextCursor}
+      />
     </div>
   );
 }

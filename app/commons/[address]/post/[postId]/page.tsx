@@ -1,4 +1,5 @@
 import { getFeedPost } from "@/lib/services/feed/get-feed-post";
+import { getFeedReplies } from "@/lib/services/feed/get-feed-replies";
 import { fetchFeedByAddress } from "@/lib/external/supabase/feeds";
 import { StatusBanner } from "@/components/shared/status-banner";
 import { PostDetail } from "@/components/commons/post-detail";
@@ -27,8 +28,11 @@ export default async function PostDetailPage({
     );
   }
 
-  // Fetch post
-  const postResult = await getFeedPost(feed.id, address, postId);
+  // Fetch post and replies in parallel
+  const [postResult, repliesResult] = await Promise.all([
+    getFeedPost(feed.id, address, postId),
+    getFeedReplies(postId),
+  ]);
 
   if (!postResult.success || !postResult.post) {
     return (
@@ -44,5 +48,7 @@ export default async function PostDetailPage({
     );
   }
 
-  return <PostDetail post={postResult.post} feedAddress={address} />;
+  const replies = repliesResult.success ? repliesResult.replies || [] : [];
+
+  return <PostDetail post={postResult.post} feedAddress={address} replies={replies} />;
 }

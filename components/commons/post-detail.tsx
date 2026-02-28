@@ -1,17 +1,21 @@
 "use client";
 
 import { FeedPost } from "@/lib/domain/feeds/types";
+import { Reply } from "@/lib/services/feed/get-feed-replies";
 import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, Eye, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Address } from "@/types/common";
+import { ReplyForm } from "./reply-form";
+import { ReplyList } from "./reply-list";
 
 interface PostDetailProps {
   post: FeedPost;
   feedAddress: Address;
+  replies: Reply[];
 }
 
-export function PostDetail({ post, feedAddress }: PostDetailProps) {
+export function PostDetail({ post, feedAddress, replies }: PostDetailProps) {
   const authorName = post.author.username?.localName || post.author.address.slice(0, 8);
   const authorHandle = post.author.username?.value || `@${post.author.address.slice(0, 6)}`;
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true });
@@ -71,21 +75,19 @@ export function PostDetail({ post, feedAddress }: PostDetailProps) {
           </div>
         </div>
 
-        {/* Reply Section Placeholder */}
+        {/* Reply Section */}
         <div className="border-t border-slate-200 p-6 dark:border-gray-700">
           <h2 className="mb-4 text-xl font-semibold text-slate-900 dark:text-gray-100">
-            Replies ({post.repliesCount})
+            Replies ({replies.length})
           </h2>
           
-          {post.repliesCount === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400">
-              No replies yet. Be the first to reply!
-            </p>
-          ) : (
-            <p className="text-gray-500 dark:text-gray-400">
-              Reply system coming soon...
-            </p>
-          )}
+          {/* Reply Form */}
+          <div className="mb-6">
+            <ReplyForm postId={post.rootPost.id} feedAddress={feedAddress} />
+          </div>
+
+          {/* Reply List */}
+          <ReplyList replies={replies} />
         </div>
       </div>
     </div>

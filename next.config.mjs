@@ -22,6 +22,12 @@ const nextConfig = {
       ...config.resolve.alias,
       '@react-native-async-storage/async-storage': false,
     };
+
+    // Add to externals to prevent bundling
+    config.externals = config.externals || [];
+    config.externals.push({
+      '@react-native-async-storage/async-storage': 'commonjs @react-native-async-storage/async-storage',
+    });
     
     // Ignore HeartbeatWorker.js completely to avoid WalletConnect/ConnectKit build errors
     config.module.rules.push({

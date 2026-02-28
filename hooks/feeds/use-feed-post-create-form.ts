@@ -57,25 +57,44 @@ export function useFeedPostCreateForm({ feedId, feedAddress }: UseFeedPostCreate
     try {
       setIsCreating(true);
 
-      const formDataToSubmit = new FormData();
-      formDataToSubmit.append("title", formData.title);
-      formDataToSubmit.append("summary", formData.summary);
-      formDataToSubmit.append("content", formData.content);
-      formDataToSubmit.append("author", account.address);
-      if (tags.length > 0) {
-        formDataToSubmit.append("tags", tags.join(","));
-      }
-
-      const result = await createFeedPostService(
-        feedId,
+      // Create article directly on client side
+      const { createThreadArticle } = await import("@/lib/external/lens/primitives/articles");
+      
+      const articleData = {
+        title: formData.title,
+        content: formData.content,
+        author: account.address,
+        summary: formData.summary,
+        tags: tags.length > 0 ? tags.join(",") : undefined,
         feedAddress,
-        formDataToSubmit,
+        slug: `${Date.now()}-${formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      };
+
+      const articleResult = await createThreadArticle(
+        articleData,
         sessionClient.data,
         walletClient.data,
       );
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to create post");
+      if (!articleResult.success || !articleResult.post) {
+        throw new Error(articleResult.error || "Failed to create post");
+      }
+
+      // Now save to database via server action
+      const { saveFeedPost } = await import("@/app/commons/[address]/new-post/actions");
+      const saveResult = await saveFeedPost(
+        feedId,
+        feedAddress,
+        articleResult.post.id,
+        formData.title,
+        formData.content,
+        formData.summary,
+        account.address
+      );
+
+      if (!saveResult.success) {
+        console.warn("Failed to save to database:", saveResult.error);
+        // Don't fail the whole operation if DB save fails
       }
 
       toast.success("Post created!", { description: "Your post was successfully created.", id: loadingToast });
