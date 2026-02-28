@@ -1,12 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { CommonsFeed } from "@/config/commons-config";
 import { Lock } from "lucide-react";
+
+interface Feed {
+  title: string;
+  address: string;
+  description: string;
+}
 
 interface ForumCategoryProps {
   title: string;
-  feeds: CommonsFeed[];
+  feeds: Feed[];
   borderColor?: string;
   isLocked?: boolean;
 }

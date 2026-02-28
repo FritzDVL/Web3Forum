@@ -2,17 +2,21 @@ import { CommunityGrid } from "@/components/home/community-grid";
 import { ForumCategory } from "@/components/home/forum-category";
 import { FunctionGrid } from "@/components/home/function-grid";
 import { getFeaturedCommunities } from "@/lib/services/community/get-featured-communities";
-import { COMMONS_SECTIONS } from "@/config/commons-config";
+import { getFeedSections } from "@/lib/services/feed/get-feeds";
 
 export default async function HomePage() {
-  const featuredCommunitiesResult = await getFeaturedCommunities();
+  const [feedSections, featuredCommunitiesResult] = await Promise.all([
+    getFeedSections(),
+    getFeaturedCommunities(),
+  ]);
+  
   const featuredCommunities = featuredCommunitiesResult.success ? (featuredCommunitiesResult.communities ?? []) : [];
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="flex flex-col items-center gap-12">
-        {/* Forum Sections */}
-        {COMMONS_SECTIONS.map((section) => (
+        {/* Forum Sections - Dynamically loaded from database */}
+        {feedSections.map((section) => (
           <div key={section.sectionTitle} className="w-full max-w-5xl">
             {section.layout === "grid" ? (
               <FunctionGrid 

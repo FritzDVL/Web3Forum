@@ -1,4 +1,5 @@
 import { fetchFeedByAddress } from "@/lib/external/supabase/feeds";
+import { getFeedPosts } from "@/lib/services/feed/get-feed-posts";
 import { StatusBanner } from "@/components/shared/status-banner";
 import { FeedNavActions } from "@/components/commons/feed-nav-actions";
 import { FeedPostsList } from "@/components/commons/feed-posts-list";
@@ -22,6 +23,10 @@ export default async function FeedPage({ params }: { params: Promise<{ address: 
       </div>
     );
   }
+
+  // Fetch real posts from Lens Protocol
+  const postsResult = await getFeedPosts(feed.id, address, { limit: 10 });
+  const posts = postsResult.success ? (postsResult.posts || []) : [];
   
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -44,7 +49,7 @@ export default async function FeedPage({ params }: { params: Promise<{ address: 
               <span className="rounded-full bg-blue-100 px-3 py-1 font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
                 {feed.category}
               </span>
-              <span>{feed.post_count || 0} posts</span>
+              <span>{posts.length} posts</span>
             </div>
           </div>
         </div>
@@ -59,7 +64,7 @@ export default async function FeedPage({ params }: { params: Promise<{ address: 
       </div>
 
       {/* Feed Posts */}
-      <FeedPostsList feedAddress={address} />
+      <FeedPostsList feedAddress={address} posts={posts} />
     </div>
   );
 }

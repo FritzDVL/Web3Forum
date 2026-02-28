@@ -8,18 +8,28 @@ const supabase = createClient(
 );
 
 export async function fetchFeedByAddress(address: string) {
-  const { data, error } = await supabase
-    .from("feeds")
-    .select("*")
-    .eq("lens_feed_address", address)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("feeds")
+      .select("*")
+      .eq("lens_feed_address", address)
+      .single();
 
-  if (error) {
-    console.error("Error fetching feed:", error);
+    if (error) {
+      if (error.code === "PGRST116") {
+        // Not found - return null instead of throwing
+        console.log(`Feed not found for address: ${address}`);
+        return null;
+      }
+      console.error("Error fetching feed:", error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Unexpected error fetching feed:", error);
     return null;
   }
-
-  return data;
 }
 
 export async function fetchAllFeeds() {
