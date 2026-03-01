@@ -12,6 +12,10 @@ export interface FeedSection {
     description: string;
     isLocked: boolean;
     featured: boolean;
+    postCount: number;
+    repliesCount: number;
+    viewsCount: number;
+    lastPostAt: string | null;
   }>;
   borderColor: string;
   layout: "list" | "grid";
@@ -45,6 +49,10 @@ export async function getFeedSections(): Promise<FeedSection[]> {
         description: feed.description || "",
         isLocked: feed.is_locked || false,
         featured: feed.featured || false,
+        postCount: feed.post_count || 0,
+        repliesCount: feed.replies_count || 0,
+        viewsCount: feed.views_count || 0,
+        lastPostAt: feed.last_post_at || null,
       })),
       borderColor: config.borderColor,
       layout: config.layout,

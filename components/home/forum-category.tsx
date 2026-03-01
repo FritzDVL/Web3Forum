@@ -7,6 +7,9 @@ interface Feed {
   title: string;
   address: string;
   description: string;
+  repliesCount: number;
+  viewsCount: number;
+  lastPostAt: string | null;
 }
 
 interface ForumCategoryProps {
@@ -14,6 +17,24 @@ interface ForumCategoryProps {
   feeds: Feed[];
   borderColor?: string;
   isLocked?: boolean;
+}
+
+function formatLastPost(lastPostAt: string | null): string {
+  if (!lastPostAt) return "Never";
+  
+  const date = new Date(lastPostAt);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 export function ForumCategory({ title, feeds, borderColor = "blue", isLocked = false }: ForumCategoryProps) {
@@ -62,15 +83,21 @@ export function ForumCategory({ title, feeds, borderColor = "blue", isLocked = f
               <div className="hidden md:flex items-center gap-8 ml-4">
                 <div className="text-center min-w-[60px]">
                   <div className={`text-xs ${isLocked ? "text-slate-400" : "text-gray-500 dark:text-gray-400"}`}>Replies</div>
-                  <div className={`text-sm font-semibold ${isLocked ? "text-slate-200" : "text-slate-700 dark:text-gray-200"}`}>0</div>
+                  <div className={`text-sm font-semibold ${isLocked ? "text-slate-200" : "text-slate-700 dark:text-gray-200"}`}>
+                    {feed.repliesCount.toLocaleString()}
+                  </div>
                 </div>
                 <div className="text-center min-w-[60px]">
                   <div className={`text-xs ${isLocked ? "text-slate-400" : "text-gray-500 dark:text-gray-400"}`}>Views</div>
-                  <div className={`text-sm font-semibold ${isLocked ? "text-slate-200" : "text-slate-700 dark:text-gray-200"}`}>0</div>
+                  <div className={`text-sm font-semibold ${isLocked ? "text-slate-200" : "text-slate-700 dark:text-gray-200"}`}>
+                    {feed.viewsCount.toLocaleString()}
+                  </div>
                 </div>
                 <div className="text-center min-w-[100px]">
                   <div className={`text-xs ${isLocked ? "text-slate-400" : "text-gray-500 dark:text-gray-400"}`}>Last Post</div>
-                  <div className={`text-xs ${isLocked ? "text-slate-300" : "text-slate-600 dark:text-gray-300"}`}>Never</div>
+                  <div className={`text-xs ${isLocked ? "text-slate-300" : "text-slate-600 dark:text-gray-300"}`}>
+                    {formatLastPost(feed.lastPostAt)}
+                  </div>
                 </div>
               </div>
             </div>

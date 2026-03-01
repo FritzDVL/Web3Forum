@@ -2,26 +2,266 @@
 
 **Created**: 2026-03-01  
 **Status**: Planning Phase  
-**Current Version**: v1.0 (Core Loop Complete)
+**Current Version**: v1.0 (Core Loop Complete + Reply System Working)
 
 ---
 
 ## Table of Contents
 
-1. [Immediate Priorities](#immediate-priorities)
-2. [Short-term Features](#short-term-features)
-3. [Medium-term Features](#medium-term-features)
-4. [Long-term Vision](#long-term-vision)
-5. [Technical Debt](#technical-debt)
+1. [Critical Decision: Technical Section Architecture](#critical-decision-technical-section-architecture)
+2. [Immediate Priorities](#immediate-priorities)
+3. [Short-term Features](#short-term-features)
+4. [Medium-term Features](#medium-term-features)
+5. [Long-term Vision](#long-term-vision)
+6. [Technical Debt](#technical-debt)
+
+---
+
+# Critical Decision: Technical Section Architecture
+
+## Current Status
+- 7 technical feeds with placeholder addresses (feed-20, feed-20a, feed-21, feed-22, feed-23, feed-23a, feed-23b)
+- All marked as `is_locked: true`
+- Topics: Architecture, State Machine, Consensus, Cryptography, Account System, Security
+
+## 🎯 Three Architecture Options
+
+### **Option 1: Token-Gated Feeds (Simplest)**
+
+**How it works:**
+- Keep 7 separate Lens Feeds
+- Each feed has token-gating rule
+- Users need token to post/view
+
+**Pros:**
+- ✅ Simplest to implement (30 min)
+- ✅ Keeps current UI/UX
+- ✅ Each topic has clear boundary
+- ✅ Easy moderation per feed
+
+**Cons:**
+- ❌ Siloed discussions (no cross-pollination)
+- ❌ 7 separate token-gate checks
+- ❌ Rigid structure
+
+**Implementation:**
+```sql
+-- Just update Supabase with real Lens Feed addresses
+UPDATE feeds SET lens_feed_address = '0xTokenGatedFeed1' WHERE lens_feed_address = 'feed-20';
+UPDATE feeds SET lens_feed_address = '0xTokenGatedFeed2' WHERE lens_feed_address = 'feed-20a';
+-- Repeat for all 7
+```
+
+**Timeline:** 30 minutes (if you have token-gated feed addresses)
+
+---
+
+### **Option 2: Single Token-Gated Lens Group (Recommended)**
+
+**How it works:**
+- Create 1 Lens Group: "Society Protocol Research"
+- Token-gate the entire group
+- Use tags/categories for the 7 topics
+- Posts are Lens Publications with metadata tags
+
+**Pros:**
+- ✅ **Cross-pollination**: Posts can have multiple tags
+- ✅ Single token-gate check (better UX)
+- ✅ More flexible organization
+- ✅ Can add new topics without creating feeds
+- ✅ Better for research (topics naturally overlap)
+- ✅ Lens Groups have built-in moderation
+
+**Cons:**
+- ⚠️ Requires UI refactor (2-3 hours)
+- ⚠️ Different pattern from other sections
+
+**Implementation Steps:**
+
+1. **Create Your Token** (1-2 hours)
+```solidity
+// Option A: Simple ERC-20 on Lens Chain
+contract SocietyResearchToken is ERC20 {
+  constructor() ERC20("Society Research", "SRES") {
+    _mint(msg.sender, 1000000 * 10**18);
+  }
+}
+
+// Option B: Use existing token/NFT you control
+```
+
+2. **Create Token-Gated Lens Group** (30 min)
+```typescript
+import { createGroup } from '@lens-protocol/client/actions';
+import { TokenStandard } from '@lens-protocol/client';
+
+const group = await createGroup(sessionClient, {
+  name: "Society Protocol Research",
+  description: "Token-gated research discussions for Society Protocol",
+  rules: {
+    anyOf: [{
+      rule: {
+        type: 'TOKEN_OWNERSHIP',
+        token: {
+          address: evmAddress('0xYourTokenAddress'),
+          standard: TokenStandard.Erc20,
+          chainId: lensChain.id,
+        },
+        minBalance: bigDecimal('1'), // Need at least 1 token
+      }
+    }]
+  }
+});
+```
+
+3. **Update UI** (2-3 hours)
+```typescript
+// Create TechnicalSection component
+// Fetch posts from group
+// Filter/organize by tags
+// Show as categorized view with 7 topics
+
+const topics = [
+  { id: 'architecture', name: 'General Architecture', tag: 'architecture' },
+  { id: 'objects', name: 'Architectural Objects & Functions', tag: 'objects' },
+  { id: 'state-machine', name: 'State Machine', tag: 'state-machine' },
+  { id: 'consensus', name: 'Consensus (Proof of Hunt)', tag: 'consensus' },
+  { id: 'cryptography', name: 'Cryptography', tag: 'cryptography' },
+  { id: 'account', name: 'Account System', tag: 'account' },
+  { id: 'security', name: 'Security', tag: 'security' },
+];
+
+// Posts have tags in metadata
+const metadata = {
+  content: "Discussion about state machine...",
+  tags: ["state-machine", "cryptography"], // Can have multiple!
+  category: "technical"
+};
+```
+
+**Timeline:** 3-4 hours total
+
+---
+
+### **Option 3: Hybrid - Group + Virtual Feeds**
+
+**How it works:**
+- Backend: Single token-gated Lens Group
+- Frontend: Show as 7 separate "feeds" (virtual)
+- Filter posts by tags to simulate feeds
+
+**Pros:**
+- ✅ Cross-pollination in backend
+- ✅ Familiar UI (looks like separate feeds)
+- ✅ Single token-gate
+- ✅ Flexible tagging
+
+**Cons:**
+- ⚠️ More complex implementation
+- ⚠️ Posts can appear in multiple "feeds"
+
+**Timeline:** 4-5 hours
+
+---
+
+## 💡 Recommendation: Option 2
+
+**Why:**
+1. Research discussions naturally overlap (Consensus involves Cryptography + State Machine)
+2. Lens Groups have native, robust token-gating
+3. Future-proof: Easy to add topics, reorganize
+4. Better UX: One token check vs 7
+5. Aligns with Lens Protocol best practices
+
+**When to use:**
+- If you have 1+ week before demo
+- If you want best long-term architecture
+- If cross-topic discussions are valuable
+
+**When to use Option 1 instead:**
+- If you need demo ready in 1-2 days
+- If you already have token-gated feed addresses
+- If strict topic separation is required
+
+---
+
+## 🛠️ Token Creation Guide
+
+### Option A: Deploy Your Own ERC-20
+
+**Contract:**
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract SocietyResearchToken is ERC20, Ownable {
+    constructor() ERC20("Society Research Token", "SRES") {
+        _mint(msg.sender, 1000000 * 10**18); // 1M tokens
+    }
+    
+    // Mint more tokens to grant access
+    function grantAccess(address to, uint256 amount) external onlyOwner {
+        _mint(to, amount);
+    }
+}
+```
+
+**Deploy:**
+1. Use Remix IDE or Hardhat
+2. Deploy to Lens Chain (or your preferred chain)
+3. Mint tokens to addresses you want to grant access
+4. Use contract address in Lens Group rules
+
+### Option B: Use Existing Token/NFT
+
+- Use any ERC-20 or ERC-721 you control
+- Just need the contract address
+- Set minimum balance requirement
+
+---
+
+## 🎯 Decision Checklist
+
+Before choosing, answer:
+
+1. **Timeline**: When do you need this for your boss?
+   - < 2 days → Option 1
+   - 1 week → Option 2
+   - 2+ weeks → Option 2 or 3
+
+2. **Token**: Do you want to create your own?
+   - Yes → Need 1-2 hours for deployment
+   - No → Use existing token
+
+3. **Access Control**: Who should have access?
+   - Small team → Manually mint tokens
+   - Community → Token sale/distribution
+   - Hybrid → Start small, expand later
+
+4. **Discussion Style**: How do topics relate?
+   - Separate → Option 1
+   - Overlapping → Option 2
+   - Mixed → Option 3
+
+5. **UI Preference**: How should it look?
+   - Like other sections (separate feeds) → Option 1 or 3
+   - Unified research hub → Option 2
 
 ---
 
 # Immediate Priorities
 
 **Timeline**: 1-2 weeks  
-**Goal**: Polish and production readiness
+**Goal**: Production readiness for demo
 
-## 1. Loading States & Skeletons (4 hours)
+## 1. Decide on Technical Section Architecture (CRITICAL)
+
+See above section. Must decide before proceeding.
+
+## 2. Loading States & Skeletons (4 hours)
 
 ### Why
 Better perceived performance and user experience.
@@ -54,7 +294,7 @@ export function SkeletonPost() {
 
 ---
 
-## 2. Error Boundaries (2 hours)
+## 3. Error Boundaries (2 hours)
 
 ### Why
 Graceful error handling prevents full app crashes.
@@ -90,68 +330,60 @@ export class ErrorBoundary extends React.Component {
 
 ---
 
-## 3. Optimistic Updates (3 hours)
+## 4. Test Production Build (30 min)
 
-### Why
-Instant feedback improves user experience.
-
-### What to Build
-- Optimistic reply creation
-- Optimistic post creation
-- Rollback on error
-- Loading indicators
-
-### Files to Modify
-- `hooks/feeds/use-feed-reply-form.ts`
-- `hooks/feeds/use-feed-post-create-form.ts`
-
-### Implementation
-```typescript
-// Optimistic reply
-const optimisticReply = {
-  id: 'temp-' + Date.now(),
-  content,
-  author: currentUser,
-  timestamp: new Date().toISOString(),
-};
-
-// Add to UI immediately
-setReplies([...replies, optimisticReply]);
-
-// Then create on blockchain
-const result = await createReply(...);
-
-// Replace temp with real
-if (result.success) {
-  setReplies(replies.map(r => 
-    r.id === optimisticReply.id ? result.reply : r
-  ));
-}
+### Commands
+```bash
+npm run build
+npm start
 ```
+
+### What to Check
+- No build errors
+- All features work
+- Performance is good
+- No console errors
 
 ---
 
-## 4. Update Placeholder Addresses (30 min)
+## 5. Environment Setup Documentation (30 min)
 
-### Why
-5 feeds still have placeholder addresses.
+### Create .env.example
+```bash
+# Lens Protocol
+NEXT_PUBLIC_LENS_ENVIRONMENT=production
 
-### What to Do
-Get real Lens feed addresses for:
-- feed-20: General Architecture Discussion
-- feed-21: State Machine
-- feed-22: Consensus (Proof of Hunt)
-- feed-23: Cryptography
-- feed-26: Economics
+# WalletConnect
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=
 
-### SQL
-```sql
-UPDATE feeds SET lens_feed_address = '0xRealAddress' WHERE lens_feed_address = 'feed-20';
-UPDATE feeds SET lens_feed_address = '0xRealAddress' WHERE lens_feed_address = 'feed-21';
-UPDATE feeds SET lens_feed_address = '0xRealAddress' WHERE lens_feed_address = 'feed-22';
-UPDATE feeds SET lens_feed_address = '0xRealAddress' WHERE lens_feed_address = 'feed-23';
-UPDATE feeds SET lens_feed_address = '0xRealAddress' WHERE lens_feed_address = 'feed-26';
+# Supabase
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+
+# Grove (Storage)
+GROVE_API_KEY=
+
+# Optional: Analytics
+NEXT_PUBLIC_ANALYTICS_ID=
 ```
+
+### Create SETUP.md
+- Installation steps
+- Environment variables
+- How to run locally
+- How to deploy
+
+---
+
+## 6. README for Evaluators (30 min)
+
+### What to Include
+- What is Society Protocol Forum
+- How to connect wallet
+- How to get Lens account
+- What features to test
+- Known limitations
+- Feedback channels
 
 ---
 

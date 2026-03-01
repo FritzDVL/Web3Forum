@@ -2,6 +2,7 @@
 
 import { Reply } from "@/lib/services/feed/get-feed-replies";
 import { formatDistanceToNow } from "date-fns";
+import ReactMarkdown from "react-markdown";
 
 interface ReplyListProps {
   replies: Reply[];
@@ -39,9 +40,9 @@ export function ReplyList({ replies }: ReplyListProps) {
             </div>
 
             {/* Reply Content */}
-            <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-              {reply.content}
-            </p>
+            <div className="prose prose-sm prose-slate max-w-none dark:prose-invert">
+              <ReactMarkdown>{reply.content}</ReactMarkdown>
+            </div>
 
             {/* Nested replies indicator (if any) */}
             {reply.repliesCount > 0 && (

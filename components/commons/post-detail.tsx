@@ -9,6 +9,8 @@ import Link from "next/link";
 import { Address } from "@/types/common";
 import { ReplyForm } from "./reply-form";
 import { ReplyList } from "./reply-list";
+import ReactMarkdown from "react-markdown";
+import { stripThreadPrefixOnly } from "@/lib/domain/threads/content";
 
 interface PostDetailProps {
   post: FeedPost;
@@ -21,8 +23,9 @@ export function PostDetail({ post, feedAddress, replies }: PostDetailProps) {
   const authorHandle = post.author.username?.value || `@${post.author.address.slice(0, 6)}`;
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true });
 
-  // Extract content from rootPost metadata
-  const content = post.rootPost.metadata?.content || post.summary || "No content available";
+  // Extract content and strip thread prefix
+  const rawContent = post.rootPost.metadata?.content || post.summary || "No content available";
+  const content = stripThreadPrefixOnly(rawContent);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -70,9 +73,7 @@ export function PostDetail({ post, feedAddress, replies }: PostDetailProps) {
         {/* Post Content */}
         <div className="p-6">
           <div className="prose prose-slate max-w-none dark:prose-invert">
-            <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-              {content}
-            </p>
+            <ReactMarkdown>{content}</ReactMarkdown>
           </div>
         </div>
 
