@@ -67,12 +67,17 @@ export async function createReply(
 
     const createdPost = result.value as Post;
 
-    // 4. Increment thread replies count
-    try {
-      await incrementThreadRepliesCount(threadId);
-    } catch (error) {
-      console.warn("Failed to increment thread replies count:", error);
-      // Don't fail the entire operation for this
+    // 4. Increment thread replies count (only for Supabase threads, not Lens-only posts)
+    // Check if threadId is a UUID (Supabase) vs Lens Publication ID format
+    const isSupabaseThread = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(threadId);
+    
+    if (isSupabaseThread) {
+      try {
+        await incrementThreadRepliesCount(threadId);
+      } catch (error) {
+        console.warn("Failed to increment thread replies count:", error);
+        // Don't fail the entire operation for this
+      }
     }
 
     // 5. Transform post to reply - using the correct author parameter

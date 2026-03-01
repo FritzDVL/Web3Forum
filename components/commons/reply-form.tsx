@@ -1,8 +1,15 @@
 "use client";
 
-import { useFeedReplyForm } from "@/hooks/feeds/use-feed-reply-form";
+import { useState } from "react";
+import { useReplyCreate } from "@/hooks/replies/use-reply-create";
 import { Address } from "@/types/common";
-import { AlertCircle } from "lucide-react";
+import { useAuthStore } from "@/stores/auth-store";
+import { useRouter } from "next/navigation";
+import { TextEditor } from "@/components/editor/text-editor";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { MessageCircle } from "lucide-react";
+import { revalidateFeedPostPath, revalidateFeedPath } from "@/app/actions/revalidate-path";
 
 interface ReplyFormProps {
   postId: string;
@@ -10,16 +17,42 @@ interface ReplyFormProps {
 }
 
 export function ReplyForm({ postId, feedAddress }: ReplyFormProps) {
-  const {
-    content,
-    setContent,
-    isSubmitting,
-    error,
-    handleSubmit,
-    isAuthenticated,
-  } = useFeedReplyForm(postId, feedAddress);
+  const [content, setContent] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editorKey, setEditorKey] = useState(0); // Key to force editor reset
+  const { createReply } = useReplyCreate();
+  const { isLoggedIn, account } = useAuthStore();
+  const router = useRouter();
 
-  if (!isAuthenticated) {
+  const handleSubmit = async () => {
+    if (!content.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      const reply = await createReply(
+        postId,
+        content,
+        feedAddress,
+        postId, // Using postId as threadId for feeds
+      );
+
+      if (reply) {
+        setContent("");
+        setEditorKey(prev => prev + 1); // Reset editor
+        
+        // Revalidate paths to show new reply
+        await revalidateFeedPostPath(feedAddress, postId);
+        await revalidateFeedPath(feedAddress);
+        
+        // Refresh to show new reply
+        router.refresh();
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isLoggedIn) {
     return (
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
         <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -30,34 +63,38 @@ export function ReplyForm({ postId, feedAddress }: ReplyFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
-          <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400" />
-          <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+    <div className="flex w-full min-w-0 items-start space-x-3">
+      <Avatar className="h-8 w-8 flex-shrink-0">
+        <AvatarImage src={account?.metadata?.picture} />
+        <AvatarFallback className="bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+          {account?.username?.localName?.[0]?.toUpperCase() || "U"}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1 space-y-3">
+        <div className="w-full min-w-0">
+          <TextEditor key={editorKey} onChange={setContent} />
         </div>
-      )}
-
-      <div>
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Write your reply..."
-          rows={4}
-          disabled={isSubmitting}
-          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 dark:focus:border-blue-400"
-        />
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            className="gradient-button h-8 text-sm"
+            disabled={!content.trim() || isSubmitting}
+          >
+            {isSubmitting ? (
+              <span className="flex items-center">
+                <span className="loader mr-2 h-3 w-3 animate-spin rounded-full border-2 border-t-2 border-gray-300 border-t-blue-500" />
+                Replying...
+              </span>
+            ) : (
+              <>
+                <MessageCircle className="mr-2 h-3 w-3" />
+                Reply
+              </>
+            )}
+          </Button>
+        </div>
       </div>
-
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={isSubmitting || !content.trim()}
-          className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-        >
-          {isSubmitting ? "Posting..." : "Post Reply"}
-        </button>
-      </div>
-    </form>
+    </div>
   );
 }

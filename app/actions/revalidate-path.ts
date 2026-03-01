@@ -30,3 +30,11 @@ export async function revalidateThreadAndListPaths(address: string) {
 export async function revalidateHomePath() {
   revalidatePath(`/`);
 }
+
+export async function revalidateFeedPostPath(feedAddress: Address, postId: string) {
+  revalidatePath(`/commons/${feedAddress}/post/${postId}`);
+}
+
+export async function revalidateFeedPath(feedAddress: Address) {
+  revalidatePath(`/commons/${feedAddress}`);
+}

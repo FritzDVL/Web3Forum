@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { FeedPost } from "@/lib/domain/feeds/types";
 import { Reply } from "@/lib/services/feed/get-feed-replies";
 import { formatDistanceToNow } from "date-fns";

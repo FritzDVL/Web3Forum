@@ -4,6 +4,9 @@ import { FunctionGrid } from "@/components/home/function-grid";
 import { getFeaturedCommunities } from "@/lib/services/community/get-featured-communities";
 import { getFeedSections } from "@/lib/services/feed/get-feeds";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function HomePage() {
   const [feedSections, featuredCommunitiesResult] = await Promise.all([
     getFeedSections(),
