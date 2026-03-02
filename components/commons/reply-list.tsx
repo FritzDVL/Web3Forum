@@ -40,8 +40,15 @@ export function ReplyList({ replies }: ReplyListProps) {
             </div>
 
             {/* Reply Content */}
-            <div className="prose prose-sm prose-slate max-w-none dark:prose-invert">
-              <ReactMarkdown>{reply.content}</ReactMarkdown>
+            <div className="prose prose-sm prose-slate max-w-none dark:prose-invert prose-p:my-3">
+              <ReactMarkdown
+                components={{
+                  p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                  br: () => <br className="my-1" />,
+                }}
+              >
+                {reply.content}
+              </ReactMarkdown>
             </div>
 
             {/* Nested replies indicator (if any) */}

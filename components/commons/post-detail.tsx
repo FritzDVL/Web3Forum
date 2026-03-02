@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FeedPost } from "@/lib/domain/feeds/types";
 import { Reply } from "@/lib/services/feed/get-feed-replies";
 import { formatDistanceToNow } from "date-fns";
@@ -10,7 +10,7 @@ import { Address } from "@/types/common";
 import { ReplyForm } from "./reply-form";
 import { ReplyList } from "./reply-list";
 import ReactMarkdown from "react-markdown";
-import { stripThreadPrefixOnly } from "@/lib/domain/threads/content";
+import { stripThreadArticleFormatting } from "@/lib/domain/threads/content";
 
 interface PostDetailProps {
   post: FeedPost;
@@ -19,13 +19,31 @@ interface PostDetailProps {
 }
 
 export function PostDetail({ post, feedAddress, replies }: PostDetailProps) {
+  const [viewsCount, setViewsCount] = useState(post.viewsCount);
   const authorName = post.author.username?.localName || post.author.address.slice(0, 8);
   const authorHandle = post.author.username?.value || `@${post.author.address.slice(0, 6)}`;
   const timeAgo = formatDistanceToNow(new Date(post.created_at), { addSuffix: true });
 
-  // Extract content and strip thread prefix
+  // Extract content and strip ALL thread formatting (prefix, title, summary)
   const rawContent = post.rootPost.metadata?.content || post.summary || "No content available";
-  const content = stripThreadPrefixOnly(rawContent);
+  const content = stripThreadArticleFormatting(rawContent);
+
+  // Track view on mount
+  useEffect(() => {
+    async function trackView() {
+      try {
+        const response = await fetch(`/api/posts/${post.rootPost.id}/view`, {
+          method: "POST",
+        });
+        if (response.ok) {
+          setViewsCount((prev) => prev + 1);
+        }
+      } catch (error) {
+        console.error("Failed to track view:", error);
+      }
+    }
+    trackView();
+  }, [post.rootPost.id]);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -61,19 +79,26 @@ export function PostDetail({ post, feedAddress, replies }: PostDetailProps) {
           <div className="mt-4 flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
             <div className="flex items-center gap-1">
               <MessageSquare className="h-4 w-4" />
-              <span>{post.repliesCount} replies</span>
+              <span>{post.repliesCount} posts</span>
             </div>
             <div className="flex items-center gap-1">
               <Eye className="h-4 w-4" />
-              <span>{post.viewsCount} views</span>
+              <span>{viewsCount} views</span>
             </div>
           </div>
         </div>
 
         {/* Post Content */}
         <div className="p-6">
-          <div className="prose prose-slate max-w-none dark:prose-invert">
-            <ReactMarkdown>{content}</ReactMarkdown>
+          <div className="prose prose-slate max-w-none dark:prose-invert prose-p:my-4 prose-headings:mt-8 prose-headings:mb-4">
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
+                br: () => <br className="my-2" />,
+              }}
+            >
+              {content}
+            </ReactMarkdown>
           </div>
         </div>
 

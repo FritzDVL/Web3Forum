@@ -95,7 +95,7 @@ export function PaginatedFeedPostsList({
             <div className="mt-4 flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-1">
                 <MessageSquare className="h-4 w-4" />
-                <span>{post.repliesCount} replies</span>
+                <span>{post.repliesCount} posts</span>
               </div>
               <div className="flex items-center gap-1">
                 <Eye className="h-4 w-4" />

@@ -82,7 +82,7 @@ export function ForumCategory({ title, feeds, borderColor = "blue", isLocked = f
               {/* Stats Columns (Desktop Only) */}
               <div className="hidden md:flex items-center gap-8 ml-4">
                 <div className="text-center min-w-[60px]">
-                  <div className={`text-xs ${isLocked ? "text-slate-400" : "text-gray-500 dark:text-gray-400"}`}>Replies</div>
+                  <div className={`text-xs ${isLocked ? "text-slate-400" : "text-gray-500 dark:text-gray-400"}`}>Posts</div>
                   <div className={`text-sm font-semibold ${isLocked ? "text-slate-200" : "text-slate-700 dark:text-gray-200"}`}>
                     {feed.repliesCount.toLocaleString()}
                   </div>

@@ -2,6 +2,7 @@ import { getThreadTitleAndSummary } from "@/lib/domain/threads/content";
 import { FeedPost } from "@/lib/domain/feeds/types";
 import { Address } from "@/types/common";
 import { Account, Post } from "@lens-protocol/client";
+import { updateFeedPostStats } from "@/lib/external/supabase/feed-posts";
 
 interface FeedPostSupabase {
   id: string;
@@ -23,6 +24,16 @@ export const adaptLensPostToFeedPost = async (
   dbPost?: FeedPostSupabase,
 ): Promise<FeedPost> => {
   const { title, summary } = getThreadTitleAndSummary(rootPost);
+  const lensRepliesCount = rootPost.stats.comments || 0;
+
+  // Sync stats from Lens to database if they differ
+  if (dbPost && dbPost.replies_count !== lensRepliesCount) {
+    try {
+      await updateFeedPostStats(rootPost.id, lensRepliesCount, dbPost.views_count);
+    } catch (error) {
+      console.error("Failed to sync post stats:", error);
+    }
+  }
 
   return {
     id: dbPost?.id || rootPost.id,
@@ -30,7 +41,7 @@ export const adaptLensPostToFeedPost = async (
     feedAddress,
     rootPost,
     author: rootPost.author,
-    repliesCount: rootPost.stats.comments || 0,
+    repliesCount: lensRepliesCount,
     viewsCount: dbPost?.views_count || 0,
     isVisible: true,
     created_at: dbPost?.created_at || (rootPost.timestamp ? new Date(rootPost.timestamp).toISOString() : new Date().toISOString()),

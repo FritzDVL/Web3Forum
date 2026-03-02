@@ -9,7 +9,7 @@ import { immutable } from "@lens-chain/storage-client";
 import { Post, SessionClient, evmAddress, postId, uri } from "@lens-protocol/client";
 import { fetchPost, post } from "@lens-protocol/client/actions";
 import { handleOperationWith } from "@lens-protocol/client/viem";
-import { textOnly } from "@lens-protocol/metadata";
+import { article } from "@lens-protocol/metadata";
 import { WalletClient } from "viem";
 
 export interface CreateReplyResult {
@@ -37,8 +37,10 @@ export async function createReply(
       };
     }
 
-    // 1. Create metadata
-    const metadata = textOnly({ content });
+    // 1. Create metadata using article (supports markdown)
+    const metadata = article({
+      content,
+    });
 
     // 2. Upload metadata to storage
     const acl = immutable(lensChain.id);

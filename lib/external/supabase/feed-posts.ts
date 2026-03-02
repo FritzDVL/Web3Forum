@@ -100,3 +100,25 @@ export async function incrementFeedPostRepliesCount(postId: string): Promise<voi
     throw new Error(`Failed to increment replies count: ${error.message}`);
   }
 }
+
+export async function updateFeedPostStats(
+  lensPostId: string,
+  repliesCount: number,
+  viewsCount?: number,
+): Promise<void> {
+  const supabase = await supabaseClient();
+
+  const updates: any = { replies_count: repliesCount };
+  if (viewsCount !== undefined) {
+    updates.views_count = viewsCount;
+  }
+
+  const { error } = await supabase
+    .from("feed_posts")
+    .update(updates)
+    .eq("lens_post_id", lensPostId);
+
+  if (error) {
+    throw new Error(`Failed to update post stats: ${error.message}`);
+  }
+}
