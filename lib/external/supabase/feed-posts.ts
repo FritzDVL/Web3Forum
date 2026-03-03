@@ -12,6 +12,7 @@ interface FeedPostSupabase {
   content: string | null;
   replies_count: number;
   views_count: number;
+  parent_post_id: string | null;
   created_at: string;
   updated_at: string;
 }

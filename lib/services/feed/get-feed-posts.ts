@@ -39,13 +39,17 @@ export async function getFeedPosts(
       };
     }
 
-    // 2. Fetch corresponding DB records (for caching)
+    // 2. Fetch corresponding DB records
     const dbPostsPromises = lensPosts.map(post => fetchFeedPostByLensId(post.id));
     const dbPosts = await Promise.all(dbPostsPromises);
 
-    // 3. Adapt to FeedPost objects
-    const feedPostsPromises = lensPosts.map(async (lensPost, idx) => {
-      const dbPost = dbPosts[idx];
+    // 3. Filter out replies - only show opening posts in feed list
+    const openingPostsData = lensPosts
+      .map((lensPost, idx) => ({ lensPost, dbPost: dbPosts[idx] }))
+      .filter(({ dbPost }) => !dbPost?.parent_post_id);
+
+    // 4. Adapt to FeedPost objects
+    const feedPostsPromises = openingPostsData.map(async ({ lensPost, dbPost }) => {
       return await adaptLensPostToFeedPost(feedId, feedAddress, lensPost as Post, dbPost || undefined);
     });
 

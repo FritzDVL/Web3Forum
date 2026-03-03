@@ -5,12 +5,13 @@ import { lensChain } from "@/lib/external/lens/chain";
 import { client } from "@/lib/external/lens/protocol-client";
 import { Address } from "@/types/common";
 import { immutable } from "@lens-chain/storage-client";
-import { Post, SessionClient, evmAddress, postId, uri } from "@lens-protocol/client";
+import { Post, SessionClient, evmAddress, uri } from "@lens-protocol/client";
 import { fetchPost, post } from "@lens-protocol/client/actions";
 import { handleOperationWith } from "@lens-protocol/client/viem";
 import { article } from "@lens-protocol/metadata";
 import { WalletClient } from "viem";
 import { revalidatePath } from "next/cache";
+import { supabaseClient } from "@/lib/external/supabase/client";
 
 export interface CreateFeedReplyResult {
   success: boolean;
@@ -24,14 +25,16 @@ export interface CreateFeedReplyResult {
 }
 
 export async function createFeedReply(
+  feedId: string,
   parentPostId: string,
   content: string,
   feedAddress: Address,
+  author: Address,
   sessionClient: SessionClient,
   walletClient: WalletClient,
 ): Promise<CreateFeedReplyResult> {
   try {
-    // 1. Create metadata using article (supports markdown)
+    // 1. Create metadata using article (supports markdown and formatting)
     const metadata = article({
       content,
     });
@@ -40,10 +43,9 @@ export async function createFeedReply(
     const acl = immutable(lensChain.id);
     const { uri: replyUri } = await storageClient.uploadAsJson(metadata, { acl });
 
-    // 3. Post to Lens Protocol
+    // 3. Post to Lens Protocol (NO commentOn - regular post)
     const result = await post(sessionClient, {
       contentUri: uri(replyUri),
-      commentOn: { post: postId(parentPostId) },
       feed: evmAddress(feedAddress),
     })
       .andThen(handleOperationWith(walletClient))
@@ -63,7 +65,18 @@ export async function createFeedReply(
 
     const createdPost = result.value as Post;
 
-    // 4. Revalidate paths
+    // 4. Save to database with parent reference
+    const supabase = await supabaseClient();
+    await supabase.from("feed_posts").insert({
+      feed_id: feedId,
+      lens_post_id: createdPost.id,
+      author: author,
+      title: null,
+      content: content,
+      parent_post_id: parentPostId,
+    });
+
+    // 5. Revalidate paths
     revalidatePath(`/commons/${feedAddress}/post/${parentPostId}`);
     revalidatePath(`/commons/${feedAddress}`);
 

@@ -7,18 +7,19 @@ import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, Eye, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Address } from "@/types/common";
-import { ReplyForm } from "./reply-form";
+import { Button } from "@/components/ui/button";
 import { ReplyList } from "./reply-list";
 import ReactMarkdown from "react-markdown";
 import { stripThreadArticleFormatting } from "@/lib/domain/threads/content";
 
 interface PostDetailProps {
   post: FeedPost;
+  feedId: string;
   feedAddress: Address;
   replies: Reply[];
 }
 
-export function PostDetail({ post, feedAddress, replies }: PostDetailProps) {
+export function PostDetail({ post, feedId, feedAddress, replies }: PostDetailProps) {
   const [viewsCount, setViewsCount] = useState(post.viewsCount);
   const authorName = post.author.username?.localName || post.author.address.slice(0, 8);
   const authorHandle = post.author.username?.value || `@${post.author.address.slice(0, 6)}`;
@@ -104,13 +105,15 @@ export function PostDetail({ post, feedAddress, replies }: PostDetailProps) {
 
         {/* Reply Section */}
         <div className="border-t border-slate-200 p-6 dark:border-gray-700">
-          <h2 className="mb-4 text-xl font-semibold text-slate-900 dark:text-gray-100">
-            Replies ({replies.length})
-          </h2>
-          
-          {/* Reply Form */}
-          <div className="mb-6">
-            <ReplyForm postId={post.rootPost.id} feedAddress={feedAddress} />
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-gray-100">
+              Replies ({replies.length})
+            </h2>
+            <Link href={`/commons/${feedAddress}/post/${post.rootPost.id}/reply`}>
+              <Button className="gradient-button">
+                Create Complete Reply
+              </Button>
+            </Link>
           </div>
 
           {/* Reply List */}

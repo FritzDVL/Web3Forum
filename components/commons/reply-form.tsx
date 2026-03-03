@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useReplyCreate } from "@/hooks/replies/use-reply-create";
 import { Address } from "@/types/common";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRouter } from "next/navigation";
@@ -10,44 +9,67 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
 import { revalidateFeedPostPath, revalidateFeedPath } from "@/app/actions/revalidate-path";
+import { createFeedReply } from "@/lib/services/feed/create-feed-reply";
+import { useSessionClient } from "@lens-protocol/react";
+import { useWalletClient } from "wagmi";
+import { toast } from "sonner";
 
 interface ReplyFormProps {
+  feedId: string;
   postId: string;
   feedAddress: Address;
 }
 
-export function ReplyForm({ postId, feedAddress }: ReplyFormProps) {
+export function ReplyForm({ feedId, postId, feedAddress }: ReplyFormProps) {
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editorKey, setEditorKey] = useState(0); // Key to force editor reset
-  const { createReply } = useReplyCreate();
+  const [editorKey, setEditorKey] = useState(0);
   const { isLoggedIn, account } = useAuthStore();
+  const sessionClient = useSessionClient();
+  const walletClient = useWalletClient();
   const router = useRouter();
 
   const handleSubmit = async () => {
     if (!content.trim()) return;
+    
+    if (!sessionClient.data || !walletClient.data || !account) {
+      toast.error("Please connect your wallet and sign in");
+      return;
+    }
 
     setIsSubmitting(true);
+    const loadingToast = toast.loading("Posting your reply...");
+
     try {
-      const reply = await createReply(
+      const result = await createFeedReply(
+        feedId,
         postId,
         content,
         feedAddress,
-        postId, // Using postId as threadId for feeds
+        account.address,
+        sessionClient.data,
+        walletClient.data
       );
 
-      if (reply) {
+      if (result.success) {
+        toast.success("Reply posted!");
         setContent("");
-        setEditorKey(prev => prev + 1); // Reset editor
+        setEditorKey(prev => prev + 1);
         
-        // Revalidate paths to show new reply
+        // Revalidate paths
         await revalidateFeedPostPath(feedAddress, postId);
         await revalidateFeedPath(feedAddress);
         
         // Refresh to show new reply
         router.refresh();
+      } else {
+        toast.error("Failed to post reply", { description: result.error });
       }
+    } catch (error) {
+      console.error("Error creating reply:", error);
+      toast.error("Failed to post reply");
     } finally {
+      toast.dismiss(loadingToast);
       setIsSubmitting(false);
     }
   };

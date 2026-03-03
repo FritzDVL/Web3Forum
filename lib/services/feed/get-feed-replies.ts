@@ -1,6 +1,7 @@
 "use server";
 
-import { fetchCommentsByPostId } from "@/lib/external/lens/primitives/posts";
+import { fetchPostsBatch } from "@/lib/external/lens/primitives/posts";
+import { supabaseClient } from "@/lib/external/supabase/client";
 import { Post } from "@lens-protocol/client";
 
 export interface Reply {
@@ -23,20 +24,40 @@ export interface GetRepliesResult {
 
 export async function getFeedReplies(postId: string): Promise<GetRepliesResult> {
   try {
-    const lensComments = await fetchCommentsByPostId(postId);
+    // 1. Get reply IDs from database
+    const supabase = await supabaseClient();
+    const { data: dbReplies, error: dbError } = await supabase
+      .from("feed_posts")
+      .select("lens_post_id, created_at")
+      .eq("parent_post_id", postId)
+      .order("created_at", { ascending: true });
 
-    const replies: Reply[] = lensComments.map((comment) => {
-      const post = comment as Post;
+    if (dbError) {
+      console.error("Database error fetching replies:", dbError);
+      return { success: false, error: dbError.message };
+    }
+
+    if (!dbReplies || dbReplies.length === 0) {
+      return { success: true, replies: [] };
+    }
+
+    // 2. Fetch actual posts from Lens in batch
+    const replyIds = dbReplies.map(r => r.lens_post_id);
+    const lensPosts = await fetchPostsBatch(replyIds);
+
+    // 3. Map to Reply objects
+    const replies: Reply[] = lensPosts.map((post) => {
+      const lensPost = post as Post;
       return {
-        id: post.id,
+        id: lensPost.id,
         author: {
-          address: post.author.address,
-          username: post.author.username?.localName,
-          handle: post.author.username?.value,
+          address: lensPost.author.address,
+          username: lensPost.author.username?.localName,
+          handle: lensPost.author.username?.value,
         },
-        content: post.metadata?.content || "",
-        timestamp: post.timestamp || new Date().toISOString(),
-        repliesCount: post.stats?.comments || 0,
+        content: lensPost.metadata?.content || "",
+        timestamp: lensPost.timestamp || new Date().toISOString(),
+        repliesCount: lensPost.stats?.comments || 0,
       };
     });
 
