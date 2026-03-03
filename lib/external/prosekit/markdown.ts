@@ -4,6 +4,7 @@ import { rehypeMentionToMarkdownLink } from "@/lib/external/prosekit/helpers/reh
 import { remarkLinkProtocol } from "@/lib/external/prosekit/helpers/remark-link-protocol";
 import rehypeParse from "rehype-parse";
 import rehypeRemark from "rehype-remark";
+import remarkGfm from "remark-gfm";
 import remarkHtml from "remark-html";
 import remarkParse from "remark-parse";
 import remarkStringify from "remark-stringify";
@@ -21,6 +22,7 @@ export const markdownFromHTML = (html: string): string => {
     .use(rehypeJoinParagraph)
     .use(rehypeMentionToMarkdownLink)
     .use(rehypeRemark, { newlines: true })
+    .use(remarkGfm) // Add GFM support for tables, strikethrough, etc.
     .use(remarkLinkProtocol)
     .use(remarkStringify, {
       handlers: { break: customBreakHandler, hardBreak: customBreakHandler },
@@ -32,5 +34,10 @@ export const markdownFromHTML = (html: string): string => {
 };
 
 export const htmlFromMarkdown = (markdown: string): string => {
-  return unified().use(remarkParse).use(remarkHtml).processSync(markdown).toString();
+  return unified()
+    .use(remarkParse)
+    .use(remarkGfm) // Add GFM support for parsing tables
+    .use(remarkHtml)
+    .processSync(markdown)
+    .toString();
 };

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LoginConnectButton } from "@/components/auth/login-connect-button";
@@ -11,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useLogout } from "@/hooks/auth/use-logout";
 import { useSwitchAccount } from "@/hooks/auth/use-switch-account";
 import { useAuthStore } from "@/stores/auth-store";
-import { Bell, Gift, Home, LogOut, Menu, RefreshCw, User, Users, X } from "lucide-react";
+import { Bell, Gift, Home, LogOut, Menu, RefreshCw, User, X } from "lucide-react";
 
 export function NavbarMobile() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -39,18 +38,9 @@ export function NavbarMobile() {
     <nav className="sticky top-0 z-50 w-full max-w-full overflow-x-hidden border-b border-gray-200 bg-white/80 px-4 py-3 shadow-xl backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/80">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="group flex items-center space-x-2">
-          <div className="flex h-8 w-8 items-center justify-center">
-            <Image
-              src="/logo.png"
-              alt="LensForum Logo"
-              width={32}
-              height={32}
-              className="rounded-lg transition-all duration-300 group-hover:shadow-brand-200/50"
-            />
-          </div>
-          <span className="bg-gradient-to-r from-brand-600 to-brand-700 bg-clip-text text-xl font-bold text-transparent transition-all duration-300 group-hover:from-brand-500 group-hover:to-brand-600 group-hover:drop-shadow-sm dark:from-brand-400 dark:to-brand-500">
-            LensForum
+        <Link href="/" className="group flex items-center">
+          <span className="font-custom text-lg font-bold uppercase tracking-wide text-slate-900 dark:text-gray-100 sm:text-xl">
+            SOCIETY PROTOCOL
           </span>
         </Link>
         <div className="flex items-center space-x-2">
@@ -100,19 +90,6 @@ export function NavbarMobile() {
                 >
                   <Home className="mr-2 h-4 w-4" />
                   Home
-                </Button>
-              </Link>
-              <Link href="/communities" className="block px-3">
-                <Button
-                  variant="ghost"
-                  className={`w-full justify-start rounded-full transition-all duration-300 ${
-                    pathname === "/communities"
-                      ? "bg-brand-600 text-white shadow-md hover:bg-brand-700"
-                      : "hover:bg-accent hover:text-accent-foreground"
-                  }`}
-                >
-                  <Users className="mr-2 h-4 w-4" />
-                  Communities
                 </Button>
               </Link>
             </div>

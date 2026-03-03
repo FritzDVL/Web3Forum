@@ -40,8 +40,8 @@ export function RewardsHistory({ distributions, loading, isRewardsAvailable }: R
             className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-600 dark:bg-gray-700"
           >
             <div className="flex items-center gap-3">
-              <div className="rounded-full bg-green-100 p-2 dark:bg-green-900/30">
-                <Calendar className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900/30">
+                <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <p className="font-medium text-gray-900 dark:text-gray-100">{distribution.type}</p>
@@ -57,7 +57,7 @@ export function RewardsHistory({ distributions, loading, isRewardsAvailable }: R
               </div>
             </div>
             <div className="text-right">
-              <p className="font-semibold text-green-700 dark:text-green-300">
+              <p className="font-semibold text-blue-700 dark:text-blue-300">
                 +{parseFloat(distribution.amount).toFixed(5)} {distribution.token}
               </p>
             </div>

@@ -35,8 +35,8 @@ export function ReplyNotificationItem({ notification }: { notification: CommentN
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex items-start justify-between">
             <div className="flex items-center gap-2">
-              <div className="rounded-full bg-green-100 p-1.5 dark:bg-green-900/30">
-                <MessageCircle className="h-4 w-4 text-green-500" />
+              <div className="rounded-full bg-blue-100 p-1.5 dark:bg-blue-900/30">
+                <MessageCircle className="h-4 w-4 text-blue-500" />
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900 group-hover:text-brand-600 dark:text-gray-100">

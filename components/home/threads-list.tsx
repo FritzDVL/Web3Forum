@@ -21,8 +21,8 @@ export function ThreadsList({ threads, loadingThreads, error, activeCategory, se
             <div className="flex items-center gap-2">
               <h2 className="text-2xl font-bold text-slate-900 dark:text-gray-100">Active threads</h2>
               <div className="relative">
-                <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
-                <div className="absolute inset-0 h-2 w-2 animate-ping rounded-full bg-green-400 opacity-75"></div>
+                <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+                <div className="absolute inset-0 h-2 w-2 animate-ping rounded-full bg-blue-400 opacity-75"></div>
               </div>
             </div>
             <p className="mt-1 text-sm text-slate-600 dark:text-gray-400">

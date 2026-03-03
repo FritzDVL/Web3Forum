@@ -47,7 +47,7 @@ export function ProfileRecentActivity({ replies }: ProfileRecentActivityProps) {
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center space-x-4 text-slate-500">
                   <span className="flex items-center gap-1">
-                    <ArrowUp className="h-4 w-4 text-green-500" />
+                    <ArrowUp className="h-4 w-4 text-blue-500" />
                     <span>{reply.post.stats.upvotes || 0}</span>
                   </span>
                   <span className="flex items-center gap-1">

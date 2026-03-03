@@ -22,7 +22,7 @@ const DEFAULT_TIPS: Tip[] = [
 
 export function CommunityCreationTips({ className = "", tips = DEFAULT_TIPS }: CommunityCreationTipsProps) {
   const getIcon = (type: Tip["type"]) => {
-    return type === "positive" ? <span className="text-green-500">✓</span> : <span className="text-red-500">×</span>;
+    return type === "positive" ? <span className="text-blue-500">✓</span> : <span className="text-red-500">×</span>;
   };
 
   return (

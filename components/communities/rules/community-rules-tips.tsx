@@ -55,7 +55,7 @@ export function CommunityRulesTips({ communityRule }: CommunityRulesTipsProps) {
       <CardContent className="space-y-3 text-sm text-foreground">
         {ruleInfo.tips.map((tip, index) => (
           <div key={index} className="flex items-start space-x-2">
-            <span className="text-green-500">✓</span>
+            <span className="text-blue-500">✓</span>
             <span>{tip}</span>
           </div>
         ))}

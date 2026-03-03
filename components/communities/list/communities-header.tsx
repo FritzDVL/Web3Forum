@@ -20,7 +20,7 @@ export function CommunitiesHeader({ total }: CommunitiesHeaderProps) {
             <h1 className="text-3xl font-bold text-foreground">Communities</h1>
             <p className="mt-1 text-muted-foreground">Discover and join communities in the Lens ecosystem</p>
           </div>
-          <Link href="/communities/new">
+          <Link href="/communities/new" className="hidden">
             <Button>Create Community</Button>
           </Link>
         </div>

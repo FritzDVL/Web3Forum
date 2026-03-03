@@ -34,7 +34,7 @@ export function ThreadReplyActions({ replyId, setReplyingTo, canReply, canTip }:
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 px-2 text-xs text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 sm:h-8 sm:px-3 sm:text-sm"
+          className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 sm:h-8 sm:px-3 sm:text-sm"
           onClick={handleReply}
           disabled={!canReply}
         >
@@ -47,7 +47,7 @@ export function ThreadReplyActions({ replyId, setReplyingTo, canReply, canTip }:
       <Button
         variant="ghost"
         size="sm"
-        className={`h-7 px-2 text-xs text-green-600 hover:text-green-700 focus:outline-none dark:text-green-400 dark:hover:text-green-300 sm:h-8 sm:px-2 sm:text-sm ${copied ? "text-green-500" : ""}`}
+        className={`h-7 px-2 text-xs text-blue-600 hover:text-blue-700 focus:outline-none dark:text-blue-400 dark:hover:text-blue-300 sm:h-8 sm:px-2 sm:text-sm ${copied ? "text-blue-500" : ""}`}
         title="Copy reply link"
         onClick={handleCopyLink}
       >

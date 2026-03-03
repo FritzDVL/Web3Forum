@@ -78,10 +78,10 @@ export function ReactionNotificationItem({ notification }: { notification: React
               <div className="flex items-center gap-1">
                 {/* Show reaction icons based on what types we have */}
                 {hasUpvotes && (
-                  <div className="rounded-full bg-green-100 p-1.5 dark:bg-green-900/30">
-                    <ArrowUp className="h-4 w-4 text-green-500" />
+                  <div className="rounded-full bg-blue-100 p-1.5 dark:bg-blue-900/30">
+                    <ArrowUp className="h-4 w-4 text-blue-500" />
                     {upvoteReactions.length > 1 && (
-                      <span className="ml-1 text-xs font-medium text-green-600 dark:text-green-400">
+                      <span className="ml-1 text-xs font-medium text-blue-600 dark:text-blue-400">
                         {upvoteReactions.length}
                       </span>
                     )}

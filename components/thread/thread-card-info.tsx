@@ -37,7 +37,7 @@ export function ThreadCardInfo({ thread }: ThreadCardInfoProps) {
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8 text-sm font-bold">
             <AvatarImage src={thread.author.metadata?.picture || undefined} alt={thread.author.username?.value} />
-            <AvatarFallback className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
               {thread.author.username?.localName[0].toUpperCase()}
             </AvatarFallback>
           </Avatar>

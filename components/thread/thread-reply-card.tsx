@@ -135,7 +135,7 @@ export function ThreadReplyCard({ reply, thread, community }: ThreadReplyCardPro
                         animate={{ opacity: 1, y: 0, scale: 1.1 }}
                         exit={{ opacity: 0, y: 24, scale: 0.8 }}
                         transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
-                        className="pointer-events-none absolute -top-4 left-1/2 -translate-x-1/2 text-xs font-bold text-green-500"
+                        className="pointer-events-none absolute -top-4 left-1/2 -translate-x-1/2 text-xs font-bold text-blue-500"
                         style={{ zIndex: 10 }}
                       >
                         +1

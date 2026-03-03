@@ -35,7 +35,7 @@ export function UnbanMemberDialog({
       <AlertDialogContent className="w-full max-w-md rounded-3xl bg-white p-8 backdrop-blur-sm dark:border-gray-600/60 dark:bg-gray-700">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2 text-2xl font-bold text-foreground">
-            <span className="inline-block rounded-full bg-gradient-to-br from-green-500 to-green-600 p-2 text-white">
+            <span className="inline-block rounded-full bg-gradient-to-br from-blue-500 to-blue-600 p-2 text-white">
               <UserCheck className="h-6 w-6" />
             </span>
             Unban member
@@ -53,7 +53,7 @@ export function UnbanMemberDialog({
           <AlertDialogAction
             onClick={onConfirm}
             disabled={isLoading}
-            className="rounded-full bg-gradient-to-r from-green-500 to-green-600 px-6 py-2 font-semibold text-white transition-all duration-300 hover:scale-105 hover:from-green-600 hover:to-green-700"
+            className="rounded-full bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-2 font-semibold text-white transition-all duration-300 hover:scale-105 hover:from-blue-600 hover:to-blue-700"
           >
             {isLoading ? "Unbanning..." : "Unban member"}
           </AlertDialogAction>
