@@ -720,3 +720,317 @@ Supabase is **NOT** primary storage. It's only used for:
 **Last Updated**: 2026-03-01  
 **Total Implementation Time**: ~10 hours  
 **Production Ready**: YES ✅
+
+
+---
+
+# Commons Reply System - Complete Implementation
+
+**Date**: 2026-03-03  
+**Status**: Production Ready ✅
+
+## The Problem We Solved
+
+The original approach tried to create independent Lens Publications for replies and track relationships only in the local database. This caused critical issues:
+
+1. Lens Protocol didn't know about parent-child relationships
+2. Navigation to individual reply URLs failed
+3. Serialization errors when passing SessionClient/WalletClient to Server Actions
+4. The architecture fought against how Lens Protocol is designed
+
+## The Solution: Hybrid Comment Architecture
+
+We implemented a **hybrid approach** combining Lens-native threading with rich formatting:
+
+### 1. Lens-Native Threading (`commentOn`)
+```typescript
+// create-feed-reply-client.ts
+const result = await post(sessionClient, {
+  contentUri: uri(replyUri),
+  commentOn: { post: postId(parentPostId) },  // ✅ Lens knows the relationship
+  feed: evmAddress(feedAddress),
+})
+```
+
+### 2. Rich Article Metadata
+```typescript
+const metadata = article({
+  content,  // ✅ Full markdown/paragraph support in comments
+});
+```
+
+### 3. Client-Server Separation (Avoiding Serialization Errors)
+```
+CLIENT LAYER (can use complex objects):
+  ├── Component → Hook → Client Service
+  └── Handles: SessionClient, WalletClient, Lens posting
+
+SERVER LAYER (only serializable data):
+  └── Server Action → Database save, path revalidation
+```
+
+## Architecture Pattern (Matches Communities)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    CLIENT LAYER                             │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │ Component (create-reply-form.tsx)                    │  │
+│  │   - Renders UI, handles user input                   │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                          ↓                                  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │ Hook (use-feed-reply-create.ts)                      │  │
+│  │   - Gets sessionClient/walletClient                  │  │
+│  │   - Validates auth                                   │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                          ↓                                  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │ Client Service (create-feed-reply-client.ts)         │  │
+│  │   - Creates article() metadata                       │  │
+│  │   - Uploads to Grove storage                         │  │
+│  │   - Posts to Lens with commentOn                     │  │
+│  │   - Waits for transaction                            │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    SERVER LAYER                             │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │ Server Action (save-feed-reply.ts)                   │  │
+│  │   - Saves to Supabase (serializable data only)      │  │
+│  │   - Revalidates Next.js paths                        │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Complete Data Flow
+
+### Creating a Reply
+
+```
+User Journey:
+  1. Click "Reply" button on post
+  2. Navigate to /commons/[address]/post/[postId]/reply
+  3. Write content in full-page editor
+  4. Click "Post Reply"
+
+Technical Flow:
+  1. Hook gets sessionClient/walletClient from React context
+  2. Client service creates article metadata
+  3. Upload metadata to Grove storage
+  4. Post to Lens Protocol with commentOn
+  5. Wait for transaction confirmation
+  6. Server action saves to database
+  7. Revalidate Next.js cache
+  8. Redirect to post page
+
+Lens Protocol Structure:
+  Publication A (opening post)
+    └─ Comment B (reply with article metadata)
+    └─ Comment C (another reply)
+```
+
+### Fetching Replies
+
+```
+Server Component:
+  getFeedReplies(postId)
+    ↓
+  fetchCommentsByPostId(postId)  ← Direct Lens Protocol query
+    ↓
+  Returns comments with article metadata
+    ↓
+  Client renders with ReactMarkdown
+```
+
+## Key Files Created/Modified
+
+### Client Layer
+```
+├── components/commons/create-reply-form.tsx      (UI component)
+├── hooks/feeds/use-feed-reply-create.ts          (Auth hook)
+└── lib/services/feed/create-feed-reply-client.ts (Lens posting)
+```
+
+### Server Layer
+```
+├── lib/services/feed/save-feed-reply.ts          (DB save)
+└── lib/services/feed/get-feed-replies.ts         (Fetch from Lens)
+```
+
+### Display
+```
+├── components/commons/reply-list.tsx             (Render replies)
+├── components/commons/post-detail.tsx            (Post page)
+└── app/commons/[address]/post/[postId]/reply/page.tsx (Reply editor page)
+```
+
+## Critical Fixes Applied
+
+### 1. Serialization Error Fix
+**Problem:** Passing SessionClient/WalletClient to Server Actions  
+**Solution:** Keep complex objects in client code, only pass strings to server actions
+
+### 2. View Tracking Fix
+**Problem:** PGRST202 error with RPC function  
+**Solution:** Use direct Supabase update instead of RPC
+
+```typescript
+// Before (broken)
+await supabase.rpc("increment_views", { post_id: postId });
+
+// After (working)
+const { data: post } = await supabase
+  .from("feed_posts")
+  .select("views_count")
+  .eq("lens_post_id", postId)
+  .single();
+
+await supabase
+  .from("feed_posts")
+  .update({ views_count: (post.views_count || 0) + 1 })
+  .eq("lens_post_id", postId);
+```
+
+### 3. Type Safety Fix
+**Problem:** Missing `parent_post_id` in TypeScript interfaces  
+**Solution:** Added field to FeedPostSupabase interface
+
+```typescript
+interface FeedPostSupabase {
+  // ... existing fields
+  parent_post_id: string | null;  // Added
+}
+```
+
+### 4. Reply Fetching Fix
+**Problem:** Querying DB for replies instead of Lens  
+**Solution:** Fetch comments directly from Lens Protocol
+
+```typescript
+// Before (broken)
+const { data: dbReplies } = await supabase
+  .from("feed_posts")
+  .select("lens_post_id")
+  .eq("parent_post_id", postId);
+
+// After (working)
+const lensPosts = await fetchCommentsByPostId(postId);
+```
+
+## UI Improvements
+
+### Before
+- Heavy card styling with thick borders
+- Large spacing between elements
+- Generic "Create Complete Reply" button
+- No loading indicators
+- Static reply cards
+- Title field in reply form (unnecessary)
+
+### After
+- ✅ Cleaner, minimal card borders
+- ✅ Tighter, more refined spacing
+- ✅ Icon on reply button (MessageCircle)
+- ✅ Animated loading spinner
+- ✅ Hover effects on reply cards
+- ✅ Better typography hierarchy
+- ✅ Subtle background on reply section
+- ✅ Improved empty state messaging
+- ✅ Removed title field (replies don't need titles)
+
+## Benefits of This Architecture
+
+1. **No Serialization Errors** - Complex objects stay in client code
+2. **Lens Protocol Alignment** - Uses `commentOn` correctly
+3. **Rich Formatting** - Article metadata in comments (not just textOnly)
+4. **Type Safety** - Full TypeScript support throughout
+5. **Proven Pattern** - Same architecture as working Communities feature
+6. **Clean Separation** - Client handles Lens, server handles DB
+7. **Performance** - Direct Lens queries, DB as cache
+8. **Maintainability** - Clear separation of concerns
+
+## Architecture Alignment
+
+This now matches how Communities/Threads work:
+- ✅ Uses `commentOn` for replies
+- ✅ Uses `article()` for rich content
+- ✅ Fetches comments from Lens Protocol
+- ✅ Full markdown/paragraph support
+- ✅ Client-side Lens posting
+- ✅ Server-side DB operations
+
+## Future Enhancement Options
+
+### Possible Improvements
+1. **Inline Reply** - Quick reply box under each post (like Reddit)
+2. **Reply Threading** - Nested replies (replies to replies)
+3. **Draft Saving** - Auto-save drafts to localStorage
+4. **Rich Editor** - Image uploads, mentions, emojis
+5. **Optimistic UI** - Show reply immediately, sync later
+6. **Flat Display** - Show all posts/replies as equal (original vision)
+
+### Flat Hierarchy Implementation (If Desired)
+
+The current architecture supports showing a flat hierarchy in the UI while maintaining proper structure in Lens:
+
+```typescript
+// Instead of filtering out replies in feed list
+const allPosts = await supabase
+  .from("feed_posts")
+  .select("*")
+  .eq("feed_id", feedId)
+  .order("created_at", { ascending: false });
+
+// Display all as equal cards - no visual hierarchy
+allPosts.map(post => <PostCard post={post} showFlat={true} />)
+```
+
+**Benefits of Flat Display:**
+- All posts appear equal in UI
+- Lens Protocol maintains hierarchy underneath
+- Users can "View on Lens" to see actual structure
+- Fast queries from local DB
+- Flexible - can toggle between flat and threaded views
+
+## Lessons Learned
+
+### What Doesn't Work
+❌ Independent publications for replies (Lens doesn't know relationship)  
+❌ Passing SessionClient/WalletClient to Server Actions (serialization error)  
+❌ Querying DB for replies (Lens is source of truth)  
+❌ Using RPC functions without proper PostgREST setup  
+
+### What Works
+✅ Lens comments with `commentOn` (protocol-native threading)  
+✅ Article metadata in comments (rich formatting)  
+✅ Client-side Lens posting (can use complex objects)  
+✅ Server-side DB operations (serializable data only)  
+✅ Direct Lens queries (fetchCommentsByPostId)  
+✅ Hook pattern for auth (matches Communities)  
+
+## Testing Checklist
+
+- [x] Create opening post in feed
+- [x] Click "Reply" button
+- [x] Navigate to reply editor
+- [x] Write content with markdown
+- [x] Submit reply
+- [x] Verify reply appears on post page
+- [x] Verify markdown renders correctly
+- [x] Verify Lens Protocol shows comment relationship
+- [x] Verify view tracking works
+- [x] Verify no serialization errors
+- [x] Build succeeds without errors
+
+## Production Status
+
+**Status**: ✅ Production Ready  
+**Build**: ✅ Successful  
+**Type Checking**: ✅ Passed  
+**Testing**: ✅ Complete  
+
+The Commons reply system is now fully functional and aligned with Lens Protocol best practices.
+
+---

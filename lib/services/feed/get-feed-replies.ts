@@ -1,7 +1,6 @@
 "use server";
 
-import { fetchPostsBatch } from "@/lib/external/lens/primitives/posts";
-import { supabaseClient } from "@/lib/external/supabase/client";
+import { fetchCommentsByPostId } from "@/lib/external/lens/primitives/posts";
 import { Post } from "@lens-protocol/client";
 
 export interface Reply {
@@ -24,28 +23,14 @@ export interface GetRepliesResult {
 
 export async function getFeedReplies(postId: string): Promise<GetRepliesResult> {
   try {
-    // 1. Get reply IDs from database
-    const supabase = await supabaseClient();
-    const { data: dbReplies, error: dbError } = await supabase
-      .from("feed_posts")
-      .select("lens_post_id, created_at")
-      .eq("parent_post_id", postId)
-      .order("created_at", { ascending: true });
+    // Fetch comments directly from Lens Protocol
+    const lensPosts = await fetchCommentsByPostId(postId);
 
-    if (dbError) {
-      console.error("Database error fetching replies:", dbError);
-      return { success: false, error: dbError.message };
-    }
-
-    if (!dbReplies || dbReplies.length === 0) {
+    if (!lensPosts || lensPosts.length === 0) {
       return { success: true, replies: [] };
     }
 
-    // 2. Fetch actual posts from Lens in batch
-    const replyIds = dbReplies.map(r => r.lens_post_id);
-    const lensPosts = await fetchPostsBatch(replyIds);
-
-    // 3. Map to Reply objects
+    // Map to Reply objects
     const replies: Reply[] = lensPosts.map((post) => {
       const lensPost = post as Post;
       return {

@@ -1,17 +1,14 @@
-"use server";
-
 import { storageClient } from "@/lib/external/grove/client";
 import { lensChain } from "@/lib/external/lens/chain";
 import { client } from "@/lib/external/lens/protocol-client";
 import { Address } from "@/types/common";
 import { immutable } from "@lens-chain/storage-client";
-import { Post, SessionClient, evmAddress, uri } from "@lens-protocol/client";
+import { Post, SessionClient, evmAddress, postId, uri } from "@lens-protocol/client";
 import { fetchPost, post } from "@lens-protocol/client/actions";
 import { handleOperationWith } from "@lens-protocol/client/viem";
 import { article } from "@lens-protocol/metadata";
 import { WalletClient } from "viem";
-import { revalidatePath } from "next/cache";
-import { supabaseClient } from "@/lib/external/supabase/client";
+import { saveFeedReplyToDB } from "./save-feed-reply";
 
 export interface CreateFeedReplyResult {
   success: boolean;
@@ -34,18 +31,19 @@ export async function createFeedReply(
   walletClient: WalletClient,
 ): Promise<CreateFeedReplyResult> {
   try {
-    // 1. Create metadata using article (supports markdown and formatting)
-    const metadata = article({
-      content,
-    });
+    console.log("[createFeedReply] Starting reply creation");
+
+    // 1. Create metadata using article
+    const metadata = article({ content });
 
     // 2. Upload metadata to storage
     const acl = immutable(lensChain.id);
     const { uri: replyUri } = await storageClient.uploadAsJson(metadata, { acl });
 
-    // 3. Post to Lens Protocol (NO commentOn - regular post)
+    // 3. Post to Lens Protocol as a COMMENT
     const result = await post(sessionClient, {
       contentUri: uri(replyUri),
+      commentOn: { post: postId(parentPostId) },
       feed: evmAddress(feedAddress),
     })
       .andThen(handleOperationWith(walletClient))
@@ -53,32 +51,20 @@ export async function createFeedReply(
       .andThen((txHash: unknown) => fetchPost(client, { txHash: txHash as string }));
 
     if (result.isErr()) {
-      const errorMessage =
-        result.error && typeof result.error === "object" && "message" in result.error
-          ? (result.error as any).message
-          : "Failed to create reply";
+      console.error("[createFeedReply] Lens post failed:", result.error);
       return {
         success: false,
-        error: errorMessage,
+        error: result.error && typeof result.error === "object" && "message" in result.error
+          ? (result.error as any).message
+          : "Failed to create reply",
       };
     }
 
     const createdPost = result.value as Post;
+    console.log("[createFeedReply] Post created:", createdPost.id);
 
-    // 4. Save to database with parent reference
-    const supabase = await supabaseClient();
-    await supabase.from("feed_posts").insert({
-      feed_id: feedId,
-      lens_post_id: createdPost.id,
-      author: author,
-      title: null,
-      content: content,
-      parent_post_id: parentPostId,
-    });
-
-    // 5. Revalidate paths
-    revalidatePath(`/commons/${feedAddress}/post/${parentPostId}`);
-    revalidatePath(`/commons/${feedAddress}`);
+    // 4. Save to database via server action
+    await saveFeedReplyToDB(feedId, createdPost.id, author, content, parentPostId, feedAddress);
 
     return {
       success: true,
@@ -90,7 +76,7 @@ export async function createFeedReply(
       },
     };
   } catch (error) {
-    console.error("Reply creation failed:", error);
+    console.error("[createFeedReply] Unexpected error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to create reply",

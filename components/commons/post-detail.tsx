@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import { FeedPost } from "@/lib/domain/feeds/types";
 import { Reply } from "@/lib/services/feed/get-feed-replies";
 import { formatDistanceToNow } from "date-fns";
-import { MessageSquare, Eye, ArrowLeft } from "lucide-react";
+import { MessageSquare, Eye, ArrowLeft, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { Address } from "@/types/common";
 import { Button } from "@/components/ui/button";
 import { ReplyList } from "./reply-list";
 import ReactMarkdown from "react-markdown";
 import { stripThreadArticleFormatting } from "@/lib/domain/threads/content";
+import { LikeButton } from "@/components/ui/like-button";
+import { PostId } from "@lens-protocol/client";
 
 interface PostDetailProps {
   post: FeedPost;
@@ -94,8 +96,8 @@ export function PostDetail({ post, feedId, feedAddress, replies }: PostDetailPro
           <div className="prose prose-slate max-w-none dark:prose-invert prose-p:my-4 prose-headings:mt-8 prose-headings:mb-4">
             <ReactMarkdown
               components={{
-                p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
-                br: () => <br className="my-2" />,
+                p: ({ children }) => <p className="mb-4 last:mb-0 whitespace-pre-wrap">{children}</p>,
+                br: () => <br />,
               }}
             >
               {content}
@@ -104,20 +106,25 @@ export function PostDetail({ post, feedId, feedAddress, replies }: PostDetailPro
         </div>
 
         {/* Reply Section */}
-        <div className="border-t border-slate-200 p-6 dark:border-gray-700">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-gray-100">
-              Replies ({replies.length})
+        <div className="p-6">
+          <hr className="mb-6 border-slate-200 dark:border-gray-700" />
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-gray-100">
+              {replies.length} {replies.length === 1 ? "Reply" : "Replies"}
             </h2>
-            <Link href={`/commons/${feedAddress}/post/${post.rootPost.id}/reply`}>
-              <Button className="gradient-button">
-                Create Complete Reply
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <LikeButton postid={post.rootPost.id as PostId} />
+              <Link href={`/commons/${feedAddress}/post/${post.rootPost.id}/reply`}>
+                <Button size="sm" className="gradient-button">
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Reply
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Reply List */}
-          <ReplyList replies={replies} />
+          <ReplyList replies={replies} feedAddress={feedAddress} parentPostId={post.rootPost.id} />
         </div>
       </div>
     </div>

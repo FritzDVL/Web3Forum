@@ -4,6 +4,8 @@ import Link from "next/link";
 import { MessageSquare, Eye } from "lucide-react";
 import { FeedPost } from "@/lib/domain/feeds/types";
 import { formatDistanceToNow } from "date-fns";
+import { LikeButton } from "@/components/ui/like-button";
+import { PostId } from "@lens-protocol/client";
 
 interface FeedPostsListProps {
   feedAddress: string;
@@ -60,15 +62,18 @@ export function FeedPostsList({ feedAddress, posts }: FeedPostsListProps) {
             )}
 
             {/* Post Stats */}
-            <div className="mt-4 flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
-              <div className="flex items-center gap-1">
-                <MessageSquare className="h-4 w-4" />
-                <span>{post.repliesCount} posts</span>
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-1">
+                  <MessageSquare className="h-4 w-4" />
+                  <span>{post.repliesCount} posts</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Eye className="h-4 w-4" />
+                  <span>{post.viewsCount} views</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <Eye className="h-4 w-4" />
-                <span>{post.viewsCount} views</span>
-              </div>
+              <LikeButton postid={post.rootPost.id as PostId} />
             </div>
           </div>
         );
