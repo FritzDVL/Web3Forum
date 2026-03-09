@@ -9,7 +9,7 @@ import { LensProvider } from "@lens-protocol/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { getDefaultConfig } from "connectkit";
 import { WagmiProvider, createConfig, http } from "wagmi";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const env = getCurrentEnv();
 const isMainnet = env === Env.MAINNET;
@@ -28,6 +28,13 @@ const wagmiConfig = createConfig(
     appName: "LensForum",
     appUrl: `${APP_URL}/`,
     appIcon: `${APP_URL}/logo.png`,
+    // Disable Coinbase telemetry
+    walletOptions: {
+      coinbaseWallet: {
+        preference: 'smartWalletOnly',
+        enableMobileWalletLink: false,
+      },
+    },
   }),
 );
 
@@ -43,6 +50,17 @@ const queryClient = new QueryClient({
 
 // Provider component that wraps the application
 export function Web3Provider({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch by only rendering providers after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <>{children}</>;
+  }
+
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
