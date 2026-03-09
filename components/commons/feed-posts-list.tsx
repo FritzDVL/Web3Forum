@@ -5,6 +5,7 @@ import { MessageSquare, Eye } from "lucide-react";
 import { FeedPost } from "@/lib/domain/feeds/types";
 import { formatDistanceToNow } from "date-fns";
 import { LikeButton } from "@/components/ui/like-button";
+import { AvatarProfileLink } from "@/components/notifications/avatar-profile-link";
 import { PostId } from "@lens-protocol/client";
 
 interface FeedPostsListProps {
@@ -36,7 +37,10 @@ export function FeedPostsList({ feedAddress, posts }: FeedPostsListProps) {
             className="rounded-lg border border-slate-200 bg-white p-6 transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
           >
             {/* Post Header */}
-            <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              {/* Avatar */}
+              <AvatarProfileLink author={post.author} />
+              
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-slate-900 hover:text-blue-600 dark:text-gray-100 dark:hover:text-blue-400">
                   <Link href={`/commons/${feedAddress}/post/${post.rootPost.id}`}>
@@ -44,9 +48,12 @@ export function FeedPostsList({ feedAddress, posts }: FeedPostsListProps) {
                   </Link>
                 </h3>
                 <div className="mt-1 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                  <Link 
+                    href={`/u/${authorName}`}
+                    className="font-medium text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+                  >
                     {authorName}
-                  </span>
+                  </Link>
                   <span>{authorHandle}</span>
                   <span>•</span>
                   <span>{timeAgo}</span>
