@@ -35,7 +35,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <AppProvider>
               <Container>{children}</Container>
             </AppProvider>
-            <Toaster />
           </Web3Provider>
         </ThemeProvider>
       </body>

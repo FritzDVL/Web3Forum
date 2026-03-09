@@ -9,7 +9,7 @@ import { LensProvider } from "@lens-protocol/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { getDefaultConfig } from "connectkit";
 import { WagmiProvider, createConfig, http } from "wagmi";
-import { useMemo } from "react";
+import { useState } from "react";
 
 const env = getCurrentEnv();
 const isMainnet = env === Env.MAINNET;
@@ -17,35 +17,34 @@ const isMainnet = env === Env.MAINNET;
 const selectedChain = isMainnet ? chains.mainnet : chains.testnet;
 const selectedRpc = isMainnet ? http("https://rpc.lens.xyz") : http("https://rpc.testnet.lens.dev");
 
-// Create Wagmi config using ConnectKit's default configuration (singleton)
-let wagmiConfig: ReturnType<typeof createConfig> | null = null;
+// Create Wagmi config as a singleton (outside component)
+const wagmiConfig = createConfig(
+  getDefaultConfig({
+    chains: [selectedChain],
+    transports: {
+      [selectedChain.id]: selectedRpc,
+    },
+    walletConnectProjectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "3a8170812b534d0ff9d794f19a901d64",
+    appName: "LensForum",
+    appUrl: `${APP_URL}/`,
+    appIcon: `${APP_URL}/logo.png`,
+  }),
+);
 
-function getWagmiConfig() {
-  if (!wagmiConfig) {
-    wagmiConfig = createConfig(
-      getDefaultConfig({
-        chains: [selectedChain],
-        transports: {
-          [selectedChain.id]: selectedRpc,
-        },
-        walletConnectProjectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || "3a8170812b534d0ff9d794f19a901d64",
-        appName: "LensForum",
-        appUrl: `${APP_URL}/`,
-        appIcon: `${APP_URL}/logo.png`,
-      }),
-    );
-  }
-  return wagmiConfig;
-}
+// Create QueryClient as a singleton (outside component)
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000, // 1 minute
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // Provider component that wraps the application
 export function Web3Provider({ children }: { children: React.ReactNode }) {
-  // Use useMemo to ensure QueryClient is only created once
-  const queryClient = useMemo(() => new QueryClient(), []);
-  const config = useMemo(() => getWagmiConfig(), []);
-
   return (
-    <WagmiProvider config={config}>
+    <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <LensProvider client={client}>
           <ConnectProvider>{children}</ConnectProvider>

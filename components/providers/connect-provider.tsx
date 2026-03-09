@@ -14,6 +14,7 @@ function ConnectMonitor() {
   const { setWalletAddress } = useAuthStore();
 
   // Synchronize wallet connection state with our auth store
+  // Use useEffect to avoid setState during render
   useEffect(() => {
     if (isConnected && address) {
       setWalletAddress(address);
