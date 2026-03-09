@@ -11,12 +11,27 @@ export function useNotifications() {
 
   useEffect(() => {
     const load = async () => {
-      if (sessionClient.loading) return;
+      console.log("🔍 [useNotifications] Starting load...");
+      console.log("  sessionClient.loading:", sessionClient.loading);
+      console.log("  sessionClient.data exists:", !!sessionClient.data);
+      
+      if (sessionClient.loading) {
+        console.log("  ⏳ Session still loading, skipping...");
+        return;
+      }
+      
       setLoading(true);
       setError(null);
-      const { notifications, error } = await getAllNotifications(sessionClient);
-      setNotifications(notifications);
-      setError(error);
+      
+      const result = await getAllNotifications(sessionClient);
+      console.log("📬 [useNotifications] Result:", {
+        notificationCount: result.notifications.length,
+        hasError: !!result.error,
+        error: result.error
+      });
+      
+      setNotifications(result.notifications);
+      setError(result.error);
       setLoading(false);
     };
     load();
