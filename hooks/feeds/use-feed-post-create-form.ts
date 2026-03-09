@@ -37,22 +37,65 @@ export function useFeedPostCreateForm({ feedId, feedAddress }: UseFeedPostCreate
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log("🔍 [CreatePostForm] Submit clicked");
+    console.log("  Form data:", {
+      title: formData.title,
+      summary: formData.summary,
+      contentLength: formData.content.length,
+      tags: tags.length
+    });
+    
+    // Validation
+    if (!formData.title.trim()) {
+      console.error("❌ [CreatePostForm] Title is empty");
+      toast.error("Title Required", { 
+        description: "Please enter a title for your post." 
+      });
+      return;
+    }
+    
+    if (!formData.content.trim()) {
+      console.error("❌ [CreatePostForm] Content is empty");
+      toast.error("Content Required", { 
+        description: "Please write some content for your post." 
+      });
+      return;
+    }
+    
+    if (formData.content.length < 10) {
+      console.error("❌ [CreatePostForm] Content too short");
+      toast.error("Content Too Short", { 
+        description: "Please write at least 10 characters." 
+      });
+      return;
+    }
+    
     if (!account?.address) {
-      toast.error("Authentication Error", { description: "User address not found" });
+      console.error("❌ [CreatePostForm] No account address");
+      toast.error("Authentication Error", { 
+        description: "User address not found. Please log in again." 
+      });
       return;
     }
     
     if (!sessionClient.data || sessionClient.loading) {
-      toast.error("Authentication required", { description: "Please sign in to create a post." });
+      console.error("❌ [CreatePostForm] Not authenticated");
+      toast.error("Authentication Required", { 
+        description: "Please sign in to create a post." 
+      });
       return;
     }
     
     if (!walletClient.data) {
-      toast.error("Connection required", { description: "Please connect your wallet." });
+      console.error("❌ [CreatePostForm] Wallet not connected");
+      toast.error("Wallet Connection Required", { 
+        description: "Please connect your wallet to create a post." 
+      });
       return;
     }
 
     const loadingToast = toast.loading("Creating post...", { description: "Your post is being created." });
+    console.log("🚀 [CreatePostForm] Starting post creation...");
     
     try {
       setIsCreating(true);
@@ -69,14 +112,22 @@ export function useFeedPostCreateForm({ feedId, feedAddress }: UseFeedPostCreate
         feedAddress,
         slug: `${Date.now()}-${formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       };
+      
+      console.log("📊 [CreatePostForm] Article data prepared");
 
       const articleResult = await createThreadArticle(
         articleData,
         sessionClient.data,
         walletClient.data,
       );
+      
+      console.log("📊 [CreatePostForm] Article result:", {
+        success: articleResult.success,
+        hasPost: !!articleResult.post
+      });
 
       if (!articleResult.success || !articleResult.post) {
+        console.error("❌ [CreatePostForm] Article creation failed:", articleResult.error);
         throw new Error(articleResult.error || "Failed to create post");
       }
 

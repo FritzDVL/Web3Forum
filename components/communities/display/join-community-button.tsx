@@ -15,22 +15,37 @@ export function JoinCommunityButton({ community, onStatusChange }: JoinCommunity
   const joinCommunity = useJoinCommunity(community);
   const requestJoin = useJoinCommunity(community);
 
+  console.log("🔍 [JoinCommunityButton] Render:", {
+    communityName: community.name,
+    isLoggedIn,
+    canJoin: community.group.operations?.canJoin.__typename,
+    isBanned: community.group.operations?.isBanned,
+    needsApproval: community.group.membershipApprovalEnabled
+  });
+
   const handleJoinRequest = async () => {
+    console.log("🚀 [JoinCommunityButton] Request join clicked");
     try {
       await requestJoin();
+      console.log("✅ [JoinCommunityButton] Request join successful");
     } catch (error) {
-      console.error("Error requesting to join community:", error);
+      console.error("❌ [JoinCommunityButton] Request join error:", error);
     }
   };
 
   const handleJoin = async () => {
+    console.log("🚀 [JoinCommunityButton] Join clicked");
     try {
       const joined = await joinCommunity();
+      console.log("📊 [JoinCommunityButton] Join result:", joined);
       if (joined) {
+        console.log("✅ [JoinCommunityButton] Join successful, calling onStatusChange");
         onStatusChange();
+      } else {
+        console.log("⚠️ [JoinCommunityButton] Join returned false");
       }
     } catch (error) {
-      console.error("Error joining community:", error);
+      console.error("❌ [JoinCommunityButton] Join error:", error);
     }
   };
 

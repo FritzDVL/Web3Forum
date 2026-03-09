@@ -30,11 +30,16 @@ export function NavbarDesktop() {
   const { switchLensAccount, isLoading: isSwitching } = useSwitchAccount();
 
   const handleSwitchAccount = async (accountToSwitch: any) => {
+    console.log("🔍 [Navbar] Switch account clicked:", accountToSwitch.account.username?.value);
     setSwitchingAccount(accountToSwitch.account.address);
     try {
-      await switchLensAccount(accountToSwitch, () => setShowLensDialog(false));
+      await switchLensAccount(accountToSwitch, () => {
+        console.log("✅ [Navbar] Switch successful, closing dialog");
+        setShowLensDialog(false);
+      });
     } catch (error) {
-      console.error("Error switching account:", error);
+      console.error("❌ [Navbar] Switch account error:", error);
+      // Error is already logged in the hook, just show it here too
     } finally {
       setSwitchingAccount(null);
     }
