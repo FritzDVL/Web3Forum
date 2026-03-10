@@ -57,8 +57,10 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
+  // Don't render anything until mounted to prevent hydration issues
+  // This ensures WagmiProvider is always present when children render
   if (!mounted) {
-    return <>{children}</>;
+    return null;
   }
 
   return (
