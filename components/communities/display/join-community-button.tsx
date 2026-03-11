@@ -50,8 +50,21 @@ export function JoinCommunityButton({ community, onStatusChange }: JoinCommunity
   };
 
   const operations = community.group.operations;
+  
+  // If no operations (unauthenticated), show disabled join button
   if (!operations) {
-    return null;
+    return (
+      <Button
+        disabled={true}
+        size="sm"
+        variant="default"
+        className="h-8 px-3 text-xs font-medium transition-all duration-150"
+      >
+        <LogIn className="mr-1.5 h-3 w-3" />
+        <span className="hidden md:inline">Join</span>
+        <span className="md:hidden">Join</span>
+      </Button>
+    );
   }
 
   if (operations.isBanned) {

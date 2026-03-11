@@ -14,6 +14,16 @@ interface UseFeedPostCreateFormProps {
   feedAddress: Address;
 }
 
+interface FormErrors {
+  title?: string;
+  content?: string;
+}
+
+interface TouchedFields {
+  title: boolean;
+  content: boolean;
+}
+
 export function useFeedPostCreateForm({ feedId, feedAddress }: UseFeedPostCreateFormProps) {
   const [formData, setFormData] = useState<CreateFeedPostFormData>({
     title: "",
@@ -23,6 +33,11 @@ export function useFeedPostCreateForm({ feedId, feedAddress }: UseFeedPostCreate
     author: "" as Address,
   });
   const [isCreating, setIsCreating] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<TouchedFields>({
+    title: false,
+    content: false,
+  });
 
   const { tags, setTags, tagInput, setTagInput, addTag, removeTag, handleTagInputKeyDown } = useTagsInput();
   const { account } = useAuthStore();
@@ -30,48 +45,76 @@ export function useFeedPostCreateForm({ feedId, feedAddress }: UseFeedPostCreate
   const walletClient = useWalletClient();
   const router = useRouter();
 
+  // Validation functions
+  const validateTitle = (value: string): string | undefined => {
+    if (!value.trim()) {
+      return "Title is required";
+    }
+    return undefined;
+  };
+
+  const validateContent = (value: string): string | undefined => {
+    if (!value.trim()) {
+      return "Content is required";
+    }
+    return undefined;
+  };
+
+  const validateField = (field: keyof FormErrors, value: string) => {
+    let error: string | undefined;
+    
+    if (field === "title") {
+      error = validateTitle(value);
+    } else if (field === "content") {
+      error = validateContent(value);
+    }
+    
+    setErrors(prev => ({ ...prev, [field]: error }));
+    return error;
+  };
+
+  const isFormValid = (): boolean => {
+    const titleError = validateTitle(formData.title);
+    const contentError = validateContent(formData.content);
+    return !titleError && !contentError;
+  };
+
   const handleChange = (field: keyof CreateFeedPostFormData, value: string) => {
     setFormData({ ...formData, [field]: value });
+    
+    // Clear error when user starts typing (if field was touched)
+    if (touched[field as keyof TouchedFields] && errors[field as keyof FormErrors]) {
+      validateField(field as keyof FormErrors, value);
+    }
+  };
+
+  const handleBlur = (field: keyof FormErrors) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    validateField(field, formData[field]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log("🔍 [CreatePostForm] Submit clicked");
-    console.log("  Form data:", {
-      title: formData.title,
-      summary: formData.summary,
-      contentLength: formData.content.length,
-      tags: tags.length
+    // Mark all fields as touched
+    setTouched({ title: true, content: true });
+    
+    // Validate all fields
+    const titleError = validateTitle(formData.title);
+    const contentError = validateContent(formData.content);
+    
+    setErrors({
+      title: titleError,
+      content: contentError,
     });
     
-    // Validation
-    if (!formData.title.trim()) {
-      console.error("❌ [CreatePostForm] Title is empty");
-      toast.error("Title Required", { 
-        description: "Please enter a title for your post." 
-      });
-      return;
-    }
-    
-    if (!formData.content.trim()) {
-      console.error("❌ [CreatePostForm] Content is empty");
-      toast.error("Content Required", { 
-        description: "Please write some content for your post." 
-      });
-      return;
-    }
-    
-    if (formData.content.length < 10) {
-      console.error("❌ [CreatePostForm] Content too short");
-      toast.error("Content Too Short", { 
-        description: "Please write at least 10 characters." 
-      });
+    // Stop if validation fails
+    if (titleError || contentError) {
+      toast.error("Please fix the errors before submitting");
       return;
     }
     
     if (!account?.address) {
-      console.error("❌ [CreatePostForm] No account address");
       toast.error("Authentication Error", { 
         description: "User address not found. Please log in again." 
       });
@@ -79,7 +122,6 @@ export function useFeedPostCreateForm({ feedId, feedAddress }: UseFeedPostCreate
     }
     
     if (!sessionClient.data || sessionClient.loading) {
-      console.error("❌ [CreatePostForm] Not authenticated");
       toast.error("Authentication Required", { 
         description: "Please sign in to create a post." 
       });
@@ -87,7 +129,6 @@ export function useFeedPostCreateForm({ feedId, feedAddress }: UseFeedPostCreate
     }
     
     if (!walletClient.data) {
-      console.error("❌ [CreatePostForm] Wallet not connected");
       toast.error("Wallet Connection Required", { 
         description: "Please connect your wallet to create a post." 
       });
@@ -95,7 +136,6 @@ export function useFeedPostCreateForm({ feedId, feedAddress }: UseFeedPostCreate
     }
 
     const loadingToast = toast.loading("Creating post...", { description: "Your post is being created." });
-    console.log("🚀 [CreatePostForm] Starting post creation...");
     
     try {
       setIsCreating(true);
@@ -112,22 +152,14 @@ export function useFeedPostCreateForm({ feedId, feedAddress }: UseFeedPostCreate
         feedAddress,
         slug: `${Date.now()}-${formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       };
-      
-      console.log("📊 [CreatePostForm] Article data prepared");
 
       const articleResult = await createThreadArticle(
         articleData,
         sessionClient.data,
         walletClient.data,
       );
-      
-      console.log("📊 [CreatePostForm] Article result:", {
-        success: articleResult.success,
-        hasPost: !!articleResult.post
-      });
 
       if (!articleResult.success || !articleResult.post) {
-        console.error("❌ [CreatePostForm] Article creation failed:", articleResult.error);
         throw new Error(articleResult.error || "Failed to create post");
       }
 
@@ -154,6 +186,8 @@ export function useFeedPostCreateForm({ feedId, feedAddress }: UseFeedPostCreate
       setFormData({ title: "", summary: "", content: "", tags: "", author: account.address });
       setTags([]);
       setTagInput("");
+      setErrors({});
+      setTouched({ title: false, content: false });
       
       router.push(`/commons/${feedAddress}`);
     } catch (error) {
@@ -178,7 +212,11 @@ export function useFeedPostCreateForm({ feedId, feedAddress }: UseFeedPostCreate
     removeTag,
     handleTagInputKeyDown,
     handleChange,
+    handleBlur,
     handleSubmit,
     isCreating,
+    errors,
+    touched,
+    isFormValid: isFormValid(),
   };
 }

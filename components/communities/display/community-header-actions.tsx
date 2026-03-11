@@ -23,7 +23,7 @@ export function CommunityHeaderActions({ communityAddr }: CommunityHeaderActions
   const sessionClient = useSessionClient();
 
   const refetchCommunity = async () => {
-    if (sessionClient.loading || !sessionClient.data) {
+    if (sessionClient.loading) {
       return;
     }
     try {
@@ -43,7 +43,7 @@ export function CommunityHeaderActions({ communityAddr }: CommunityHeaderActions
 
   const handleDialogOpen = (open: boolean) => setShowLeaveDialog(open);
 
-  if (!isLoggedIn || !community) {
+  if (!community) {
     return null;
   }
 
