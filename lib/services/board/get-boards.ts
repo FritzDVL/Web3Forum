@@ -1,10 +1,14 @@
 "use server";
 
-import { fetchAllFeeds, fetchFeedsByCategory } from "@/lib/external/supabase/feeds";
+import { adaptFeedToBoard } from "@/lib/adapters/board-adapter";
+import { Board } from "@/lib/domain/boards/types";
+import { fetchAllFeeds } from "@/lib/external/supabase/feeds";
 
-export interface FeedSection {
+export interface BoardSection {
   sectionTitle: string;
   category: string;
+  boards: Board[];
+  /** Backward-compatible shape for homepage components (ForumCategory, FunctionGrid) */
   feeds: Array<{
     id: string;
     address: string;
@@ -30,35 +34,36 @@ const CATEGORY_CONFIG: Record<string, { title: string; layout: "list" | "grid"; 
   others: { title: "OTHERS", layout: "list", borderColor: "blue" },
 };
 
-export async function getFeedSections(): Promise<FeedSection[]> {
+export async function getBoardSections(): Promise<BoardSection[]> {
   const allFeeds = await fetchAllFeeds();
-  
   const categories = ["general", "partners", "functions", "technical", "others"];
-  
-  const sections: FeedSection[] = categories.map((category) => {
+
+  const sections: BoardSection[] = categories.map((category) => {
     const categoryFeeds = allFeeds.filter((feed) => feed.category === category);
     const config = CATEGORY_CONFIG[category];
-    
+    const boards = categoryFeeds.map(adaptFeedToBoard);
+
     return {
       sectionTitle: config.title,
       category,
-      feeds: categoryFeeds.map((feed) => ({
-        id: feed.id,
-        address: feed.lens_feed_address,
-        title: feed.title,
-        description: feed.description || "",
-        isLocked: feed.is_locked || false,
-        featured: feed.featured || false,
-        postCount: feed.post_count || 0,
-        repliesCount: feed.replies_count || 0,
-        viewsCount: feed.views_count || 0,
-        lastPostAt: feed.last_post_at || null,
+      boards,
+      feeds: boards.map((b) => ({
+        id: b.id,
+        address: b.feedAddress,
+        title: b.name,
+        description: b.description,
+        isLocked: b.isLocked,
+        featured: false,
+        postCount: b.postCount,
+        repliesCount: b.repliesCount,
+        viewsCount: b.viewsCount,
+        lastPostAt: b.lastPostAt,
       })),
       borderColor: config.borderColor,
       layout: config.layout,
       isLocked: category === "technical",
     };
   });
-  
+
   return sections.filter((section) => section.feeds.length > 0);
 }

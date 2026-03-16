@@ -1,72 +1,60 @@
-import { fetchFeedByAddress } from "@/lib/external/supabase/feeds";
-import { getFeedPosts } from "@/lib/services/feed/get-feed-posts";
+import { getBoard } from "@/lib/services/board/get-board";
+import { getBoardPosts } from "@/lib/services/board/get-board-posts";
 import { StatusBanner } from "@/components/shared/status-banner";
-import { FeedNavActions } from "@/components/commons/feed-nav-actions";
-import { PaginatedFeedPostsList } from "@/components/commons/paginated-feed-posts-list";
+import { BoardNavActions } from "@/components/boards/board-nav-actions";
+import { BoardPostList } from "@/components/boards/board-post-list";
 import { Lock } from "lucide-react";
 
-export default async function FeedPage({ params }: { params: Promise<{ address: string }> }) {
+export default async function BoardPage({ params }: { params: Promise<{ address: string }> }) {
   const { address } = await params;
-  
-  const feed = await fetchFeedByAddress(address);
-  
-  if (!feed) {
+
+  const boardResult = await getBoard(address);
+
+  if (!boardResult.success || !boardResult.board) {
     return (
       <div className="flex min-h-screen items-start justify-center">
         <div className="w-full max-w-md px-4 pt-12">
-          <StatusBanner
-            type="info"
-            title="Feed not found"
-            message="The requested feed does not exist."
-          />
+          <StatusBanner type="info" title="Board not found" message="The requested board does not exist." />
         </div>
       </div>
     );
   }
 
-  // Fetch real posts from Lens Protocol
-  const postsResult = await getFeedPosts(feed.id, address, { limit: 10 });
+  const board = boardResult.board;
+  const postsResult = await getBoardPosts(board, { limit: 10 });
   const posts = postsResult.success ? (postsResult.posts || []) : [];
-  const nextCursor = postsResult.success ? postsResult.nextCursor : null;
-  
+  const nextCursor = postsResult.success ? (postsResult.nextCursor ?? null) : null;
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <FeedNavActions feedAddress={address} isLocked={feed.is_locked} />
-      
-      {/* Feed Header */}
+      <BoardNavActions feedAddress={address} isLocked={board.isLocked} />
+
+      {/* Board Header */}
       <div className="mb-8 rounded-lg border border-slate-200 bg-white p-8 dark:border-gray-700 dark:bg-gray-800">
         <div className="flex items-start gap-4">
-          {feed.is_locked && (
-            <Lock className="h-6 w-6 flex-shrink-0 text-yellow-500" />
-          )}
+          {board.isLocked && <Lock className="h-6 w-6 flex-shrink-0 text-yellow-500" />}
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-gray-100">
-              {feed.title}
-            </h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
-              {feed.description}
-            </p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-gray-100">{board.name}</h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">{board.description}</p>
             <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
               <span className="rounded-full bg-blue-100 px-3 py-1 font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
-                {feed.category}
+                {board.category}
               </span>
               <span>{posts.length}+ posts</span>
             </div>
           </div>
         </div>
-        
-        {feed.is_locked && (
+        {board.isLocked && (
           <div className="mt-6 rounded-md bg-yellow-50 p-4 dark:bg-yellow-900/20">
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              🔒 This feed requires a Society Protocol Pass to post. Read access is public.
+              🔒 This board requires a Society Protocol Pass to post. Read access is public.
             </p>
           </div>
         )}
       </div>
 
-      {/* Feed Posts with Pagination */}
-      <PaginatedFeedPostsList
-        feedId={feed.id}
+      <BoardPostList
+        boardId={board.id}
         feedAddress={address}
         initialPosts={posts}
         initialNextCursor={nextCursor}

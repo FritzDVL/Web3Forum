@@ -1,8 +1,8 @@
-import { getFeedPost } from "@/lib/services/feed/get-feed-post";
-import { getFeedReplies } from "@/lib/services/feed/get-feed-replies";
-import { fetchFeedByAddress } from "@/lib/external/supabase/feeds";
+import { getBoard } from "@/lib/services/board/get-board";
+import { getBoardPost } from "@/lib/services/board/get-board-post";
+import { getBoardPostReplies } from "@/lib/services/board/get-board-post-replies";
 import { StatusBanner } from "@/components/shared/status-banner";
-import { PostDetail } from "@/components/commons/post-detail";
+import { BoardPostDetail } from "@/components/boards/board-post-detail";
 
 export default async function PostDetailPage({
   params,
@@ -11,44 +11,34 @@ export default async function PostDetailPage({
 }) {
   const { address, postId } = await params;
 
-  // Fetch feed metadata
-  const feed = await fetchFeedByAddress(address);
+  const boardResult = await getBoard(address);
 
-  if (!feed) {
+  if (!boardResult.success || !boardResult.board) {
     return (
       <div className="flex min-h-screen items-start justify-center">
         <div className="w-full max-w-md px-4 pt-12">
-          <StatusBanner
-            type="info"
-            title="Feed not found"
-            message="The requested feed does not exist."
-          />
+          <StatusBanner type="info" title="Board not found" message="The requested board does not exist." />
         </div>
       </div>
     );
   }
 
-  // Fetch post and replies in parallel
   const [postResult, repliesResult] = await Promise.all([
-    getFeedPost(feed.id, address, postId),
-    getFeedReplies(postId),
+    getBoardPost(boardResult.board, postId),
+    getBoardPostReplies(postId),
   ]);
 
   if (!postResult.success || !postResult.post) {
     return (
       <div className="flex min-h-screen items-start justify-center">
         <div className="w-full max-w-md px-4 pt-12">
-          <StatusBanner
-            type="error"
-            title="Post not found"
-            message={postResult.error || "The requested post does not exist."}
-          />
+          <StatusBanner type="error" title="Post not found" message={postResult.error || "The requested post does not exist."} />
         </div>
       </div>
     );
   }
 
-  const replies = repliesResult.success ? repliesResult.replies || [] : [];
+  const replies = repliesResult.success ? (repliesResult.replies || []) : [];
 
-  return <PostDetail post={postResult.post} feedAddress={address} replies={replies} />;
+  return <BoardPostDetail post={postResult.post} replies={replies} />;
 }

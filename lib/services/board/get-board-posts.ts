@@ -1,0 +1,61 @@
+"use server";
+
+import { adaptLensPostToBoardPost } from "@/lib/adapters/board-adapter";
+import { Board, BoardPost } from "@/lib/domain/boards/types";
+import { fetchPostsByFeed } from "@/lib/external/lens/primitives/posts";
+import { fetchFeedPostByLensId } from "@/lib/external/supabase/feed-posts";
+import { Post } from "@lens-protocol/client";
+
+export interface GetBoardPostsResult {
+  success: boolean;
+  posts?: BoardPost[];
+  nextCursor?: string | null;
+  prevCursor?: string | null;
+  error?: string;
+}
+
+export async function getBoardPosts(
+  board: Board,
+  options?: { limit?: number; cursor?: string },
+): Promise<GetBoardPostsResult> {
+  try {
+    const lensResult = await fetchPostsByFeed(board.feedAddress, undefined, {
+      sort: "desc",
+      limit: options?.limit || 10,
+      cursor: options?.cursor,
+    });
+
+    const lensPosts = lensResult.posts;
+
+    if (!lensPosts || lensPosts.length === 0) {
+      return { success: true, posts: [], nextCursor: null, prevCursor: null };
+    }
+
+    // Batch fetch DB records for view counts
+    const dbPosts = await Promise.all(
+      lensPosts.map((post) => fetchFeedPostByLensId(post.id)),
+    );
+
+    // Filter out replies — only show root posts in the board list
+    const rootPostsData = lensPosts
+      .map((lensPost, idx) => ({ lensPost, dbPost: dbPosts[idx] }))
+      .filter(({ dbPost }) => !dbPost?.parent_post_id);
+
+    const posts = rootPostsData.map(({ lensPost, dbPost }) =>
+      adaptLensPostToBoardPost(board, lensPost as Post, dbPost || undefined),
+    );
+
+    return {
+      success: true,
+      posts,
+      nextCursor: lensResult.pageInfo?.next ?? null,
+      prevCursor: lensResult.pageInfo?.prev ?? null,
+    };
+  } catch (error) {
+    console.error("Failed to fetch board posts:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to fetch board posts",
+    };
+  }
+}
