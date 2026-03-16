@@ -25,6 +25,7 @@ export function adaptGroupToCommunity(
     moderators: moderators.filter(
       mod => mod.address !== ADMIN_USER_ADDRESS && mod.address !== LENS_CONTRACT_GROUP_MANAGER,
     ),
+    postCount: group.feed.stats?.posts || 0,
     memberCount: groupStats.totalMembers || 0,
     threadsCount: dbCommunity.threads_count || 0,
     isVisible: dbCommunity.visible,
