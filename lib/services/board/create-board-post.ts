@@ -60,7 +60,7 @@ export async function createBoardPost(
     );
 
     // 3. Revalidate paths
-    revalidatePath(`/commons/${board.feedAddress}`);
+    revalidatePath(`/boards/${board.feedAddress}`);
     revalidatePath("/");
 
     return { success: true, postId: articleResult.post.id };

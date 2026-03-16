@@ -32,9 +32,9 @@ export async function revalidateHomePath() {
 }
 
 export async function revalidateFeedPostPath(feedAddress: Address, postId: string) {
-  revalidatePath(`/commons/${feedAddress}/post/${postId}`);
+  revalidatePath(`/boards/${feedAddress}/post/${postId}`);
 }
 
 export async function revalidateFeedPath(feedAddress: Address) {
-  revalidatePath(`/commons/${feedAddress}`);
+  revalidatePath(`/boards/${feedAddress}`);
 }

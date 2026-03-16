@@ -31,7 +31,7 @@ export function BoardPostCard({ post }: BoardPostCardProps) {
           <AvatarProfileLink author={post.author} />
           <div className="min-w-0 flex-1">
             <h3 className="text-lg font-semibold text-slate-900 hover:text-blue-600 dark:text-gray-100 dark:hover:text-blue-400">
-              <Link href={`/commons/${post.board.feedAddress}/post/${post.rootPost.id}`}>
+              <Link href={`/boards/${post.board.feedAddress}/post/${post.rootPost.id}`}>
                 {post.title}
               </Link>
             </h3>

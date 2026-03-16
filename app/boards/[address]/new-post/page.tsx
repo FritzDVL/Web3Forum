@@ -24,7 +24,7 @@ export default async function NewPostPage({ params }: { params: Promise<{ addres
     <ProtectedRoute>
       <div className="mx-auto max-w-4xl px-4 py-8">
         <div className="mb-6">
-          <Link href={`/commons/${address}`}>
+          <Link href={`/boards/${address}`}>
             <Button variant="outline" size="sm">← Back to {boardResult.board.name}</Button>
           </Link>
         </div>

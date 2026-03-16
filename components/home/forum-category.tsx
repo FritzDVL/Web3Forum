@@ -64,7 +64,7 @@ export function ForumCategory({ title, feeds, borderColor = "blue", isLocked = f
         {feeds.map((feed) => (
           <Link
             key={feed.address}
-            href={`/commons/${feed.address}`}
+            href={`/boards/${feed.address}`}
             onClick={handleLockedClick}
             className={`block transition-colors ${isLocked ? "hover:bg-[#252663]" : "hover:bg-slate-50 dark:hover:bg-gray-700/50"}`}
           >

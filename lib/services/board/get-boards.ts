@@ -36,7 +36,7 @@ const CATEGORY_CONFIG: Record<string, { title: string; layout: "list" | "grid"; 
 
 export async function getBoardSections(): Promise<BoardSection[]> {
   const allFeeds = await fetchAllFeeds();
-  const categories = ["general", "partners", "functions", "technical", "others"];
+  const categories = ["general", "functions", "others", "technical", "partners"];
 
   const sections: BoardSection[] = categories.map((category) => {
     const categoryFeeds = allFeeds.filter((feed) => feed.category === category);

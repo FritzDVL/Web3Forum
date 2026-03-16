@@ -42,7 +42,7 @@ export default async function NewReplyPage({
     <ProtectedRoute>
       <div className="mx-auto max-w-4xl px-4 py-8">
         <div className="mb-6">
-          <Link href={`/commons/${address}/post/${postId}`}>
+          <Link href={`/boards/${address}/post/${postId}`}>
             <Button variant="outline" size="sm">← Back to post</Button>
           </Link>
         </div>

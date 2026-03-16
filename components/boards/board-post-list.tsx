@@ -25,7 +25,7 @@ export function BoardPostList({
     if (!nextCursor || isLoading) return;
     setIsLoading(true);
     try {
-      const actions = await import("@/app/commons/[address]/actions") as any;
+      const actions = await import("@/app/boards/[address]/actions") as any;
       const result = await actions.loadMoreBoardPosts(boardId, feedAddress, nextCursor);
       if (result.success && result.posts) {
         setPosts([...posts, ...result.posts]);

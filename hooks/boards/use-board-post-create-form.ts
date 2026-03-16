@@ -123,7 +123,7 @@ export function useBoardPostCreateForm({ board }: { board: Board }) {
       setTagInput("");
       setErrors({});
       setTouched({ title: false, content: false });
-      router.push(`/commons/${board.feedAddress}`);
+      router.push(`/boards/${board.feedAddress}`);
     } catch (error) {
       toast.error("Failed to create post", {
         description: error instanceof Error ? error.message : "An error occurred",

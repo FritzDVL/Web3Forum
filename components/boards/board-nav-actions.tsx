@@ -15,7 +15,7 @@ export function BoardNavActions({ feedAddress, isLocked = false }: BoardNavActio
           ← Back to Home
         </Button>
       </Link>
-      <Link href={`/commons/${feedAddress}/new-post`}>
+      <Link href={`/boards/${feedAddress}/new-post`}>
         <Button
           size="sm"
           className="gap-2"
