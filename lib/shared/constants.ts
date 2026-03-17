@@ -36,6 +36,10 @@ export const GROVE_API_URL = "https://api.grove.storage/";
 
 export const APP_NAME = isTestnet ? "LensForumV1" : "LensForum";
 
+// Research
+export const RESEARCH_GROUP_ADDRESS: Address = "0x7303D4F3e6499C24A1A2902261B848F7bBC6B914";
+export const RESEARCH_FEED_ADDRESS: Address = "0xDfe0F7fdf80Df515D396470e6bB1d8f398ddF25F";
+
 // Paginations
 export const COMMUNITIES_PER_PAGE = 10;
 export const THREADS_PER_PAGE = 10;

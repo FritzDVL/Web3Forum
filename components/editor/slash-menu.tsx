@@ -35,7 +35,7 @@ export default function SlashMenu() {
 
         <SlashMenuItem label="Quote" kbd=">" onSelect={() => editor.commands.setBlockquote()} />
 
-        {/* <SlashMenuItem label="Table" onSelect={() => editor.commands.insertTable({ row: 3, col: 3 })} /> */}
+        <SlashMenuItem label="Table" onSelect={() => editor.commands.insertTable({ row: 3, col: 3 })} />
 
         <SlashMenuItem label="Divider" kbd="---" onSelect={() => editor.commands.insertHorizontalRule()} />
 

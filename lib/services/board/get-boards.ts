@@ -3,6 +3,7 @@
 import { adaptFeedToBoard } from "@/lib/adapters/board-adapter";
 import { Board } from "@/lib/domain/boards/types";
 import { fetchAllFeeds } from "@/lib/external/supabase/feeds";
+import { fetchAllResearchCategories } from "@/lib/external/supabase/research-categories";
 
 export interface BoardSection {
   sectionTitle: string;
@@ -36,7 +37,7 @@ const CATEGORY_CONFIG: Record<string, { title: string; layout: "list" | "grid"; 
 
 export async function getBoardSections(): Promise<BoardSection[]> {
   const allFeeds = await fetchAllFeeds();
-  const categories = ["general", "functions", "others", "technical", "partners"];
+  const categories = ["general", "functions", "others", "partners"];
 
   const sections: BoardSection[] = categories.map((category) => {
     const categoryFeeds = allFeeds.filter((feed) => feed.category === category);
@@ -66,4 +67,31 @@ export async function getBoardSections(): Promise<BoardSection[]> {
   });
 
   return sections.filter((section) => section.feeds.length > 0);
+}
+
+export interface ResearchSection {
+  sectionTitle: string;
+  categories: Array<{
+    slug: string;
+    name: string;
+    description: string;
+    publicationCount: number;
+    viewsCount: number;
+  }>;
+}
+
+export async function getResearchSection(): Promise<ResearchSection | null> {
+  const rows = await fetchAllResearchCategories();
+  if (rows.length === 0) return null;
+
+  return {
+    sectionTitle: "SOCIETY PROTOCOL TECHNICAL SECTION",
+    categories: rows.map((r) => ({
+      slug: r.slug,
+      name: r.name,
+      description: r.description || "",
+      publicationCount: r.publication_count,
+      viewsCount: r.views_count,
+    })),
+  };
 }

@@ -38,3 +38,11 @@ export async function revalidateFeedPostPath(feedAddress: Address, postId: strin
 export async function revalidateFeedPath(feedAddress: Address) {
   revalidatePath(`/boards/${feedAddress}`);
 }
+
+export async function revalidateResearchPath() {
+  revalidatePath("/research");
+}
+
+export async function revalidateResearchThreadPath(threadId: string) {
+  revalidatePath(`/research/thread/${threadId}`);
+}

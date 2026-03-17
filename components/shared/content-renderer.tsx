@@ -4,6 +4,7 @@ import Mention from "@/components/editor/mention";
 import { MediaImage, MediaVideo } from "@lens-protocol/client";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
 
 interface ContentRendererProps {
   content: { content: string; image?: MediaImage; video?: MediaVideo };
@@ -45,7 +46,7 @@ export function ContentRenderer({ content, className }: ContentRendererProps) {
   return (
     <div className={className}>
       <ReactMarkdown
-        remarkPlugins={[remarkBreaks]}
+        remarkPlugins={[remarkBreaks, remarkGfm]}
         components={{
           p: ({ children }) => renderParagraphWithMentions(children),
         }}
