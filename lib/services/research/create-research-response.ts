@@ -1,9 +1,7 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
 import { storageClient } from "@/lib/external/grove/client";
 import { lensChain } from "@/lib/external/lens/chain";
 import { client } from "@/lib/external/lens/protocol-client";
+import { revalidateResearchPath, revalidateResearchThreadPath } from "@/app/actions/revalidate-path";
 import { RESEARCH_FEED_ADDRESS } from "@/lib/shared/constants";
 import {
   persistResearchPublication,
@@ -77,8 +75,8 @@ export async function createResearchResponse(
 
     await incrementRootPostCount(rootLensPostId);
 
-    revalidatePath(`/research/thread/${rootLensPostId}`);
-    revalidatePath("/research");
+    await revalidateResearchThreadPath(rootLensPostId);
+    await revalidateResearchPath();
 
     return { success: true, lensPostId: createdPost.id };
   } catch (error) {

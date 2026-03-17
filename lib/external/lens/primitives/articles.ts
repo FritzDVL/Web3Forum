@@ -60,7 +60,9 @@ export async function createThreadArticle(
     // 1. Build article attributes
     const attributes: any[] = [];
     attributes.push({ key: "author", type: MetadataAttributeType.STRING, value: articleData.author });
-    attributes.push({ key: "subtitle", type: MetadataAttributeType.STRING, value: articleData.summary });
+    if (articleData.summary) {
+      attributes.push({ key: "subtitle", type: MetadataAttributeType.STRING, value: articleData.summary });
+    }
 
     // 2. Add thread content prefix with URL, title and summary
     const threadUrl = `${APP_URL}/thread/${articleData.slug}`;
@@ -144,7 +146,9 @@ export async function updateThreadArticle(
 
     const attributes: any[] = [];
     attributes.push({ key: "author", type: MetadataAttributeType.STRING, value: updateData.author });
-    attributes.push({ key: "subtitle", type: MetadataAttributeType.STRING, value: updateData.summary });
+    if (updateData.summary) {
+      attributes.push({ key: "subtitle", type: MetadataAttributeType.STRING, value: updateData.summary });
+    }
 
     // 2. Create article metadata
     const metadata = article({

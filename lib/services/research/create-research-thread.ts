@@ -1,9 +1,7 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
 import { createThreadArticle } from "@/lib/external/lens/primitives/articles";
 import { persistResearchPublication } from "@/lib/external/supabase/research-publications";
 import { incrementCategoryPublicationCount } from "@/lib/external/supabase/research-categories";
+import { revalidateResearchPath, revalidateHomePath } from "@/app/actions/revalidate-path";
 import { RESEARCH_FEED_ADDRESS } from "@/lib/shared/constants";
 import { SessionClient } from "@lens-protocol/client";
 import { WalletClient } from "viem";
@@ -32,7 +30,7 @@ export async function createResearchThread(
         content: formData.content,
         author: formData.author,
         summary: "",
-        tags: formData.tags.join(","),
+        tags: formData.tags.length > 0 ? formData.tags.join(",") : undefined,
         feedAddress: RESEARCH_FEED_ADDRESS,
         slug: `research-${Date.now()}-${formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40)}`,
       },
@@ -57,8 +55,8 @@ export async function createResearchThread(
 
     await incrementCategoryPublicationCount(formData.categorySlug);
 
-    revalidatePath("/research");
-    revalidatePath("/");
+    await revalidateResearchPath();
+    await revalidateHomePath();
 
     return { success: true, lensPostId: articleResult.post.id };
   } catch (error) {
