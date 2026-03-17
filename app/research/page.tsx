@@ -1,7 +1,6 @@
 import { getResearchThreads } from "@/lib/services/research/get-research-threads";
 import { getResearchCategories } from "@/lib/services/research/get-research-categories";
 import { fetchAllResearchTags } from "@/lib/external/supabase/research-publications";
-import { ResearchNavActions } from "@/components/research/research-nav-actions";
 import { ResearchThreadList } from "@/components/research/research-thread-list";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +26,6 @@ export default async function ResearchPage() {
         </p>
       </div>
 
-      <ResearchNavActions />
       <ResearchThreadList
         initialThreads={threads}
         categories={categories}

@@ -37,7 +37,7 @@ const CATEGORY_CONFIG: Record<string, { title: string; layout: "list" | "grid"; 
 
 export async function getBoardSections(): Promise<BoardSection[]> {
   const allFeeds = await fetchAllFeeds();
-  const categories = ["general", "functions", "others", "partners"];
+  const categories = ["general", "functions", "others"];
 
   const sections: BoardSection[] = categories.map((category) => {
     const categoryFeeds = allFeeds.filter((feed) => feed.category === category);
@@ -93,5 +93,35 @@ export async function getResearchSection(): Promise<ResearchSection | null> {
       publicationCount: r.publication_count,
       viewsCount: r.views_count,
     })),
+  };
+}
+
+export async function getPartnerSection(): Promise<BoardSection | null> {
+  const allFeeds = await fetchAllFeeds();
+  const partnerFeeds = allFeeds.filter((feed) => feed.category === "partners");
+  if (partnerFeeds.length === 0) return null;
+
+  const config = CATEGORY_CONFIG["partners"];
+  const boards = partnerFeeds.map(adaptFeedToBoard);
+
+  return {
+    sectionTitle: config.title,
+    category: "partners",
+    boards,
+    feeds: boards.map((b) => ({
+      id: b.id,
+      address: b.feedAddress,
+      title: b.name,
+      description: b.description,
+      isLocked: b.isLocked,
+      featured: false,
+      postCount: b.postCount,
+      repliesCount: b.repliesCount,
+      viewsCount: b.viewsCount,
+      lastPostAt: b.lastPostAt,
+    })),
+    borderColor: config.borderColor,
+    layout: config.layout,
+    isLocked: false,
   };
 }
