@@ -3,10 +3,11 @@ import { ResearchPost } from "./research-post";
 
 interface ResearchPostListProps {
   publications: ResearchPublication[];
+  threadId: string;
   onReply: (quotedText: string, authorName: string) => void;
 }
 
-export function ResearchPostList({ publications, onReply }: ResearchPostListProps) {
+export function ResearchPostList({ publications, threadId, onReply }: ResearchPostListProps) {
   if (publications.length === 0) {
     return <div className="py-8 text-center text-gray-500">No posts yet.</div>;
   }
@@ -14,7 +15,7 @@ export function ResearchPostList({ publications, onReply }: ResearchPostListProp
   return (
     <div>
       {publications.map((pub) => (
-        <ResearchPost key={pub.lensPostId} publication={pub} onReply={onReply} />
+        <ResearchPost key={pub.lensPostId} publication={pub} threadId={threadId} onReply={onReply} />
       ))}
     </div>
   );

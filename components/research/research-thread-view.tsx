@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { ResearchThread, ResearchPublication } from "@/lib/domain/research/types";
 import { ResearchPostList } from "./research-post-list";
 import { ResearchReplyEditor } from "./research-reply-editor";
@@ -24,6 +24,15 @@ export function ResearchThreadView({ thread, publications }: ResearchThreadViewP
     insertQuote(quotedText, authorName);
     editorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
+
+  // Scroll to post anchor on load (e.g. #post-3)
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash) {
+      const el = document.querySelector(hash);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, []);
 
   return (
     <div>
@@ -55,7 +64,7 @@ export function ResearchThreadView({ thread, publications }: ResearchThreadViewP
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-        <ResearchPostList publications={publications} onReply={handleReply} />
+        <ResearchPostList publications={publications} threadId={thread.lensPostId} onReply={handleReply} />
 
         <div ref={editorRef}>
           <ResearchReplyEditor

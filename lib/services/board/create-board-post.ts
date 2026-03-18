@@ -1,13 +1,11 @@
-"use server";
-
 import { Board } from "@/lib/domain/boards/types";
 import { createThreadArticle } from "@/lib/external/lens/primitives/articles";
 import { fetchAccountFromLens } from "@/lib/external/lens/primitives/accounts";
 import { persistFeedPost } from "@/lib/external/supabase/feed-posts";
+import { revalidateFeedPath, revalidateHomePath } from "@/app/actions/revalidate-path";
 import { Address } from "@/types/common";
 import { SessionClient } from "@lens-protocol/client";
 import { WalletClient } from "viem";
-import { revalidatePath } from "next/cache";
 
 export interface CreateBoardPostResult {
   success: boolean;
@@ -60,8 +58,8 @@ export async function createBoardPost(
     );
 
     // 3. Revalidate paths
-    revalidatePath(`/boards/${board.feedAddress}`);
-    revalidatePath("/");
+    await revalidateFeedPath(board.feedAddress as Address);
+    await revalidateHomePath();
 
     return { success: true, postId: articleResult.post.id };
   } catch (error) {

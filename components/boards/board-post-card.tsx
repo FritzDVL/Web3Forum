@@ -1,7 +1,6 @@
 "use client";
 
 import { AvatarProfileLink } from "@/components/notifications/avatar-profile-link";
-import { BoardPostVoting } from "./board-post-voting";
 import { BoardPost } from "@/lib/domain/boards/types";
 import { LikeButton } from "@/components/ui/like-button";
 import { formatDistanceToNow } from "date-fns";
@@ -20,12 +19,6 @@ export function BoardPostCard({ post }: BoardPostCardProps) {
 
   return (
     <div className="flex gap-3 rounded-lg border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
-      {/* Voting column */}
-      <div className="flex flex-col items-center pt-1">
-        <BoardPostVoting lensPostId={post.rootPost.id} />
-      </div>
-
-      {/* Content column */}
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-3">
           <AvatarProfileLink author={post.author} />

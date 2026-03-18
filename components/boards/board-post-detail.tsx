@@ -6,7 +6,6 @@ import ReactMarkdown from "react-markdown";
 import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, Eye, ArrowLeft } from "lucide-react";
 import { AvatarProfileLink } from "@/components/notifications/avatar-profile-link";
-import { BoardPostVoting } from "./board-post-voting";
 import { BoardReplyList } from "./board-reply-list";
 import { BoardReplyBox } from "./board-reply-box";
 import { LikeButton } from "@/components/ui/like-button";
@@ -56,9 +55,6 @@ export function BoardPostDetail({ post, replies }: BoardPostDetailProps) {
         {/* Post Header */}
         <div className="border-b border-slate-200 p-6 dark:border-gray-700">
           <div className="flex items-start gap-4">
-            <div className="flex flex-col items-center">
-              <BoardPostVoting lensPostId={post.rootPost.id} />
-            </div>
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-slate-900 dark:text-gray-100">{post.title}</h1>
               <div className="mt-4 flex items-center gap-3">

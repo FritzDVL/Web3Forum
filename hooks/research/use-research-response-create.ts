@@ -58,7 +58,7 @@ export function useResearchResponseCreate(rootLensPostId: string) {
     const quotedLines = text.split("\n").map((line) => `> ${line}`).join("\n");
     const quote = `> **@${authorName}** wrote:\n${quotedLines}\n\n`;
     setContent((prev) => quote + prev);
-    setEditorKey((prev) => prev + 1);
+    setTimeout(() => setEditorKey((prev) => prev + 1), 0);
   };
 
   return {
