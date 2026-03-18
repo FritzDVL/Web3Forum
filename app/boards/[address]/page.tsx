@@ -30,22 +30,21 @@ export default async function BoardPage({ params }: { params: Promise<{ address:
       <BoardNavActions feedAddress={address} isLocked={board.isLocked} />
 
       {/* Board Header */}
-      <div className="mb-8 rounded-lg border border-slate-200 bg-white p-8 dark:border-gray-700 dark:bg-gray-800">
-        <div className="flex items-start gap-4">
-          {board.isLocked && <Lock className="h-6 w-6 flex-shrink-0 text-yellow-500" />}
+      <div className="mb-6 rounded-lg border border-slate-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="flex items-start gap-3">
+          {board.isLocked && <Lock className="h-5 w-5 flex-shrink-0 text-yellow-500" />}
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-gray-100">{board.name}</h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">{board.description}</p>
-            <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
-              <span className="rounded-full bg-blue-100 px-3 py-1 font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">{board.name}</h1>
+            <div className="mt-1 flex items-center justify-between">
+              <p className="text-sm text-gray-600 dark:text-gray-400">{board.description}</p>
+              <span className="ml-4 shrink-0 rounded-full bg-blue-100 px-3 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
                 {board.category}
               </span>
-              <span>{posts.length}+ posts</span>
             </div>
           </div>
         </div>
         {board.isLocked && (
-          <div className="mt-6 rounded-md bg-yellow-50 p-4 dark:bg-yellow-900/20">
+          <div className="mt-3 rounded-md bg-yellow-50 p-3 dark:bg-yellow-900/20">
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
               🔒 This board requires a Society Protocol Pass to post. Read access is public.
             </p>

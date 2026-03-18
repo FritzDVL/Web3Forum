@@ -1,10 +1,10 @@
 "use server";
 
 import { adaptLensPostToBoardPost } from "@/lib/adapters/board-adapter";
-import { Board, BoardPost } from "@/lib/domain/boards/types";
-import { fetchPostsByFeed } from "@/lib/external/lens/primitives/posts";
+import { Board, BoardPost, BoardParticipant } from "@/lib/domain/boards/types";
+import { fetchPostsByFeed, fetchCommentsByPostId } from "@/lib/external/lens/primitives/posts";
 import { fetchFeedPostByLensId } from "@/lib/external/supabase/feed-posts";
-import { Post } from "@lens-protocol/client";
+import { Post, postId as toPostId } from "@lens-protocol/client";
 
 export interface GetBoardPostsResult {
   success: boolean;
@@ -45,9 +45,46 @@ export async function getBoardPosts(
       adaptLensPostToBoardPost(board, lensPost as Post, dbPost || undefined),
     );
 
+    // Enrich posts with participants and lastActivityAt
+    const enrichedPosts = await Promise.all(
+      posts.map(async (post) => {
+        try {
+          const comments = await fetchCommentsByPostId(toPostId(post.lensPostId));
+          const filtered = (comments || []).filter((c) => c.id !== post.lensPostId && c.commentOn !== null);
+
+          // Deduplicate reply authors (exclude OP)
+          const seen = new Set<string>([post.author.address]);
+          const participants: BoardParticipant[] = [];
+          for (const c of filtered) {
+            const addr = c.author.address;
+            if (!seen.has(addr) && participants.length < 4) {
+              seen.add(addr);
+              participants.push({
+                address: addr,
+                username: c.author.username?.localName,
+                avatar: c.author.metadata?.picture || undefined,
+              });
+            }
+          }
+
+          const lastComment = filtered.length > 0
+            ? filtered.reduce((latest, c) => (c.timestamp > latest.timestamp ? c : latest))
+            : null;
+
+          return {
+            ...post,
+            participants,
+            lastActivityAt: lastComment?.timestamp || post.createdAt,
+          };
+        } catch {
+          return { ...post, participants: [], lastActivityAt: post.createdAt };
+        }
+      }),
+    );
+
     return {
       success: true,
-      posts,
+      posts: enrichedPosts,
       nextCursor: lensResult.pageInfo?.next ?? null,
       prevCursor: lensResult.pageInfo?.prev ?? null,
     };

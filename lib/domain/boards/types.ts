@@ -1,6 +1,13 @@
 import { Address } from "@/types/common";
 import { Account, Post } from "@lens-protocol/client";
 
+/** Lightweight author info for board post participant avatars */
+export interface BoardParticipant {
+  address: string;
+  username?: string;
+  avatar?: string;
+}
+
 /**
  * A Board is a Lens Feed used as a fixed topic container.
  * Mapped from the `feeds` Supabase table.
@@ -37,6 +44,8 @@ export interface BoardPost {
   createdAt: string;
   updatedAt: string;
   app?: string;
+  participants?: BoardParticipant[];
+  lastActivityAt?: string;
 }
 
 /**

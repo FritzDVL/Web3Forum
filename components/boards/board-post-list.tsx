@@ -49,13 +49,26 @@ export function BoardPostList({
   }
 
   return (
-    <div className="space-y-4">
-      {posts.map((post) => (
-        <BoardPostCard key={post.id} post={post} />
-      ))}
+    <div>
+      <table className="w-full table-fixed border-collapse">
+        <thead>
+          <tr className="border-b-2 border-slate-400 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:border-gray-500 dark:text-gray-400">
+            <th className="w-[58%] pb-3 pr-2">Topic</th>
+            <th className="relative w-[12%] pb-3 text-center before:absolute before:left-0 before:top-1/2 before:h-[60%] before:-translate-y-1/2 before:border-l before:border-slate-300 dark:before:border-gray-600">Started by</th>
+            <th className="relative w-[10%] pb-3 text-center before:absolute before:left-0 before:top-1/2 before:h-[60%] before:-translate-y-1/2 before:border-l before:border-slate-300 dark:before:border-gray-600">Replies</th>
+            <th className="relative w-[10%] pb-3 text-center before:absolute before:left-0 before:top-1/2 before:h-[60%] before:-translate-y-1/2 before:border-l before:border-slate-300 dark:before:border-gray-600">Views</th>
+            <th className="relative w-[10%] pb-3 text-center before:absolute before:left-0 before:top-1/2 before:h-[60%] before:-translate-y-1/2 before:border-l before:border-slate-300 dark:before:border-gray-600">Activity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {posts.map((post) => (
+            <BoardPostCard key={post.id} post={post} />
+          ))}
+        </tbody>
+      </table>
 
       {nextCursor && (
-        <div className="flex justify-center pt-4">
+        <div className="flex justify-center pt-6">
           <button
             onClick={handleLoadMore}
             disabled={isLoading}
