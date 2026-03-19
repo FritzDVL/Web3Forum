@@ -16,7 +16,7 @@ export default async function ResearchPage() {
   const categories = categoriesResult.success ? (categoriesResult.categories || []) : [];
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-gray-100">
           Society Protocol Research
