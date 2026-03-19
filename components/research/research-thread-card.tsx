@@ -26,7 +26,7 @@ export function ResearchThreadCard({ thread }: ResearchThreadCardProps) {
 
   return (
     <tr className="border-b border-slate-300 transition-colors hover:bg-slate-50 dark:border-gray-600 dark:hover:bg-gray-800/50">
-      <td className="w-[58%] py-3 pr-2">
+      <td className="w-[58%] py-5 pr-2">
         <Link href={`/research/thread/${thread.lensPostId}`} className="text-lg font-medium text-slate-900 hover:text-blue-600 dark:text-gray-100 dark:hover:text-blue-400">
           {thread.title}
         </Link>
@@ -41,7 +41,7 @@ export function ResearchThreadCard({ thread }: ResearchThreadCardProps) {
           ))}
         </div>
       </td>
-      <td className="w-[12%] py-3 text-center text-sm text-gray-600 dark:text-gray-400">
+      <td className="w-[12%] py-5 text-center text-sm text-gray-600 dark:text-gray-400">
         <Link href={`/u/${authorName}`} className="inline-flex items-center gap-1.5 hover:text-blue-600 dark:hover:text-blue-400">
           <Avatar className="h-5 w-5">
             <AvatarImage src={avatarUrl} />
@@ -52,13 +52,13 @@ export function ResearchThreadCard({ thread }: ResearchThreadCardProps) {
           {authorName}
         </Link>
       </td>
-      <td className="w-[10%] py-3 text-center text-sm text-gray-500 dark:text-gray-400">
+      <td className="w-[10%] py-5 text-center text-sm text-gray-500 dark:text-gray-400">
         {thread.totalPosts}
       </td>
-      <td className="w-[10%] py-3 text-center text-sm text-gray-500 dark:text-gray-400">
+      <td className="w-[10%] py-5 text-center text-sm text-gray-500 dark:text-gray-400">
         {thread.viewsCount}
       </td>
-      <td className="w-[10%] py-3 text-center text-sm text-gray-500 dark:text-gray-400">
+      <td className="w-[10%] py-5 text-center text-sm text-gray-500 dark:text-gray-400">
         {formatCompactTime(thread.lastActivityAt || thread.createdAt)}
       </td>
     </tr>

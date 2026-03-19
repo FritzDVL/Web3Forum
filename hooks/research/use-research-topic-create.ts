@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { useSessionClient } from "@lens-protocol/react";
 import { useWalletClient } from "wagmi";
-import { useTagsInput } from "@/hooks/forms/use-tags-input";
 import { createResearchThread } from "@/lib/services/research/create-research-thread";
 import { toast } from "sonner";
 import { ResearchCategory } from "@/lib/domain/research/types";
@@ -20,11 +19,11 @@ export function useResearchTopicCreate(categories: ResearchCategory[]) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [categorySlug, setCategorySlug] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const { tags, setTags, tagInput, setTagInput, addTag, removeTag, handleTagInputKeyDown } = useTagsInput();
   const { account } = useAuthStore();
   const sessionClient = useSessionClient();
   const walletClient = useWalletClient();
@@ -91,9 +90,8 @@ export function useResearchTopicCreate(categories: ResearchCategory[]) {
     title, setTitle,
     content, setContent,
     categorySlug, setCategorySlug,
-    tags, tagInput, setTagInput, addTag, removeTag, handleTagInputKeyDown,
+    tags, setTags,
     handleBlur, handleSubmit,
     isCreating, errors, touched, isFormValid,
-    categories,
   };
 }
