@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ContentRenderer } from "@/components/shared/content-renderer";
-import { ReplyVoting } from "@/components/reply/reply-voting";
+import { LikeButton } from "@/components/ui/like-button";
 import { Reply } from "@/lib/domain/replies/types";
 import { getReplyContent } from "@/lib/domain/replies/content";
 import { useReplyCreate } from "@/hooks/replies/use-reply-create";
@@ -68,11 +68,6 @@ export function BoardReplyCard({ reply, boardFeedAddress, rootPostId }: BoardRep
     <div className="space-y-2" id={reply.id}>
       <div className="rounded-lg bg-white p-3 shadow-sm dark:border-gray-700/60 dark:bg-gray-800 sm:p-4">
         <div className="flex items-start gap-2 sm:gap-3">
-          {/* Voting */}
-          <div className="flex flex-col items-center">
-            <ReplyVoting postid={postId(reply.id)} />
-          </div>
-
           <div className="min-w-0 flex-1">
             {/* Author row */}
             <div className="mb-3 flex items-center justify-between">
@@ -114,17 +109,20 @@ export function BoardReplyCard({ reply, boardFeedAddress, rootPostId }: BoardRep
                   </Button>
                 )}
               </div>
-              {canReply && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowReplyBox(true)}
-                  className="h-auto p-1 text-xs"
-                >
-                  <MessageCircle className="mr-1 h-3 w-3" />
-                  Reply
-                </Button>
-              )}
+              <div className="flex items-center gap-1">
+                {canReply && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowReplyBox(true)}
+                    className="h-auto p-1 text-xs"
+                  >
+                    <MessageCircle className="mr-1 h-3 w-3" />
+                    Reply
+                  </Button>
+                )}
+                <LikeButton postid={postId(reply.id)} />
+              </div>
             </div>
 
             {/* Inline reply box */}

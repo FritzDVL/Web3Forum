@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ReplyVoting } from "../reply/reply-voting";
+import { LikeButton } from "@/components/ui/like-button";
 import { ThreadReplyBox } from "./thread-reply-box";
 import { ThreadReplyModeratorActions } from "./thread-reply-moderator-actions";
 import { ContentRenderer } from "@/components/shared/content-renderer";
@@ -88,16 +88,12 @@ export function ThreadReplyCard({ reply, thread, community }: ThreadReplyCardPro
   }, [showPlusOne]);
 
   const canReply = reply.post.operations?.canComment.__typename === "PostOperationValidationPassed";
-  const canTip = reply.post.operations?.canTip;
 
   return (
     <div className="space-y-2" id={reply.id}>
       <Card className="rounded-lg bg-white shadow-sm dark:border-gray-700/60 dark:bg-gray-800">
         <CardContent className="p-3 sm:p-4">
           <div className="flex items-start gap-2 sm:gap-3">
-            <div className="flex flex-col items-center">
-              <ReplyVoting postid={postId(reply.id)} />
-            </div>
             <div className="min-w-0 flex-1">
               {/* Top row: author info and show context button at top right */}
               <div className="relative mb-3 flex flex-col gap-1 sm:mb-6 sm:flex-row sm:items-center sm:gap-2">
@@ -157,13 +153,13 @@ export function ThreadReplyCard({ reply, thread, community }: ThreadReplyCardPro
                     </Button>
                   )}
                 </div>
-                <div className="flex w-full justify-end sm:w-auto">
+                <div className="flex w-full items-center justify-end gap-1 sm:w-auto">
                   <ThreadReplyActions
                     replyId={reply.id}
                     setReplyingTo={() => setShowReplyBox(true)}
                     canReply={canReply}
-                    canTip={!!canTip}
                   />
+                  <LikeButton postid={postId(reply.id)} />
                 </div>
               </div>
               {showReplyBox && (

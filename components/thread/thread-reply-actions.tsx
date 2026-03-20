@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { TipGhoPopover } from "@/components/shared/tip-gho-popover";
 import { Button } from "@/components/ui/button";
-import { PostId } from "@lens-protocol/client";
 import { Reply } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,10 +7,9 @@ interface ThreadReplyActionsProps {
   replyId: string;
   setReplyingTo?: (id: string | null) => void;
   canReply: boolean;
-  canTip: boolean;
 }
 
-export function ThreadReplyActions({ replyId, setReplyingTo, canReply, canTip }: ThreadReplyActionsProps) {
+export function ThreadReplyActions({ replyId, setReplyingTo, canReply }: ThreadReplyActionsProps) {
   const [copied, setCopied] = useState(false);
 
   const handleReply = () => {
@@ -43,7 +40,6 @@ export function ThreadReplyActions({ replyId, setReplyingTo, canReply, canTip }:
           <span className="sm:hidden">Rep</span>
         </Button>
       )}
-      {canTip && <TipGhoPopover to={replyId as PostId} />}
       <Button
         variant="ghost"
         size="sm"

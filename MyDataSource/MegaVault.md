@@ -2433,6 +2433,12 @@ import { WalletClient } from "viem";
 
 // File: lib/services/feed/create-feed-reply.ts
 
+// File: lib/services/feed/create-feed-reply.ts
+
+// File: lib/services/feed/create-feed-reply.ts
+
+// File: lib/services/feed/create-feed-reply.ts
+
 export interface CreateFeedReplyResult {
   success: boolean;
   reply?: {
@@ -2532,6 +2538,12 @@ import { fetchPostsByFeed } from "@/lib/external/lens/primitives/posts";
 import { fetchFeedPostByLensId, fetchFeedPosts } from "@/lib/external/supabase/feed-posts";
 import { Address } from "@/types/common";
 import { Post } from "@lens-protocol/client";
+
+// File: lib/services/feed/get-feed-posts.ts
+
+// File: lib/services/feed/get-feed-posts.ts
+
+// File: lib/services/feed/get-feed-posts.ts
 
 // File: lib/services/feed/get-feed-posts.ts
 
@@ -2690,6 +2702,12 @@ import { Post } from "@lens-protocol/client";
 
 // File: lib/services/feed/get-feed-replies.ts
 
+// File: lib/services/feed/get-feed-replies.ts
+
+// File: lib/services/feed/get-feed-replies.ts
+
+// File: lib/services/feed/get-feed-replies.ts
+
 export interface Reply {
   id: string;
   author: {
@@ -2773,6 +2791,12 @@ import { useSessionClient } from "@/hooks/lens/use-session-client";
 import { createFeedReply } from "@/lib/services/feed/create-feed-reply";
 import { Address } from "@/types/common";
 import { useAccount, useWalletClient } from "wagmi";
+
+// File: hooks/feeds/use-feed-reply-form.ts (NEW FILE)
+
+// File: hooks/feeds/use-feed-reply-form.ts (NEW FILE)
+
+// File: hooks/feeds/use-feed-reply-form.ts (NEW FILE)
 
 // File: hooks/feeds/use-feed-reply-form.ts (NEW FILE)
 
@@ -15143,3 +15167,3786 @@ Rendering lives in:
 components/shared/content-renderer.tsx  — Markdown → HTML display
 lib/external/prosekit/markdown.ts       — HTML ↔ Markdown conversion
 ```
+
+# Understanding Lens Protocol Integration (For Beginners)
+
+**Your Question:** "How does the integration work for each Lens feed? I'm a code beginner and want to understand the whole structure."
+
+---
+
+## 🎯 The Simple Answer
+
+Think of your app like this:
+
+```
+Your App = The Interface (what users see)
+Lens Protocol = The Database (where data lives)
+Your Supabase = The Cache (for speed)
+```
+
+**Example:**
+
+- When you like a post → saved to Lens blockchain (permanent)
+- When you view a feed → reads from Lens + your cache (fast)
+- When you create a post → written to Lens (decentralized)
+
+---
+
+## 📚 What is Lens Protocol?
+
+### The Simple Explanation
+
+Imagine if Twitter was:
+
+- Not owned by anyone
+- Your tweets lived forever
+- You owned your followers
+- Any app could read your tweets
+- No one could ban you
+
+**That's Lens Protocol!**
+
+### How It Works
+
+```
+Traditional Social Media:
+You → Twitter's Servers → Twitter's Database
+     (They own everything)
+
+Lens Protocol:
+You → Your Wallet → Blockchain → Permanent Storage
+     (You own everything)
+```
+
+---
+
+## 🏗️ Your App's Architecture
+
+### The Three Layers
+
+```
+┌─────────────────────────────────────┐
+│   LAYER 1: UI (What Users See)      │
+│   - React Components                │
+│   - Buttons, Forms, Lists           │
+│   - File: components/               │
+└─────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────┐
+│   LAYER 2: Logic (How It Works)     │
+│   - React Hooks                     │
+│   - Business Rules                  │
+│   - File: hooks/                    │
+└─────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────┐
+│   LAYER 3: Data (Where It Lives)    │
+│   - Lens Protocol (blockchain)      │
+│   - Supabase (your database)        │
+│   - File: lib/external/             │
+└─────────────────────────────────────┘
+```
+
+---
+
+## 🔍 Example: How a Feed Works
+
+Let's trace what happens when someone visits `/commons/feed-20`:
+
+### Step 1: User Types URL
+
+```
+User browser: https://yourapp.com/commons/feed-20
+```
+
+### Step 2: Next.js Loads Page
+
+```typescript
+// File: app/commons/[address]/page.tsx
+
+export default async function FeedPage({ params }) {
+  const { address } = await params; // address = "feed-20"
+
+  // This function runs on your server
+  // ...
+}
+```
+
+### Step 3: Fetch Feed Info (From Your Database)
+
+```typescript
+// Get feed metadata from Supabase
+const feed = await fetchFeedByAddress("feed-20");
+
+// Returns:
+{
+  id: "feed-20",
+  title: "General Discussion",
+  description: "Talk about anything",
+  category: "general",
+  is_locked: false
+}
+```
+
+**Why your database?**
+
+- Fast (no blockchain query needed)
+- You control the metadata
+- Can add custom fields
+
+### Step 4: Fetch Posts (From Lens Protocol)
+
+```typescript
+// Get posts from Lens blockchain
+const postsResult = await getFeedPosts(feed.id, address);
+
+// This calls Lens Protocol API
+// Returns array of posts with:
+{
+  id: "0x01-0x02",
+  author: {
+    username: "john",
+    address: "0x123...",
+    metadata: { picture: "...", name: "John" }
+  },
+  content: "Post content here",
+  stats: {
+    upvotes: 23,
+    comments: 5,
+    views: 120
+  }
+}
+```
+
+**Why Lens Protocol?**
+
+- Decentralized (no single point of failure)
+- Permanent (can't be deleted)
+- Owned by users (not your company)
+
+### Step 5: Combine & Display
+
+```typescript
+return (
+  <div>
+    {/* Feed info from your DB */}
+    <h1>{feed.title}</h1>
+    <p>{feed.description}</p>
+
+    {/* Posts from Lens */}
+    <FeedPostsList posts={posts} />
+  </div>
+);
+```
+
+### Step 6: User Sees Page
+
+```
+┌─────────────────────────────────────┐
+│ General Discussion                  │ ← From your DB
+│ Talk about anything                 │ ← From your DB
+│ general • 10+ posts                 │ ← From your DB
+├─────────────────────────────────────┤
+│ [Avatar] John @john                 │ ← From Lens
+│ Post Title                          │ ← From Lens
+│ Post content...                     │ ← From Lens
+│ 💬 5  👁 120  ❤️ 23                │ ← From Lens
+└─────────────────────────────────────┘
+```
+
+---
+
+## 🔄 The Data Flow (Visual)
+
+### Reading Data (Viewing a Feed)
+
+```
+User clicks feed
+    ↓
+Next.js page loads
+    ↓
+┌─────────────────────┐
+│ Fetch feed metadata │ → Your Supabase DB
+│ (title, description)│   (Fast, 50ms)
+└─────────────────────┘
+    ↓
+┌─────────────────────┐
+│ Fetch posts         │ → Lens Protocol API
+│ (content, authors)  │   (Slower, 500ms)
+└─────────────────────┘
+    ↓
+Combine both
+    ↓
+Render page
+    ↓
+User sees content
+```
+
+### Writing Data (Liking a Post)
+
+```
+User clicks heart
+    ↓
+Check if logged in
+    ↓
+Check if wallet connected
+    ↓
+Call Lens Protocol API
+    ↓
+┌─────────────────────┐
+│ addReaction()       │ → Lens Protocol
+│                     │   (Writes to blockchain)
+└─────────────────────┘
+    ↓
+Wait for confirmation
+    ↓
+Update UI (heart fills)
+    ↓
+Show success message
+```
+
+---
+
+## 🧩 The Key Files Explained
+
+### 1. Page Files (Entry Points)
+
+```
+app/commons/[address]/page.tsx
+```
+
+**What it does:**
+
+- Receives the URL parameter (feed address)
+- Fetches data from both sources
+- Renders the page
+
+**Think of it as:** The "controller" that coordinates everything
+
+### 2. Component Files (UI)
+
+```
+components/commons/feed-posts-list.tsx
+```
+
+**What it does:**
+
+- Receives data as props
+- Displays posts in a nice format
+- Handles user interactions (clicks)
+
+**Think of it as:** The "view" that shows things to users
+
+### 3. Hook Files (Logic)
+
+```
+hooks/common/use-voting.ts
+```
+
+**What it does:**
+
+- Contains the voting logic
+- Talks to Lens Protocol
+- Manages state (liked/not liked)
+
+**Think of it as:** The "brain" that makes decisions
+
+### 4. Service Files (Data Access)
+
+```
+lib/services/feed/get-feed-posts.ts
+```
+
+**What it does:**
+
+- Fetches data from Lens Protocol
+- Fetches data from your database
+- Combines and formats the data
+
+**Think of it as:** The "messenger" that gets data
+
+### 5. External Files (APIs)
+
+```
+lib/external/lens/protocol-client.ts
+lib/external/supabase/feeds.ts
+```
+
+**What it does:**
+
+- Connects to external services
+- Handles authentication
+- Makes API calls
+
+**Think of it as:** The "connector" to outside world
+
+---
+
+## 🎨 How Components Talk to Each Other
+
+### Example: The Heart Button
+
+```
+┌──────────────────────────────────────┐
+│ FeedPostsList Component              │
+│ (Shows list of posts)                │
+│                                      │
+│  ┌────────────────────────────────┐ │
+│  │ LikeButton Component           │ │
+│  │ (Shows heart)                  │ │
+│  │                                │ │
+│  │  ┌──────────────────────────┐ │ │
+│  │  │ useVoting Hook           │ │ │
+│  │  │ (Handles logic)          │ │ │
+│  │  │                          │ │ │
+│  │  │  ┌────────────────────┐ │ │ │
+│  │  │  │ Lens Protocol API  │ │ │ │
+│  │  │  │ (Saves to chain)   │ │ │ │
+│  │  │  └────────────────────┘ │ │ │
+│  │  └──────────────────────────┘ │ │
+│  └────────────────────────────────┘ │
+└──────────────────────────────────────┘
+```
+
+**The flow:**
+
+1. User sees heart (LikeButton component)
+2. User clicks heart (onClick event)
+3. Component calls hook (useVoting)
+4. Hook calls Lens API (addReaction)
+5. Lens saves to blockchain
+6. Hook updates state
+7. Component re-renders
+8. User sees filled heart
+
+---
+
+## 🔐 Authentication Flow
+
+### How Users Log In
+
+```
+1. User clicks "Connect Wallet"
+   ↓
+2. MetaMask (or other wallet) opens
+   ↓
+3. User approves connection
+   ↓
+4. App gets wallet address
+   ↓
+5. App asks Lens: "Who owns this wallet?"
+   ↓
+6. Lens returns: "John (@john)"
+   ↓
+7. User is now logged in as John
+   ↓
+8. App stores session
+   ↓
+9. User can now like, post, comment
+```
+
+### The Code Behind It
+
+```typescript
+// File: hooks/auth/use-login.ts
+
+export function useLogin() {
+  const login = async lensAccount => {
+    // 1. Get wallet client
+    const wallet = await getWalletClient();
+
+    // 2. Sign message with wallet
+    const signature = await wallet.signMessage("Login to Lens");
+
+    // 3. Send to Lens Protocol
+    const session = await lensLogin({ signature });
+
+    // 4. Save session
+    setLensSession(session);
+
+    // 5. User is logged in!
+  };
+
+  return { login };
+}
+```
+
+---
+
+## 🎯 Why This Architecture?
+
+### The Benefits
+
+**1. Decentralization**
+
+- No single point of failure
+- Can't be shut down
+- Users own their data
+
+**2. Interoperability**
+
+- Other apps can read your posts
+- Users can switch apps easily
+- Network effects
+
+**3. Permanence**
+
+- Posts can't be deleted (by anyone)
+- History is preserved
+- Censorship-resistant
+
+**4. Ownership**
+
+- Users own their followers
+- Users own their content
+- Users control their data
+
+### The Trade-offs
+
+**Slower:**
+
+- Blockchain queries take time
+- Need to cache in your DB
+
+**More Complex:**
+
+- Two data sources (Lens + your DB)
+- Authentication is harder
+- Need wallet integration
+
+**Less Control:**
+
+- Can't delete posts
+- Can't ban users (easily)
+- Can't change history
+
+---
+
+## 🛠️ How to Add a New Feature
+
+Let's say you want to add a "bookmark" feature:
+
+### Step 1: Check if Lens Supports It
+
+```
+Look at Lens Protocol docs
+→ Yes, they have "bookmarks" API
+```
+
+### Step 2: Create a Hook
+
+```typescript
+// File: hooks/common/use-bookmark.ts
+
+export function useBookmark({ postId }) {
+  const [isBookmarked, setIsBookmarked] = useState(false);
+
+  const toggleBookmark = async () => {
+    if (isBookmarked) {
+      await removeBookmark(sessionClient, { post: postId });
+    } else {
+      await addBookmark(sessionClient, { post: postId });
+    }
+    setIsBookmarked(!isBookmarked);
+  };
+
+  return { isBookmarked, toggleBookmark };
+}
+```
+
+### Step 3: Create a Component
+
+```typescript
+// File: components/ui/bookmark-button.tsx
+
+export function BookmarkButton({ postId }) {
+  const { isBookmarked, toggleBookmark } = useBookmark({ postId });
+
+  return (
+    <Button onClick={toggleBookmark}>
+      <Bookmark className={isBookmarked ? "fill-yellow-500" : ""} />
+    </Button>
+  );
+}
+```
+
+### Step 4: Add to Feed Posts
+
+```typescript
+// File: components/commons/feed-posts-list.tsx
+
+import { BookmarkButton } from "@/components/ui/bookmark-button";
+
+// In the render:
+<div className="flex gap-2">
+  <LikeButton postid={post.id} />
+  <BookmarkButton postid={post.id} />  {/* New! */}
+</div>
+```
+
+### Done! 🎉
+
+---
+
+## 📊 Data Sources Comparison
+
+### Your Supabase Database
+
+**What it stores:**
+
+- Feed metadata (title, description)
+- User preferences
+- Cache of Lens data
+- Analytics
+
+**Why use it:**
+
+- Fast queries
+- Full control
+- Can add custom fields
+- Good for non-critical data
+
+**Example:**
+
+```sql
+SELECT * FROM feeds WHERE address = 'feed-20';
+-- Returns in 50ms
+```
+
+### Lens Protocol Blockchain
+
+**What it stores:**
+
+- Posts and comments
+- User profiles
+- Likes and reactions
+- Follows and followers
+
+**Why use it:**
+
+- Decentralized
+- Permanent
+- User-owned
+- Interoperable
+
+**Example:**
+
+```typescript
+await fetchPosts(client, { feed: "feed-20" });
+// Returns in 500ms
+```
+
+### The Strategy
+
+```
+Fast, non-critical data → Your database
+Slow, critical data → Lens Protocol
+Best of both worlds → Cache Lens in your DB
+```
+
+---
+
+## 🎓 Learning Path
+
+### If you want to understand more:
+
+**1. React Basics**
+
+- Components
+- Props
+- State
+- Hooks
+
+**2. Next.js**
+
+- App Router
+- Server vs Client Components
+- Dynamic Routes
+- Data Fetching
+
+**3. Lens Protocol**
+
+- Accounts (users)
+- Posts (content)
+- Reactions (likes)
+- Feeds (communities)
+
+**4. Web3 Basics**
+
+- Wallets (MetaMask)
+- Blockchain
+- Signatures
+- Transactions
+
+---
+
+## 🤔 Common Questions
+
+### Q: Why not just use a normal database?
+
+**A:** You could! But then:
+
+- You own all the data (legal liability)
+- Users don't own their content
+- Can't interoperate with other apps
+- Single point of failure
+
+### Q: Is everything on the blockchain?
+
+**A:** No! Only critical data:
+
+- Posts, comments, likes → Blockchain
+- Feed titles, descriptions → Your DB
+- UI preferences → Your DB
+- Analytics → Your DB
+
+### Q: Can I delete posts?
+
+**A:** Not really. Once on blockchain, it's permanent. You can:
+
+- Hide posts in your UI
+- Mark as deleted (but still readable)
+- Use Lens moderation tools
+
+### Q: How much does it cost?
+
+**A:** For users:
+
+- Reading is free
+- Writing costs gas (small fee)
+- Lens subsidizes some actions
+
+For you:
+
+- Lens API is free
+- Your database costs money
+- Hosting costs money
+
+---
+
+## 🚀 Next Steps for Learning
+
+1. **Read the code** - Start with a simple component like `LikeButton`
+2. **Trace the flow** - Follow what happens when you click it
+3. **Make small changes** - Change button text, colors
+4. **Add console.logs** - See what data looks like
+5. **Break things** - Best way to learn!
+
+---
+
+## 📝 Cheat Sheet
+
+### Common Patterns
+
+**Get current user:**
+
+```typescript
+const { account } = useAuthStore();
+```
+
+**Check if logged in:**
+
+```typescript
+const { isLoggedIn } = useAuthStore();
+```
+
+**Get Lens session:**
+
+```typescript
+const sessionClient = useSessionClient();
+```
+
+**Get wallet:**
+
+```typescript
+const walletClient = useWalletClient();
+```
+
+**Call Lens API:**
+
+```typescript
+const result = await lensAction(sessionClient.data, params);
+if (result.isErr()) {
+  // Handle error
+}
+// Success!
+```
+
+**Show notification:**
+
+```typescript
+toast.success("Action completed!");
+toast.error("Action failed!");
+toast.loading("Processing...");
+```
+
+---
+
+**Hope this helps! Ask me anything about the structure and I'll explain it in simple terms.**
+
+# Option C (Final): Board-Centric Forum + Communities
+
+**Date:** March 16, 2026
+**Status:** Design Document — Awaiting Approval
+
+---
+
+## Scope
+
+This document covers **two systems only**:
+
+1. **Boards** — 24+ Lens Feeds as fixed topic containers (the `/commons/` section)
+2. **Communities** — Lens Groups for language subgroups (the `/communities/` section)
+
+The **Research section** (7 technical feeds) will be developed in a separate repository. For now, those 7 feeds remain in the UI as a facade with their current locked appearance. No implementation work on them in this repo.
+
+---
+
+## 1. Current State of the Boards System
+
+### What's Working
+
+The boards system is more functional than previously assessed:
+
+- **28+ real Lens Feeds** deployed on-chain, addresses stored in Supabase `feeds` table
+- **Posts propagate to Lens** — visible on Hey, Soclly, and other Lens apps
+- **Post creation** works via `createThreadArticle` → publishes to the correct Lens Feed
+- **Reply creation** works via `createFeedReply` → creates Lens Comments on posts
+- **Feed pages** render at `/commons/[address]` with post lists
+- **Post detail pages** render at `/commons/[address]/post/[postId]`
+- **Reply pages** render at `/commons/[address]/post/[postId]/reply`
+- **Supabase tracking** — `feeds` table (metadata, stats), `feed_posts` table (post cache), triggers for auto-updating counts
+- **View tracking** — API endpoint at `/api/posts/[postId]/view`
+- **Pagination** — cursor-based via Lens API
+- **Markdown rendering** — ReactMarkdown in post detail and replies
+- **Like button** — `LikeButton` component using `useVoting` hook (already on board posts!)
+
+### What's Missing or Broken
+
+| Issue                                            | Root Cause                                                                    | Fix Complexity                          |
+| ------------------------------------------------ | ----------------------------------------------------------------------------- | --------------------------------------- |
+| Post count on homepage shows wrong numbers       | `feed.repliesCount` from Supabase may not sync with Lens                      | Small — verify trigger chain            |
+| No upvote/downvote buttons (only heart/like)     | Board posts use `LikeButton` (heart) instead of `ThreadVotesDisplay` (arrows) | Small — swap component                  |
+| Reply list uses generic avatar (gradient circle) | `ReplyList` doesn't use `AvatarProfileLink` component                         | Small — swap component                  |
+| No notifications for board activity              | Notifications page may not include feed post activity                         | Medium — verify Lens notification types |
+| Migration SQL files have placeholder addresses   | Real addresses only in live Supabase, not in code                             | Small — update SQL files                |
+| `PostDetail` doesn't show author avatar          | Missing `AvatarProfileLink` in post header                                    | Small — add component                   |
+
+---
+
+## 2. Existing Code Map for Boards
+
+### Routes
+
+```
+app/commons/[address]/page.tsx              → Board page (list of posts)
+app/commons/[address]/new-post/page.tsx     → Create new post form
+app/commons/[address]/post/[postId]/page.tsx → Post detail + replies
+app/commons/[address]/post/[postId]/reply/page.tsx → Reply form
+```
+
+### Components
+
+```
+components/commons/
+├── feed-nav-actions.tsx          → Back button + "New Post" button
+├── paginated-feed-posts-list.tsx → Wrapper with "Load More" pagination
+├── feed-posts-list.tsx           → Post cards list (has avatar + like button)
+├── post-detail.tsx               → Full post view + reply section
+├── reply-list.tsx                → List of replies (missing real avatars)
+├── reply-form.tsx                → Quick reply form (unused?)
+├── create-reply-form.tsx         → Full reply creation form
+└── create-post-form.tsx          → Post creation form
+```
+
+### Services
+
+```
+lib/services/feed/
+├── create-feed-post.ts     → Creates post on Lens + saves to Supabase
+├── create-feed-reply-client.ts → Creates reply on Lens + saves to Supabase
+├── get-feed-posts.ts       → Fetches posts from Lens + merges with Supabase
+├── get-feed-post.ts        → Fetches single post
+└── get-feeds.ts            → Fetches feed sections for homepage
+```
+
+### Adapters
+
+```
+lib/adapters/
+├── feed-adapter.ts         → Lens Post → FeedPost (for boards)
+├── thread-adapter.ts       → Lens Post → Thread (for communities)
+└── community-adapter.ts    → Lens Group → Community
+```
+
+### Hooks (Shared — already work for boards)
+
+```
+hooks/common/use-voting.ts  → Upvote/downvote logic (used by LikeButton)
+```
+
+### Components (Shared — can be used in boards)
+
+```
+components/ui/like-button.tsx                    → Heart-style like (already used)
+components/home/thread-votes-display.tsx          → Arrow-style up/down votes
+components/notifications/avatar-profile-link.tsx  → Avatar with link to profile
+```
+
+---
+
+## 3. Implementation Plan: Fix the Boards
+
+### Task 1: Add Upvote/Downvote to Board Posts (replace heart with arrows)
+
+**Current:** `FeedPostsList` uses `<LikeButton>` which shows a heart icon.
+**Target:** Use arrow-style upvote/downvote like `ThreadVotesDisplay` but interactive.
+
+**Files to modify:**
+
+- `components/commons/feed-posts-list.tsx` — replace `LikeButton` with a new `PostVoting` component
+- The new component should combine the arrow UI from `ThreadVotesDisplay` with the click handlers from `useVoting`
+
+**What to build:**
+
+```
+components/commons/post-voting.tsx (new)
+- Uses useVoting hook (already exists)
+- Renders ArrowUp + score + ArrowDown
+- Handles upvote/downvote clicks
+- Shows loading state
+- Disabled when not logged in
+```
+
+**Also update:**
+
+- `components/commons/post-detail.tsx` — add `PostVoting` next to the reply button
+- `components/commons/reply-list.tsx` — keep `LikeButton` for replies (hearts are fine for short comments)
+
+### Task 2: Add Real Avatars to Replies
+
+**Current:** `ReplyList` renders a gradient circle with the first letter of the username.
+**Target:** Use `AvatarProfileLink` component (already exists, used in `FeedPostsList`).
+
+**Files to modify:**
+
+- `components/commons/reply-list.tsx`
+
+**Problem:** The reply data structure uses `reply.author.username` (string) and `reply.author.address` (string), but `AvatarProfileLink` expects a Lens `Account` object with `metadata.picture`.
+
+**Fix:** The reply data needs to include the full Lens Account object, or we need to fetch it. Check how `createFeedReply` returns reply data and whether the Lens Post object includes the full author Account.
+
+**Investigation needed:**
+
+- Check `createFeedReply` return type — does `createdPost.author` have the full Account?
+- Check `getFeedPostReplies` (or equivalent) — does it return full Account objects?
+- If not, we need to batch-fetch accounts for reply authors
+
+### Task 3: Fix Post Count on Homepage
+
+**Current:** The homepage `ForumCategory` component shows `feed.repliesCount` from the `get-feeds.ts` service, which reads from Supabase `feeds.replies_count`.
+
+**The chain:**
+
+1. User creates a reply → `createFeedReply` saves to `feed_posts` table
+2. Supabase trigger `update_feed_stats_on_post_create` fires → increments `feeds.post_count`
+3. Supabase trigger `update_feed_reply_count` fires when `feed_posts.replies_count` changes → increments `feeds.replies_count`
+4. Homepage reads `feeds.replies_count` via `get-feeds.ts`
+
+**Potential issues:**
+
+- The `feed_posts` insert in `createFeedReply` may not have the correct `feed_id` (it uses the feed's UUID, not the address)
+- The `replies_count` on `feed_posts` is updated by `adaptLensPostToFeedPost` which syncs from Lens stats — but only when the post is fetched, not when a reply is created
+- The `post_count` column tracks root posts, `replies_count` tracks total replies across all posts in the feed
+
+**Fix approach:**
+
+1. Verify the trigger chain works by checking Supabase data directly
+2. If triggers work: the count is correct but may be stale (only updates on next fetch)
+3. If triggers don't work: fix the `feed_id` reference in reply creation
+4. Consider also showing `feed.post_count` (number of topics) alongside `replies_count`
+
+### Task 4: Add Author Avatar to Post Detail
+
+**Current:** `PostDetail` shows author name and handle but no avatar image.
+**Target:** Add `AvatarProfileLink` to the post header.
+
+**Files to modify:**
+
+- `components/commons/post-detail.tsx` — add avatar in the post header section
+
+**Simple change:** The `post.author` is already a full Lens `Account` object (from `FeedPost.author`), so `AvatarProfileLink` can be used directly.
+
+### Task 5: Verify Notifications Work for Board Posts
+
+**Current:** Notifications page exists but may not show activity from board posts.
+
+**Investigation:**
+
+- Board posts are real Lens posts, so Lens should generate notifications for:
+  - Comments on your post (reply notifications)
+  - Reactions on your post (like/upvote notifications)
+  - Mentions in posts/replies
+- Check if the notifications page filters by app address — if it only shows notifications from the Communities system, board notifications would be excluded
+
+**Files to check:**
+
+- `hooks/notifications/use-notifications.ts` — does it filter by app?
+- `components/notifications/notifications-list.tsx` — does it handle all notification types?
+- Notification items need to link to `/commons/[address]/post/[postId]` for board posts (not `/thread/[slug]`)
+
+### Task 6: Update Migration Files (Documentation)
+
+**Current:** Seed SQL files have `feed-1`, `feed-2` placeholder addresses.
+**Target:** Update with real Lens Feed addresses from Supabase.
+
+**How:**
+
+1. Export current feed data from Supabase: `SELECT lens_feed_address, title, category, display_order, is_locked, featured FROM feeds ORDER BY display_order`
+2. Update `20260227_seed_feeds_data.sql` with real `0x` addresses
+3. Update `20260302_fix_technical_feeds.sql` with real addresses
+4. This ensures anyone cloning the repo can reproduce the database
+
+---
+
+## 4. Implementation Order
+
+```
+Task 4: Add avatar to PostDetail          → 15 min (one component addition)
+Task 1: Add upvote/downvote to posts      → 2-3 hours (new component + wiring)
+Task 2: Add real avatars to replies        → 1-2 hours (depends on data shape)
+Task 3: Fix post count on homepage         → 1-2 hours (investigation + fix)
+Task 5: Verify notifications              → 2-3 hours (investigation + potential fixes)
+Task 6: Update migration files            → 30 min (data export + SQL update)
+```
+
+**Total: ~1.5 to 2 days of focused work**
+
+After these 6 tasks, the Boards system will have feature parity with the Communities system for the core interactions: posting, replying, voting, avatars, notifications, and accurate stats.
+
+---
+
+## 5. Communities System — Remaining Work
+
+The Communities system (`/communities/`) is mostly working. Remaining items from Feedback.md:
+
+| Bug                           | Status              | Notes                                                                                    |
+| ----------------------------- | ------------------- | ---------------------------------------------------------------------------------------- |
+| Join community button         | ✅ Fixed            | We fixed this in the previous session                                                    |
+| Post count in community cards | Not fixed           | `adaptGroupToCommunity` doesn't set `postCount` — needs to read `group.feed.stats.posts` |
+| Switch account                | Debug logging added | Needs testing and fix                                                                    |
+| Notifications                 | Debug logging added | May be fixed by Task 5 above (shared notification system)                                |
+
+The community post count fix is the same pattern as the board post count — read from Lens stats instead of (or in addition to) Supabase.
+
+---
+
+## 6. What NOT to Touch
+
+- **Research section (7 technical feeds)** — leave the locked UI facade as-is. No implementation work. Will be built in separate repo.
+- **Lens primitives layer** (`lib/external/lens/primitives/`) — this is solid, don't modify
+- **Community thread system** (`lib/services/thread/`) — working, don't merge with boards
+- **Authentication system** — working, don't modify
+- **Homepage layout** — working, just fix the data it displays
+
+---
+
+## 7. Architecture After Implementation
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                      HOMEPAGE                             │
+│  ┌─────────────┐  ┌──────────┐  ┌─────────────────────┐ │
+│  │ Board List   │  │ Research │  │ Community Grid      │ │
+│  │ (4 categories│  │ (locked  │  │ (language groups)   │ │
+│  │  24 feeds)   │  │  facade) │  │                     │ │
+│  └──────┬───────┘  └──────────┘  └──────────┬──────────┘ │
+└─────────┼────────────────────────────────────┼────────────┘
+          │                                    │
+          ▼                                    ▼
+┌──────────────────┐              ┌──────────────────────┐
+│ /commons/[addr]  │              │ /communities/[addr]  │
+│                  │              │                      │
+│ Board Page       │              │ Community Page       │
+│ - Post list      │              │ - Thread list        │
+│ - Voting (↑↓)    │              │ - Voting (↑↓)        │
+│ - Avatars        │              │ - Avatars            │
+│ - Post count     │              │ - Member count       │
+│ - Pagination     │              │ - Join/Leave         │
+│                  │              │ - Moderation         │
+│ Post Detail      │              │                      │
+│ - Full content   │              │ Thread Detail        │
+│ - Reply list     │              │ - Full content       │
+│ - Voting         │              │ - Reply tree         │
+│ - Avatars        │              │ - Voting             │
+└──────────────────┘              └──────────────────────┘
+          │                                    │
+          ▼                                    ▼
+┌──────────────────────────────────────────────────────────┐
+│              SHARED LENS PRIMITIVES LAYER                 │
+│  articles.ts │ posts.ts │ groups.ts │ feeds.ts            │
+├──────────────────────────────────────────────────────────┤
+│              SHARED HOOKS                                 │
+│  use-voting.ts │ use-notifications.ts │ auth-store.ts     │
+├──────────────────────────────────────────────────────────┤
+│              SHARED COMPONENTS                            │
+│  AvatarProfileLink │ LikeButton │ ContentRenderer        │
+├──────────────────────────────────────────────────────────┤
+│              SUPABASE                                     │
+│  feeds │ feed_posts │ communities │ community_threads     │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 8. Decisions Made
+
+1. **Research section** → Separate repo. Facade stays in this app's UI.
+2. **Boards use Lens Feeds directly** → No Groups needed for open boards. The Lens Feed IS the board.
+3. **Communities stay as-is** → Lens Groups for language subgroups. Separate system, separate routes.
+4. **Board comments are flat** → One level of replies under each post. No deep nesting.
+5. **Voting style** → Arrow up/down for board posts (forum-style). Hearts for replies (lightweight).
+6. **Post count source** → Supabase triggers (already in place). Verify they work, fix if not.
+
+---
+
+## 9. Next Steps
+
+1. Review and approve this plan
+2. Commit current changes
+3. Start with Task 4 (avatar on PostDetail — quickest win)
+4. Then Task 1 (voting — highest impact)
+5. Work through Tasks 2-6 in order
+6. Test end-to-end
+7. Then tackle remaining Community bugs
+
+# Research System Build Spec — Step-by-Step Implementation Guide
+
+**Date:** March 17, 2026
+**Branch:** `feature/research-system` (create before starting)
+**Prerequisite:** Read `MyDataSource/ResearchPlan.md` (v5) for architectural context
+
+This document is a spec-driven build guide. Each phase lists every file to create, with exact code, exact imports, and exact types. Follow it top to bottom. Commit after each phase.
+
+**Before starting:** User must provide:
+
+- Lens Group address (created by user, owner/admin)
+- Lens Feed address (created by user, single Research feed)
+
+---
+
+## PHASE 1: Domain Layer
+
+**Goal:** Define the Research data types. One new file.
+
+**Commit message:** `feat(research): add domain types`
+
+### File 1.1: `lib/domain/research/types.ts` (CREATE)
+
+```typescript
+import { Account, Post } from "@lens-protocol/client";
+
+/**
+ * One of the 7 research categories (Supabase-only, not a Lens container).
+ * Maps to `research_categories` table.
+ */
+export interface ResearchCategory {
+  slug: string;
+  name: string;
+  description: string;
+  displayOrder: number;
+  publicationCount: number;
+  viewsCount: number;
+}
+
+/**
+ * A thread listing item — used on the /research page.
+ * Contains the root publication + thread-level metadata.
+ */
+export interface ResearchThread {
+  id: string;
+  lensPostId: string;
+  post: Post;
+  category: ResearchCategory;
+  title: string;
+  tags: string[];
+  totalPosts: number;
+  viewsCount: number;
+  lastActivityAt: string;
+  createdAt: string;
+}
+
+/**
+ * A single publication within a thread (root or response).
+ * All publications are at the same level — root is just #1.
+ */
+export interface ResearchPublication {
+  id: string;
+  lensPostId: string;
+  rootLensPostId: string | null;
+  post: Post;
+  postNumber: number;
+  isRoot: boolean;
+  createdAt: string;
+}
+
+/**
+ * Form data for creating a new topic (root publication).
+ */
+export interface CreateResearchTopicFormData {
+  title: string;
+  content: string;
+  categorySlug: string;
+  tags: string[];
+}
+
+/**
+ * Form data for creating a response within a thread.
+ */
+export interface CreateResearchResponseFormData {
+  content: string;
+}
+```
+
+**Key design decisions:**
+
+- `ResearchThread` is for the listing page — wraps a root `Post` with thread metadata
+- `ResearchPublication` is for inside a thread — every post (#1, #2, #3) uses this
+- Both preserve the full Lens `Post` object — never destructured
+- No separate `ResearchResponse` type — responses are `ResearchPublication` with `isRoot: false`
+
+---
+
+## PHASE 2: Supabase Layer
+
+**Goal:** Create the Supabase data access functions. Two new files.
+
+**Commit message:** `feat(research): add supabase data layer`
+
+### Pre-requisite: Run this SQL in Supabase
+
+```sql
+CREATE TABLE research_categories (
+  slug TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  display_order INTEGER DEFAULT 0,
+  publication_count INTEGER DEFAULT 0,
+  views_count INTEGER DEFAULT 0
+);
+
+CREATE TABLE research_publications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  lens_post_id TEXT NOT NULL UNIQUE,
+  root_lens_post_id TEXT,
+  category_slug TEXT NOT NULL REFERENCES research_categories(slug),
+  author_address TEXT NOT NULL,
+  title TEXT,
+  tags TEXT[],
+  post_number INTEGER NOT NULL,
+  views_count INTEGER DEFAULT 0,
+  total_posts INTEGER DEFAULT 1,
+  last_activity_at TIMESTAMPTZ DEFAULT now(),
+  is_root BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_research_pub_root ON research_publications(root_lens_post_id);
+CREATE INDEX idx_research_pub_category ON research_publications(category_slug);
+CREATE INDEX idx_research_pub_is_root ON research_publications(is_root);
+
+INSERT INTO research_categories (slug, name, description, display_order) VALUES
+  ('architecture', 'General Architecture', 'System design and architecture discussions', 1),
+  ('state-machine', 'State Machine', 'State machine design and transitions', 2),
+  ('objects', 'Architectural Objects', 'Core objects and data structures', 3),
+  ('consensus', 'Consensus', 'Consensus mechanisms and protocols', 4),
+  ('cryptography', 'Cryptography', 'Cryptographic primitives and protocols', 5),
+  ('account-system', 'Account System', 'Account model and identity', 6),
+  ('security', 'Security', 'Security analysis and threat models', 7);
+```
+
+### File 2.1: `lib/external/supabase/research-categories.ts` (CREATE)
+
+```typescript
+"use server";
+
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+
+export interface ResearchCategoryRow {
+  slug: string;
+  name: string;
+  description: string | null;
+  display_order: number;
+  publication_count: number;
+  views_count: number;
+}
+
+export async function fetchAllResearchCategories(): Promise<ResearchCategoryRow[]> {
+  const { data, error } = await supabase
+    .from("research_categories")
+    .select("*")
+    .order("display_order", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching research categories:", error);
+    return [];
+  }
+  return data;
+}
+
+export async function fetchResearchCategoryBySlug(slug: string): Promise<ResearchCategoryRow | null> {
+  const { data, error } = await supabase.from("research_categories").select("*").eq("slug", slug).single();
+
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    console.error("Error fetching research category:", error);
+    return null;
+  }
+  return data;
+}
+
+export async function incrementCategoryPublicationCount(slug: string): Promise<void> {
+  const { error } = await supabase.rpc("increment_field", {
+    table_name: "research_categories",
+    field_name: "publication_count",
+    row_id: slug,
+    id_field: "slug",
+  });
+  // Fallback if RPC doesn't exist: manual increment
+  if (error) {
+    const cat = await fetchResearchCategoryBySlug(slug);
+    if (cat) {
+      await supabase
+        .from("research_categories")
+        .update({ publication_count: cat.publication_count + 1 })
+        .eq("slug", slug);
+    }
+  }
+}
+```
+
+### File 2.2: `lib/external/supabase/research-publications.ts` (CREATE)
+
+```typescript
+"use server";
+
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+
+export interface ResearchPublicationRow {
+  id: string;
+  lens_post_id: string;
+  root_lens_post_id: string | null;
+  category_slug: string;
+  author_address: string;
+  title: string | null;
+  tags: string[] | null;
+  post_number: number;
+  views_count: number;
+  total_posts: number;
+  last_activity_at: string;
+  is_root: boolean;
+  created_at: string;
+}
+
+/** Fetch root publications for the listing page, with optional category filter */
+export async function fetchResearchThreads(options?: {
+  categorySlug?: string;
+  tag?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<ResearchPublicationRow[]> {
+  let query = supabase
+    .from("research_publications")
+    .select("*")
+    .eq("is_root", true)
+    .order("last_activity_at", { ascending: false });
+
+  if (options?.categorySlug) {
+    query = query.eq("category_slug", options.categorySlug);
+  }
+  if (options?.tag) {
+    query = query.contains("tags", [options.tag]);
+  }
+  if (options?.limit) {
+    query = query.limit(options.limit);
+  }
+  if (options?.offset) {
+    query = query.range(options.offset, options.offset + (options?.limit || 20) - 1);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("Error fetching research threads:", error);
+    return [];
+  }
+  return data;
+}
+
+/** Fetch a single root publication by its Lens post ID */
+export async function fetchResearchRootByLensId(lensPostId: string): Promise<ResearchPublicationRow | null> {
+  const { data, error } = await supabase
+    .from("research_publications")
+    .select("*")
+    .eq("lens_post_id", lensPostId)
+    .eq("is_root", true)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    console.error("Error fetching research root:", error);
+    return null;
+  }
+  return data;
+}
+
+/** Fetch all publications in a thread (root + responses) ordered by post_number */
+export async function fetchResearchPublicationsByRoot(rootLensPostId: string): Promise<ResearchPublicationRow[]> {
+  const { data, error } = await supabase
+    .from("research_publications")
+    .select("*")
+    .or(`lens_post_id.eq.${rootLensPostId},root_lens_post_id.eq.${rootLensPostId}`)
+    .order("post_number", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching research publications:", error);
+    return [];
+  }
+  return data;
+}
+
+/** Insert a new publication (root or response) */
+export async function persistResearchPublication(params: {
+  lensPostId: string;
+  rootLensPostId: string | null;
+  categorySlug: string;
+  authorAddress: string;
+  title: string | null;
+  tags: string[] | null;
+  postNumber: number;
+  isRoot: boolean;
+}): Promise<ResearchPublicationRow> {
+  const { data, error } = await supabase
+    .from("research_publications")
+    .insert({
+      lens_post_id: params.lensPostId,
+      root_lens_post_id: params.rootLensPostId,
+      category_slug: params.categorySlug,
+      author_address: params.authorAddress,
+      title: params.title,
+      tags: params.tags,
+      post_number: params.postNumber,
+      is_root: params.isRoot,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to persist research publication: ${error.message}`);
+  }
+  return data;
+}
+
+/** Increment total_posts and update last_activity_at on the root publication */
+export async function incrementRootPostCount(rootLensPostId: string): Promise<void> {
+  const root = await fetchResearchRootByLensId(rootLensPostId);
+  if (!root) return;
+
+  await supabase
+    .from("research_publications")
+    .update({
+      total_posts: root.total_posts + 1,
+      last_activity_at: new Date().toISOString(),
+    })
+    .eq("lens_post_id", rootLensPostId);
+}
+
+/** Get the next post number for a thread */
+export async function getNextPostNumber(rootLensPostId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("research_publications")
+    .select("*", { count: "exact", head: true })
+    .or(`lens_post_id.eq.${rootLensPostId},root_lens_post_id.eq.${rootLensPostId}`);
+
+  if (error) {
+    console.error("Error getting next post number:", error);
+    return 1;
+  }
+  return (count || 0) + 1;
+}
+
+/** Increment views on a root publication */
+export async function incrementResearchViews(lensPostId: string): Promise<void> {
+  const root = await fetchResearchRootByLensId(lensPostId);
+  if (!root) return;
+
+  await supabase
+    .from("research_publications")
+    .update({ views_count: root.views_count + 1 })
+    .eq("lens_post_id", lensPostId);
+}
+
+/** Fetch all unique tags across all publications */
+export async function fetchAllResearchTags(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("research_publications")
+    .select("tags")
+    .eq("is_root", true)
+    .not("tags", "is", null);
+
+  if (error) {
+    console.error("Error fetching research tags:", error);
+    return [];
+  }
+
+  const allTags = new Set<string>();
+  data.forEach(row => {
+    if (row.tags) row.tags.forEach((tag: string) => allTags.add(tag));
+  });
+  return Array.from(allTags).sort();
+}
+```
+
+---
+
+## PHASE 3: Adapter Layer
+
+**Goal:** Pure functions to convert Supabase rows + Lens Posts into domain types.
+
+**Commit message:** `feat(research): add adapter layer`
+
+### File 3.1: `lib/adapters/research-adapter.ts` (CREATE)
+
+```typescript
+import { ResearchCategory, ResearchPublication, ResearchThread } from "@/lib/domain/research/types";
+import { ResearchCategoryRow } from "@/lib/external/supabase/research-categories";
+import { ResearchPublicationRow } from "@/lib/external/supabase/research-publications";
+import { Post } from "@lens-protocol/client";
+
+/**
+ * Converts a Supabase research_categories row into a ResearchCategory domain object.
+ */
+export function adaptRowToCategory(row: ResearchCategoryRow): ResearchCategory {
+  return {
+    slug: row.slug,
+    name: row.name,
+    description: row.description || "",
+    displayOrder: row.display_order,
+    publicationCount: row.publication_count,
+    viewsCount: row.views_count,
+  };
+}
+
+/**
+ * Converts a Supabase root publication row + Lens Post + category into a ResearchThread.
+ * Used on the /research listing page.
+ */
+export function adaptToThread(row: ResearchPublicationRow, lensPost: Post, category: ResearchCategory): ResearchThread {
+  return {
+    id: row.id,
+    lensPostId: row.lens_post_id,
+    post: lensPost,
+    category,
+    title: row.title || getArticleTitle(lensPost),
+    tags: row.tags || [],
+    totalPosts: row.total_posts,
+    viewsCount: row.views_count,
+    lastActivityAt: row.last_activity_at,
+    createdAt: row.created_at,
+  };
+}
+
+/**
+ * Converts a Supabase publication row + Lens Post into a ResearchPublication.
+ * Used inside a thread page — all posts (#1, #2, #3) use this.
+ */
+export function adaptToPublication(row: ResearchPublicationRow, lensPost: Post): ResearchPublication {
+  return {
+    id: row.id,
+    lensPostId: row.lens_post_id,
+    rootLensPostId: row.root_lens_post_id,
+    post: lensPost,
+    postNumber: row.post_number,
+    isRoot: row.is_root,
+    createdAt: row.created_at,
+  };
+}
+
+/** Extract title from ArticleMetadata, fallback to first words of content */
+function getArticleTitle(post: Post): string {
+  if (post.metadata.__typename === "ArticleMetadata" && post.metadata.title) {
+    return post.metadata.title;
+  }
+  const content = (post.metadata as any)?.content || "";
+  return content.split(" ").slice(0, 8).join(" ") + "..." || "Untitled";
+}
+```
+
+---
+
+## PHASE 4: Service Layer
+
+**Goal:** 5 service files that orchestrate Lens + Supabase calls.
+
+**Commit message:** `feat(research): add service layer`
+
+### File 4.1: `lib/services/research/get-research-categories.ts` (CREATE)
+
+```typescript
+"use server";
+
+import { adaptRowToCategory } from "@/lib/adapters/research-adapter";
+import { ResearchCategory } from "@/lib/domain/research/types";
+import { fetchAllResearchCategories } from "@/lib/external/supabase/research-categories";
+
+export interface GetResearchCategoriesResult {
+  success: boolean;
+  categories?: ResearchCategory[];
+  error?: string;
+}
+
+export async function getResearchCategories(): Promise<GetResearchCategoriesResult> {
+  try {
+    const rows = await fetchAllResearchCategories();
+    return { success: true, categories: rows.map(adaptRowToCategory) };
+  } catch (error) {
+    console.error("Failed to fetch research categories:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to fetch categories" };
+  }
+}
+```
+
+### File 4.2: `lib/services/research/get-research-threads.ts` (CREATE)
+
+```typescript
+"use server";
+
+import { adaptRowToCategory, adaptToThread } from "@/lib/adapters/research-adapter";
+import { ResearchCategory, ResearchThread } from "@/lib/domain/research/types";
+import { fetchPostsBatch } from "@/lib/external/lens/primitives/posts";
+import { fetchAllResearchCategories } from "@/lib/external/supabase/research-categories";
+import { ResearchPublicationRow, fetchResearchThreads } from "@/lib/external/supabase/research-publications";
+import { Post } from "@lens-protocol/client";
+
+export interface GetResearchThreadsResult {
+  success: boolean;
+  threads?: ResearchThread[];
+  error?: string;
+}
+
+export async function getResearchThreads(options?: {
+  categorySlug?: string;
+  tag?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<GetResearchThreadsResult> {
+  try {
+    // 1. Fetch root publication rows from Supabase
+    const rows = await fetchResearchThreads({
+      categorySlug: options?.categorySlug,
+      tag: options?.tag,
+      limit: options?.limit || 20,
+      offset: options?.offset,
+    });
+
+    if (rows.length === 0) {
+      return { success: true, threads: [] };
+    }
+
+    // 2. Batch fetch Lens Posts for all roots
+    const lensPostIds = rows.map(r => r.lens_post_id);
+    const lensPosts = await fetchPostsBatch(lensPostIds);
+    const postMap = new Map<string, Post>(lensPosts.map(p => [p.id, p]));
+
+    // 3. Fetch all categories for lookup
+    const catRows = await fetchAllResearchCategories();
+    const catMap = new Map(catRows.map(c => [c.slug, adaptRowToCategory(c)]));
+
+    // 4. Assemble threads (skip any where Lens post is missing)
+    const threads: ResearchThread[] = [];
+    for (const row of rows) {
+      const lensPost = postMap.get(row.lens_post_id);
+      const category = catMap.get(row.category_slug);
+      if (lensPost && category) {
+        threads.push(adaptToThread(row, lensPost, category));
+      }
+    }
+
+    return { success: true, threads };
+  } catch (error) {
+    console.error("Failed to fetch research threads:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to fetch threads" };
+  }
+}
+```
+
+### File 4.3: `lib/services/research/get-research-thread.ts` (CREATE)
+
+This is the key service — fetches a single thread with ALL its publications (flat).
+
+```typescript
+"use server";
+
+import { adaptRowToCategory, adaptToPublication, adaptToThread } from "@/lib/adapters/research-adapter";
+import { ResearchCategory, ResearchPublication, ResearchThread } from "@/lib/domain/research/types";
+import { fetchPostsBatch } from "@/lib/external/lens/primitives/posts";
+import { fetchResearchCategoryBySlug } from "@/lib/external/supabase/research-categories";
+import {
+  fetchResearchPublicationsByRoot,
+  fetchResearchRootByLensId,
+} from "@/lib/external/supabase/research-publications";
+import { Post } from "@lens-protocol/client";
+
+export interface GetResearchThreadResult {
+  success: boolean;
+  thread?: ResearchThread;
+  publications?: ResearchPublication[];
+  error?: string;
+}
+
+export async function getResearchThread(rootLensPostId: string): Promise<GetResearchThreadResult> {
+  try {
+    // 1. Fetch root row from Supabase
+    const rootRow = await fetchResearchRootByLensId(rootLensPostId);
+    if (!rootRow) {
+      return { success: false, error: "Thread not found" };
+    }
+
+    // 2. Fetch all publication rows in this thread (root + responses)
+    const allRows = await fetchResearchPublicationsByRoot(rootLensPostId);
+
+    // 3. Batch fetch all Lens Posts
+    const lensPostIds = allRows.map(r => r.lens_post_id);
+    const lensPosts = await fetchPostsBatch(lensPostIds);
+    const postMap = new Map<string, Post>(lensPosts.map(p => [p.id, p]));
+
+    // 4. Fetch category
+    const catRow = await fetchResearchCategoryBySlug(rootRow.category_slug);
+    if (!catRow) {
+      return { success: false, error: "Category not found" };
+    }
+    const category = adaptRowToCategory(catRow);
+
+    // 5. Build thread header from root
+    const rootPost = postMap.get(rootRow.lens_post_id);
+    if (!rootPost) {
+      return { success: false, error: "Root post not found on Lens" };
+    }
+    const thread = adaptToThread(rootRow, rootPost, category);
+
+    // 6. Build flat publication list (all posts including root)
+    const publications: ResearchPublication[] = [];
+    for (const row of allRows) {
+      const lensPost = postMap.get(row.lens_post_id);
+      if (lensPost) {
+        publications.push(adaptToPublication(row, lensPost));
+      }
+    }
+
+    return { success: true, thread, publications };
+  } catch (error) {
+    console.error("Failed to fetch research thread:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to fetch thread" };
+  }
+}
+```
+
+### File 4.4: `lib/services/research/create-research-thread.ts` (CREATE)
+
+Creates a new topic (root publication).
+
+```typescript
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { fetchAccountFromLens } from "@/lib/external/lens/primitives/accounts";
+import { createThreadArticle } from "@/lib/external/lens/primitives/articles";
+import { incrementCategoryPublicationCount } from "@/lib/external/supabase/research-categories";
+import { persistResearchPublication } from "@/lib/external/supabase/research-publications";
+import { RESEARCH_FEED_ADDRESS } from "@/lib/shared/constants";
+import { SessionClient } from "@lens-protocol/client";
+import { WalletClient } from "viem";
+
+export interface CreateResearchThreadResult {
+  success: boolean;
+  lensPostId?: string;
+  error?: string;
+}
+
+export async function createResearchThread(
+  formData: {
+    title: string;
+    content: string;
+    categorySlug: string;
+    tags: string[];
+    author: string;
+  },
+  sessionClient: SessionClient,
+  walletClient: WalletClient,
+): Promise<CreateResearchThreadResult> {
+  try {
+    // 1. Create article on Lens
+    const articleResult = await createThreadArticle(
+      {
+        title: formData.title,
+        content: formData.content,
+        author: formData.author,
+        summary: "",
+        tags: formData.tags.join(","),
+        feedAddress: RESEARCH_FEED_ADDRESS,
+        slug: `research-${Date.now()}-${formData.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .slice(0, 40)}`,
+      },
+      sessionClient,
+      walletClient,
+    );
+
+    if (!articleResult.success || !articleResult.post) {
+      return { success: false, error: articleResult.error || "Failed to create article on Lens" };
+    }
+
+    // 2. Persist to Supabase
+    await persistResearchPublication({
+      lensPostId: articleResult.post.id,
+      rootLensPostId: null,
+      categorySlug: formData.categorySlug,
+      authorAddress: formData.author,
+      title: formData.title,
+      tags: formData.tags.length > 0 ? formData.tags : null,
+      postNumber: 1,
+      isRoot: true,
+    });
+
+    // 3. Increment category count
+    await incrementCategoryPublicationCount(formData.categorySlug);
+
+    // 4. Revalidate
+    revalidatePath("/research");
+    revalidatePath("/");
+
+    return { success: true, lensPostId: articleResult.post.id };
+  } catch (error) {
+    console.error("Failed to create research thread:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to create thread" };
+  }
+}
+```
+
+### File 4.5: `lib/services/research/create-research-response.ts` (CREATE)
+
+Creates a response within a thread (commentOn root).
+
+```typescript
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { storageClient } from "@/lib/external/grove/client";
+import { lensChain } from "@/lib/external/lens/chain";
+import { client } from "@/lib/external/lens/protocol-client";
+import {
+  fetchResearchRootByLensId,
+  getNextPostNumber,
+  incrementRootPostCount,
+  persistResearchPublication,
+} from "@/lib/external/supabase/research-publications";
+import { RESEARCH_FEED_ADDRESS } from "@/lib/shared/constants";
+import { immutable } from "@lens-chain/storage-client";
+import { Post, SessionClient, evmAddress, uri } from "@lens-protocol/client";
+import { postId } from "@lens-protocol/client";
+import { fetchPost, post } from "@lens-protocol/client/actions";
+import { handleOperationWith } from "@lens-protocol/client/viem";
+import { article } from "@lens-protocol/metadata";
+import { WalletClient } from "viem";
+
+export interface CreateResearchResponseResult {
+  success: boolean;
+  lensPostId?: string;
+  error?: string;
+}
+
+export async function createResearchResponse(
+  rootLensPostId: string,
+  content: string,
+  authorAddress: string,
+  sessionClient: SessionClient,
+  walletClient: WalletClient,
+): Promise<CreateResearchResponseResult> {
+  try {
+    // 1. Verify root exists
+    const rootRow = await fetchResearchRootByLensId(rootLensPostId);
+    if (!rootRow) {
+      return { success: false, error: "Thread not found" };
+    }
+
+    // 2. Create article metadata (full rich content, same as root)
+    const metadata = article({ content });
+
+    // 3. Upload metadata
+    const acl = immutable(lensChain.id);
+    const { uri: contentUri } = await storageClient.uploadAsJson(metadata, { acl });
+
+    // 4. Post to Lens with commentOn (links to root, flat)
+    const result = await post(sessionClient, {
+      contentUri: uri(contentUri),
+      commentOn: { post: postId(rootLensPostId) },
+      feed: evmAddress(RESEARCH_FEED_ADDRESS),
+    })
+      .andThen(handleOperationWith(walletClient))
+      .andThen(sessionClient.waitForTransaction)
+      .andThen((txHash: unknown) => fetchPost(client, { txHash: txHash as string }));
+
+    if (result.isErr()) {
+      const errorMessage =
+        result.error && typeof result.error === "object" && "message" in result.error
+          ? (result.error as any).message
+          : "Failed to create response";
+      return { success: false, error: errorMessage };
+    }
+
+    const createdPost = result.value as Post;
+
+    // 5. Get next post number and persist to Supabase
+    const nextNumber = await getNextPostNumber(rootLensPostId);
+
+    await persistResearchPublication({
+      lensPostId: createdPost.id,
+      rootLensPostId,
+      categorySlug: rootRow.category_slug,
+      authorAddress,
+      title: null,
+      tags: null,
+      postNumber: nextNumber,
+      isRoot: false,
+    });
+
+    // 6. Increment root's total_posts and update last_activity_at
+    await incrementRootPostCount(rootLensPostId);
+
+    // 7. Revalidate
+    revalidatePath(`/research/thread/${rootLensPostId}`);
+    revalidatePath("/research");
+
+    return { success: true, lensPostId: createdPost.id };
+  } catch (error) {
+    console.error("Failed to create research response:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to create response" };
+  }
+}
+```
+
+### File 4.6: `lib/shared/constants.ts` (UPDATE)
+
+Add the Research Feed and Group addresses. **Replace `TODO_REPLACE` with actual addresses once created.**
+
+```typescript
+// Add these lines to the existing constants file:
+export const RESEARCH_GROUP_ADDRESS = "TODO_REPLACE_WITH_GROUP_ADDRESS";
+export const RESEARCH_FEED_ADDRESS = "TODO_REPLACE_WITH_FEED_ADDRESS";
+```
+
+---
+
+## PHASE 5: Hooks
+
+**Goal:** Client-side hooks for creating topics and responses.
+
+**Commit message:** `feat(research): add hooks`
+
+### File 5.1: `hooks/research/use-research-topic-create.ts` (CREATE)
+
+```typescript
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useTagsInput } from "@/hooks/forms/use-tags-input";
+import { ResearchCategory } from "@/lib/domain/research/types";
+import { createResearchThread } from "@/lib/services/research/create-research-thread";
+import { useAuthStore } from "@/stores/auth-store";
+import { useSessionClient } from "@lens-protocol/react";
+import { toast } from "sonner";
+import { useWalletClient } from "wagmi";
+
+interface FormErrors {
+  title?: string;
+  content?: string;
+  category?: string;
+}
+
+export function useResearchTopicCreate(categories: ResearchCategory[]) {
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [categorySlug, setCategorySlug] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const { tags, setTags, tagInput, setTagInput, addTag, removeTag, handleTagInputKeyDown } = useTagsInput();
+  const { account } = useAuthStore();
+  const sessionClient = useSessionClient();
+  const walletClient = useWalletClient();
+  const router = useRouter();
+
+  const validate = (): FormErrors => {
+    const e: FormErrors = {};
+    if (!title.trim()) e.title = "Title is required";
+    if (!content.trim()) e.content = "Content is required";
+    if (!categorySlug) e.category = "Category is required";
+    return e;
+  };
+
+  const isFormValid = !validate().title && !validate().content && !validate().category;
+
+  const handleBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    setErrors(validate());
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const validationErrors = validate();
+    setTouched({ title: true, content: true, category: true });
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
+    if (!account?.address || !sessionClient.data || !walletClient.data) {
+      toast.error("Please sign in and connect your wallet");
+      return;
+    }
+
+    const loadingToast = toast.loading("Creating topic...");
+    setIsCreating(true);
+
+    try {
+      const result = await createResearchThread(
+        {
+          title,
+          content,
+          categorySlug,
+          tags,
+          author: account.address,
+        },
+        sessionClient.data,
+        walletClient.data,
+      );
+
+      if (!result.success) throw new Error(result.error || "Failed to create topic");
+
+      toast.success("Topic created!", { id: loadingToast });
+      router.push(`/research/thread/${result.lensPostId}`);
+    } catch (error) {
+      toast.error("Failed to create topic", {
+        description: error instanceof Error ? error.message : "An error occurred",
+        id: loadingToast,
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  return {
+    title,
+    setTitle,
+    content,
+    setContent,
+    categorySlug,
+    setCategorySlug,
+    tags,
+    tagInput,
+    setTagInput,
+    addTag,
+    removeTag,
+    handleTagInputKeyDown,
+    handleBlur,
+    handleSubmit,
+    isCreating,
+    errors,
+    touched,
+    isFormValid,
+    categories,
+  };
+}
+```
+
+### File 5.2: `hooks/research/use-research-response-create.ts` (CREATE)
+
+```typescript
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createResearchResponse } from "@/lib/services/research/create-research-response";
+import { useAuthStore } from "@/stores/auth-store";
+import { useSessionClient } from "@lens-protocol/react";
+import { toast } from "sonner";
+import { useWalletClient } from "wagmi";
+
+export function useResearchResponseCreate(rootLensPostId: string) {
+  const [content, setContent] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editorKey, setEditorKey] = useState(0);
+
+  const { account } = useAuthStore();
+  const sessionClient = useSessionClient();
+  const walletClient = useWalletClient();
+  const router = useRouter();
+
+  const handleSubmit = async () => {
+    if (!content.trim()) return;
+
+    if (!account?.address || !sessionClient.data || !walletClient.data) {
+      toast.error("Please sign in and connect your wallet");
+      return;
+    }
+
+    const loadingToast = toast.loading("Posting response...");
+    setIsSubmitting(true);
+
+    try {
+      const result = await createResearchResponse(
+        rootLensPostId,
+        content,
+        account.address,
+        sessionClient.data,
+        walletClient.data,
+      );
+
+      if (!result.success) throw new Error(result.error || "Failed to post response");
+
+      toast.success("Response posted!", { id: loadingToast });
+      setContent("");
+      setEditorKey(prev => prev + 1);
+      router.refresh();
+    } catch (error) {
+      toast.error("Failed to post response", {
+        description: error instanceof Error ? error.message : "An error occurred",
+        id: loadingToast,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /** Called by the Quote button — prepends a blockquote to the current content */
+  const insertQuote = (text: string, authorName: string) => {
+    const quotedLines = text
+      .split("\n")
+      .map(line => `> ${line}`)
+      .join("\n");
+    const quote = `> **@${authorName}** wrote:\n${quotedLines}\n\n`;
+    setContent(prev => quote + prev);
+    setEditorKey(prev => prev + 1);
+  };
+
+  return {
+    content,
+    setContent,
+    isSubmitting,
+    editorKey,
+    handleSubmit,
+    insertQuote,
+  };
+}
+```
+
+---
+
+## PHASE 6: Components
+
+**Goal:** 8 new components for the Research UI.
+
+**Commit message:** `feat(research): add components`
+
+### File 6.1: `components/research/research-nav-actions.tsx` (CREATE)
+
+```typescript
+"use client";
+
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Plus } from "lucide-react";
+
+interface ResearchNavActionsProps {
+  showNewTopic?: boolean;
+  backHref?: string;
+  backLabel?: string;
+}
+
+export function ResearchNavActions({
+  showNewTopic = true,
+  backHref,
+  backLabel = "Back",
+}: ResearchNavActionsProps) {
+  return (
+    <div className="mb-6 flex items-center justify-between">
+      {backHref ? (
+        <Link href={backHref}>
+          <Button variant="outline" size="sm">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {backLabel}
+          </Button>
+        </Link>
+      ) : (
+        <div />
+      )}
+      {showNewTopic && (
+        <Link href="/research/new">
+          <Button size="sm" className="gradient-button">
+            <Plus className="mr-2 h-4 w-4" />
+            New Topic
+          </Button>
+        </Link>
+      )}
+    </div>
+  );
+}
+```
+
+### File 6.2: `components/research/research-sort-filter.tsx` (CREATE)
+
+```typescript
+"use client";
+
+import { ResearchCategory } from "@/lib/domain/research/types";
+
+interface ResearchSortFilterProps {
+  categories: ResearchCategory[];
+  activeCategory: string | null;
+  activeTag: string | null;
+  allTags: string[];
+  onCategoryChange: (slug: string | null) => void;
+  onTagChange: (tag: string | null) => void;
+}
+
+export function ResearchSortFilter({
+  categories,
+  activeCategory,
+  activeTag,
+  allTags,
+  onCategoryChange,
+  onTagChange,
+}: ResearchSortFilterProps) {
+  return (
+    <div className="mb-6 space-y-3">
+      {/* Category tabs */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => onCategoryChange(null)}
+          className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+            !activeCategory
+              ? "bg-blue-600 text-white"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-700 dark:text-gray-300"
+          }`}
+        >
+          All
+        </button>
+        {categories.map((cat) => (
+          <button
+            key={cat.slug}
+            onClick={() => onCategoryChange(cat.slug === activeCategory ? null : cat.slug)}
+            className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+              activeCategory === cat.slug
+                ? "bg-blue-600 text-white"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-700 dark:text-gray-300"
+            }`}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Tag filter */}
+      {allTags.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {activeTag && (
+            <button
+              onClick={() => onTagChange(null)}
+              className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+            >
+              #{activeTag} ✕
+            </button>
+          )}
+          {!activeTag &&
+            allTags.slice(0, 15).map((tag) => (
+              <button
+                key={tag}
+                onClick={() => onTagChange(tag)}
+                className="rounded-full bg-slate-50 px-2 py-0.5 text-xs text-slate-500 hover:bg-slate-100 dark:bg-gray-800 dark:text-gray-400"
+              >
+                #{tag}
+              </button>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### File 6.3: `components/research/research-thread-card.tsx` (CREATE)
+
+```typescript
+import Link from "next/link";
+import { ResearchThread } from "@/lib/domain/research/types";
+import { AvatarProfileLink } from "@/components/notifications/avatar-profile-link";
+import { MessageSquare, Eye } from "lucide-react";
+import { getTimeAgo } from "@/lib/shared/utils";
+
+interface ResearchThreadCardProps {
+  thread: ResearchThread;
+}
+
+export function ResearchThreadCard({ thread }: ResearchThreadCardProps) {
+  const author = thread.post.author;
+  const authorName = author.username?.localName || author.address.slice(0, 8);
+  const timeAgo = getTimeAgo(new Date(thread.createdAt));
+
+  return (
+    <Link
+      href={`/research/thread/${thread.lensPostId}`}
+      className="block rounded-lg border border-slate-200 bg-white p-5 transition-colors hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+    >
+      <div className="flex items-start gap-4">
+        <AvatarProfileLink author={author} />
+        <div className="min-w-0 flex-1">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-gray-100">
+            {thread.title}
+          </h3>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+            <span>by @{authorName}</span>
+            <span>·</span>
+            <span>{timeAgo}</span>
+            <span>·</span>
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+              {thread.category.name}
+            </span>
+          </div>
+          {thread.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {thread.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-gray-700 dark:text-gray-400"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="mt-3 flex items-center gap-4 text-sm text-gray-500">
+            <div className="flex items-center gap-1">
+              <MessageSquare className="h-4 w-4" />
+              <span>{thread.totalPosts} {thread.totalPosts === 1 ? "post" : "posts"}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Eye className="h-4 w-4" />
+              <span>{thread.viewsCount} views</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+```
+
+### File 6.4: `components/research/research-thread-list.tsx` (CREATE)
+
+```typescript
+"use client";
+
+import { useState, useEffect } from "react";
+import { ResearchThread, ResearchCategory } from "@/lib/domain/research/types";
+import { ResearchThreadCard } from "./research-thread-card";
+import { ResearchSortFilter } from "./research-sort-filter";
+import { getResearchThreads } from "@/lib/services/research/get-research-threads";
+import { Button } from "@/components/ui/button";
+
+interface ResearchThreadListProps {
+  initialThreads: ResearchThread[];
+  categories: ResearchCategory[];
+  allTags: string[];
+}
+
+export function ResearchThreadList({ initialThreads, categories, allTags }: ResearchThreadListProps) {
+  const [threads, setThreads] = useState(initialThreads);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function refetch() {
+      setLoading(true);
+      const result = await getResearchThreads({
+        categorySlug: activeCategory || undefined,
+        tag: activeTag || undefined,
+        limit: 20,
+      });
+      if (result.success && result.threads) {
+        setThreads(result.threads);
+      }
+      setLoading(false);
+    }
+    // Only refetch when filters change (not on initial mount)
+    if (activeCategory !== null || activeTag !== null) {
+      refetch();
+    } else {
+      setThreads(initialThreads);
+    }
+  }, [activeCategory, activeTag, initialThreads]);
+
+  return (
+    <div>
+      <ResearchSortFilter
+        categories={categories}
+        activeCategory={activeCategory}
+        activeTag={activeTag}
+        allTags={allTags}
+        onCategoryChange={setActiveCategory}
+        onTagChange={setActiveTag}
+      />
+
+      {loading ? (
+        <div className="py-12 text-center text-gray-500">Loading...</div>
+      ) : threads.length === 0 ? (
+        <div className="py-12 text-center text-gray-500">
+          No topics yet. Be the first to start a discussion!
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {threads.map((thread) => (
+            <ResearchThreadCard key={thread.lensPostId} thread={thread} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### File 6.5: `components/research/research-post.tsx` (CREATE)
+
+This is the core component — renders a single post in a thread. All posts (#1, #2, #3) use this. Visually identical.
+
+```typescript
+"use client";
+
+import { ResearchPublication } from "@/lib/domain/research/types";
+import { AvatarProfileLink } from "@/components/notifications/avatar-profile-link";
+import { ContentRenderer } from "@/components/shared/content-renderer";
+import { ReplyVoting } from "@/components/reply/reply-voting";
+import { getReplyContent } from "@/lib/domain/replies/content";
+import { stripThreadArticleFormatting } from "@/lib/domain/threads/content";
+import { getTimeAgo } from "@/lib/shared/utils";
+import { Button } from "@/components/ui/button";
+import { MessageCircle } from "lucide-react";
+import { postId } from "@lens-protocol/client";
+
+interface ResearchPostProps {
+  publication: ResearchPublication;
+  onReply: (quotedText: string, authorName: string) => void;
+}
+
+export function ResearchPost({ publication, onReply }: ResearchPostProps) {
+  const author = publication.post.author;
+  const authorName = author.username?.localName || author.address.slice(0, 8);
+  const timeAgo = getTimeAgo(new Date(publication.createdAt));
+
+  // Extract content — handle both root (ArticleMetadata with prefix) and responses
+  const { content, image, video } = getReplyContent(publication.post);
+
+  const handleReply = () => {
+    // Quote first ~300 chars of this post's content
+    const quoteText = content.slice(0, 300) + (content.length > 300 ? "..." : "");
+    onReply(quoteText, authorName);
+  };
+
+  return (
+    <div className="border-b border-slate-200 p-6 last:border-b-0 dark:border-gray-700" id={`post-${publication.postNumber}`}>
+      <div className="flex items-start gap-4">
+        {/* Voting */}
+        <div className="flex flex-col items-center pt-1">
+          <ReplyVoting postid={postId(publication.lensPostId)} />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          {/* Author row */}
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AvatarProfileLink author={author} />
+              <div>
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {author.metadata?.name || authorName}
+                </span>
+                <span className="ml-2 text-sm text-gray-500">@{authorName}</span>
+              </div>
+              <span className="text-sm text-gray-400">·</span>
+              <span className="text-sm text-gray-500">{timeAgo}</span>
+            </div>
+            <span className="text-sm font-medium text-gray-400">#{publication.postNumber}</span>
+          </div>
+
+          {/* Content */}
+          <ContentRenderer
+            content={{ content, image, video }}
+            className="prose prose-slate max-w-none dark:prose-invert"
+          />
+
+          {/* Actions */}
+          <div className="mt-4 flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReply}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              <MessageCircle className="mr-1 h-3 w-3" />
+              Reply
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### File 6.6: `components/research/research-post-list.tsx` (CREATE)
+
+```typescript
+import { ResearchPublication } from "@/lib/domain/research/types";
+import { ResearchPost } from "./research-post";
+
+interface ResearchPostListProps {
+  publications: ResearchPublication[];
+  onReply: (quotedText: string, authorName: string) => void;
+}
+
+export function ResearchPostList({ publications, onReply }: ResearchPostListProps) {
+  if (publications.length === 0) {
+    return (
+      <div className="py-8 text-center text-gray-500">No posts yet.</div>
+    );
+  }
+
+  return (
+    <div>
+      {publications.map((pub) => (
+        <ResearchPost key={pub.lensPostId} publication={pub} onReply={onReply} />
+      ))}
+    </div>
+  );
+}
+```
+
+### File 6.7: `components/research/research-reply-editor.tsx` (CREATE)
+
+The reply editor at the bottom of every thread page. Full TextEditor. Receives quote insertions from the Reply buttons above.
+
+```typescript
+"use client";
+
+import { useAuthStore } from "@/stores/auth-store";
+import { TextEditor } from "@/components/editor/text-editor";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Send } from "lucide-react";
+
+interface ResearchReplyEditorProps {
+  content: string;
+  onContentChange: (value: string) => void;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+  editorKey: number;
+}
+
+export function ResearchReplyEditor({
+  content,
+  onContentChange,
+  onSubmit,
+  isSubmitting,
+  editorKey,
+}: ResearchReplyEditorProps) {
+  const { isLoggedIn, account } = useAuthStore();
+
+  if (!isLoggedIn) {
+    return (
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center dark:border-gray-700 dark:bg-gray-800/50">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Sign in to participate in this discussion.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-t border-slate-200 p-6 dark:border-gray-700">
+      <div className="flex items-start gap-3">
+        <Avatar className="h-10 w-10 flex-shrink-0">
+          <AvatarImage src={account?.metadata?.picture} />
+          <AvatarFallback className="bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+            {account?.username?.localName?.[0]?.toUpperCase() || "U"}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1 space-y-3">
+          <TextEditor
+            key={editorKey}
+            onChange={onContentChange}
+            initialValue={content}
+          />
+          <div className="flex justify-end">
+            <Button
+              onClick={onSubmit}
+              disabled={!content.trim() || isSubmitting}
+              className="gradient-button"
+            >
+              <Send className="mr-2 h-4 w-4" />
+              {isSubmitting ? "Posting..." : "Post Response"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### File 6.8: `components/research/research-topic-create-form.tsx` (CREATE)
+
+```typescript
+"use client";
+
+import { ResearchCategory } from "@/lib/domain/research/types";
+import { useResearchTopicCreate } from "@/hooks/research/use-research-topic-create";
+import { TextEditor } from "@/components/editor/text-editor";
+import { TagsInput } from "@/components/ui/tags-input";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Send } from "lucide-react";
+
+interface ResearchTopicCreateFormProps {
+  categories: ResearchCategory[];
+}
+
+export function ResearchTopicCreateForm({ categories }: ResearchTopicCreateFormProps) {
+  const {
+    title, setTitle,
+    content, setContent,
+    categorySlug, setCategorySlug,
+    tags, tagInput, setTagInput, addTag, removeTag, handleTagInputKeyDown,
+    handleBlur, handleSubmit,
+    isCreating, errors, touched, isFormValid,
+  } = useResearchTopicCreate(categories);
+
+  return (
+    <Card className="rounded-3xl border border-brand-200/60 bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
+      <CardHeader className="pb-4">
+        <h1 className="text-2xl font-medium text-foreground">New Research Topic</h1>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Title */}
+          <div className="space-y-2">
+            <Label htmlFor="title">
+              Title <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={() => handleBlur("title")}
+              placeholder="What is this research about?"
+              className={touched.title && errors.title ? "border-red-500" : ""}
+            />
+            {touched.title && errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
+          </div>
+
+          {/* Category */}
+          <div className="space-y-2">
+            <Label>
+              Category <span className="text-red-500">*</span>
+            </Label>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat.slug}
+                  type="button"
+                  onClick={() => setCategorySlug(cat.slug)}
+                  className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+                    categorySlug === cat.slug
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-700 dark:text-gray-300"
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+            {touched.category && errors.category && <p className="text-sm text-red-500">{errors.category}</p>}
+          </div>
+
+          {/* Content */}
+          <div className="space-y-2">
+            <Label>
+              Content <span className="text-red-500">*</span>
+            </Label>
+            <div
+              className={`rounded-2xl border backdrop-blur-sm dark:bg-gray-800 ${
+                touched.content && errors.content
+                  ? "border-red-500 bg-red-50/50"
+                  : "border-brand-200/40 bg-white/50"
+              }`}
+              onBlur={() => handleBlur("content")}
+            >
+              <TextEditor onChange={setContent} />
+            </div>
+            {touched.content && errors.content && <p className="text-sm text-red-500">{errors.content}</p>}
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-2">
+            <Label>
+              Tags (optional) {tags.length > 0 && <span className="text-slate-500">({tags.length}/5)</span>}
+            </Label>
+            <TagsInput
+              tags={tags}
+              tagInput={tagInput}
+              setTagInput={setTagInput}
+              addTag={addTag}
+              removeTag={removeTag}
+              handleTagInputKeyDown={handleTagInputKeyDown}
+              maxTags={5}
+            />
+          </div>
+
+          <div className="flex justify-end pt-4">
+            <Button type="submit" disabled={isCreating || !isFormValid} className="gap-2">
+              <Send className="h-4 w-4" />
+              {isCreating ? "Creating..." : "Create Topic"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+---
+
+## PHASE 7: Routes
+
+**Goal:** 3 route pages for the Research section.
+
+**Commit message:** `feat(research): add route pages`
+
+### File 7.1: `app/research/page.tsx` (CREATE)
+
+The main Research listing page. Shows all threads sorted by recent activity, with category/tag filters.
+
+```typescript
+import { getResearchThreads } from "@/lib/services/research/get-research-threads";
+import { getResearchCategories } from "@/lib/services/research/get-research-categories";
+import { fetchAllResearchTags } from "@/lib/external/supabase/research-publications";
+import { ResearchNavActions } from "@/components/research/research-nav-actions";
+import { ResearchThreadList } from "@/components/research/research-thread-list";
+
+export const dynamic = "force-dynamic";
+
+export default async function ResearchPage() {
+  const [threadsResult, categoriesResult, allTags] = await Promise.all([
+    getResearchThreads({ limit: 20 }),
+    getResearchCategories(),
+    fetchAllResearchTags(),
+  ]);
+
+  const threads = threadsResult.success ? (threadsResult.threads || []) : [];
+  const categories = categoriesResult.success ? (categoriesResult.categories || []) : [];
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-gray-100">
+          Society Protocol Research
+        </h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">
+          Technical research and discussion
+        </p>
+      </div>
+
+      <ResearchNavActions />
+      <ResearchThreadList
+        initialThreads={threads}
+        categories={categories}
+        allTags={allTags}
+      />
+    </div>
+  );
+}
+```
+
+### File 7.2: `app/research/new/page.tsx` (CREATE)
+
+Create new topic page. Protected — requires login.
+
+```typescript
+import { getResearchCategories } from "@/lib/services/research/get-research-categories";
+import { ResearchTopicCreateForm } from "@/components/research/research-topic-create-form";
+import { ResearchNavActions } from "@/components/research/research-nav-actions";
+import { ProtectedRoute } from "@/components/pages/protected-route";
+import { StatusBanner } from "@/components/shared/status-banner";
+
+export default async function NewResearchTopicPage() {
+  const categoriesResult = await getResearchCategories();
+
+  if (!categoriesResult.success || !categoriesResult.categories?.length) {
+    return (
+      <div className="flex min-h-screen items-start justify-center">
+        <div className="w-full max-w-md px-4 pt-12">
+          <StatusBanner type="error" title="Error" message="Failed to load categories." />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ProtectedRoute>
+      <div className="mx-auto max-w-4xl px-4 py-8">
+        <ResearchNavActions backHref="/research" backLabel="Back to Research" showNewTopic={false} />
+        <ResearchTopicCreateForm categories={categoriesResult.categories} />
+      </div>
+    </ProtectedRoute>
+  );
+}
+```
+
+### File 7.3: `app/research/thread/[threadId]/page.tsx` (CREATE)
+
+Thread detail page — shows all posts flat with reply editor at bottom.
+
+```typescript
+import { getResearchThread } from "@/lib/services/research/get-research-thread";
+import { StatusBanner } from "@/components/shared/status-banner";
+import { ResearchNavActions } from "@/components/research/research-nav-actions";
+import { ResearchThreadView } from "@/components/research/research-thread-view";
+
+export const dynamic = "force-dynamic";
+
+export default async function ResearchThreadPage({
+  params,
+}: {
+  params: Promise<{ threadId: string }>;
+}) {
+  const { threadId } = await params;
+  const result = await getResearchThread(threadId);
+
+  if (!result.success || !result.thread || !result.publications) {
+    return (
+      <div className="flex min-h-screen items-start justify-center">
+        <div className="w-full max-w-md px-4 pt-12">
+          <StatusBanner
+            type="error"
+            title="Thread not found"
+            message={result.error || "The requested thread does not exist."}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      <ResearchNavActions backHref="/research" backLabel="Back to Research" showNewTopic={false} />
+      <ResearchThreadView thread={result.thread} publications={result.publications} />
+    </div>
+  );
+}
+```
+
+### File 7.4: `components/research/research-thread-view.tsx` (CREATE)
+
+Client component that wires together the thread header, post list, and reply editor. This is where the quote-reply flow lives.
+
+```typescript
+"use client";
+
+import { useRef } from "react";
+import { ResearchThread, ResearchPublication } from "@/lib/domain/research/types";
+import { ResearchPostList } from "./research-post-list";
+import { ResearchReplyEditor } from "./research-reply-editor";
+import { useResearchResponseCreate } from "@/hooks/research/use-research-response-create";
+import { Eye, MessageSquare } from "lucide-react";
+
+interface ResearchThreadViewProps {
+  thread: ResearchThread;
+  publications: ResearchPublication[];
+}
+
+export function ResearchThreadView({ thread, publications }: ResearchThreadViewProps) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const {
+    content, setContent,
+    isSubmitting, editorKey,
+    handleSubmit, insertQuote,
+  } = useResearchResponseCreate(thread.lensPostId);
+
+  const handleReply = (quotedText: string, authorName: string) => {
+    insertQuote(quotedText, authorName);
+    // Scroll to editor
+    editorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  return (
+    <div>
+      {/* Thread header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-gray-100">
+          {thread.title}
+        </h1>
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-gray-500">
+          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+            {thread.category.name}
+          </span>
+          {thread.tags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-gray-700 dark:text-gray-400"
+            >
+              #{tag}
+            </span>
+          ))}
+          <span className="flex items-center gap-1">
+            <MessageSquare className="h-4 w-4" />
+            {thread.totalPosts} posts
+          </span>
+          <span className="flex items-center gap-1">
+            <Eye className="h-4 w-4" />
+            {thread.viewsCount} views
+          </span>
+        </div>
+      </div>
+
+      {/* All posts — flat, same level */}
+      <div className="rounded-lg border border-slate-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+        <ResearchPostList publications={publications} onReply={handleReply} />
+
+        {/* Reply editor at bottom */}
+        <div ref={editorRef}>
+          <ResearchReplyEditor
+            content={content}
+            onContentChange={setContent}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+            editorKey={editorKey}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## PHASE 8: Homepage Integration
+
+**Goal:** Replace the technical section on the homepage with research categories linking to `/research`.
+
+**Commit message:** `feat(research): integrate with homepage`
+
+### File 8.1: `lib/services/board/get-boards.ts` (UPDATE)
+
+The technical section currently reads from the `feeds` table. We replace it with `research_categories`.
+
+Change the `getBoardSections` function to exclude the `technical` category from the board sections, and add a new function for the research section:
+
+```typescript
+// Add this import at the top:
+import { fetchAllResearchCategories } from "@/lib/external/supabase/research-categories";
+
+// Add this new interface:
+export interface ResearchSection {
+  sectionTitle: string;
+  categories: Array<{
+    slug: string;
+    name: string;
+    description: string;
+    publicationCount: number;
+    viewsCount: number;
+  }>;
+  borderColor: string;
+  isLocked: boolean;
+}
+
+// Add this new function:
+export async function getResearchSection(): Promise<ResearchSection | null> {
+  const rows = await fetchAllResearchCategories();
+  if (rows.length === 0) return null;
+
+  return {
+    sectionTitle: "SOCIETY PROTOCOL TECHNICAL SECTION",
+    categories: rows.map(r => ({
+      slug: r.slug,
+      name: r.name,
+      description: r.description || "",
+      publicationCount: r.publication_count,
+      viewsCount: r.views_count,
+    })),
+    borderColor: "blue",
+    isLocked: true,
+  };
+}
+```
+
+In `getBoardSections`, change the categories array to exclude `technical`:
+
+```typescript
+// Change this line:
+const categories = ["general", "functions", "others", "technical", "partners"];
+
+// To:
+const categories = ["general", "functions", "others", "partners"];
+```
+
+### File 8.2: `components/home/research-category-list.tsx` (CREATE)
+
+New homepage component that renders the 7 research categories linking to `/research`.
+
+```typescript
+import Link from "next/link";
+import { Lock } from "lucide-react";
+import { ResearchSection } from "@/lib/services/board/get-boards";
+
+interface ResearchCategoryListProps {
+  section: ResearchSection;
+}
+
+export function ResearchCategoryList({ section }: ResearchCategoryListProps) {
+  return (
+    <div className="w-full overflow-hidden rounded-lg border border-yellow-600/50 bg-[#1a1b4b]">
+      {/* Header */}
+      <div className="border-l-4 border-blue-600 bg-[#252663] px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Lock className="h-4 w-4 text-yellow-500" />
+          <h3 className="text-sm font-bold uppercase tracking-wide text-yellow-100">
+            {section.sectionTitle}
+          </h3>
+        </div>
+      </div>
+
+      {/* Category List */}
+      <div className="divide-y divide-slate-600/50">
+        {section.categories.map((cat) => (
+          <Link
+            key={cat.slug}
+            href="/research"
+            className="block transition-colors hover:bg-[#252663]"
+          >
+            <div className="flex items-center justify-between px-4 py-4">
+              <div className="min-w-0 flex-1">
+                <h4 className="font-semibold text-yellow-400">{cat.name}</h4>
+                <p className="mt-1 text-xs text-slate-300">{cat.description}</p>
+              </div>
+              <div className="hidden items-center gap-8 md:flex ml-4">
+                <div className="min-w-[60px] text-center">
+                  <div className="text-xs text-slate-400">Topics</div>
+                  <div className="text-sm font-semibold text-slate-200">
+                    {cat.publicationCount.toLocaleString()}
+                  </div>
+                </div>
+                <div className="min-w-[60px] text-center">
+                  <div className="text-xs text-slate-400">Views</div>
+                  <div className="text-sm font-semibold text-slate-200">
+                    {cat.viewsCount.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### File 8.3: `app/page.tsx` (UPDATE)
+
+Add the research section to the homepage, in the same position where the technical board section used to appear.
+
+```typescript
+import { CommunityGrid } from "@/components/home/community-grid";
+import { ForumCategory } from "@/components/home/forum-category";
+import { FunctionGrid } from "@/components/home/function-grid";
+import { ResearchCategoryList } from "@/components/home/research-category-list";
+import { getFeaturedCommunities } from "@/lib/services/community/get-featured-communities";
+import { getBoardSections, getResearchSection } from "@/lib/services/board/get-boards";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function HomePage() {
+  const [boardSections, researchSection, featuredCommunitiesResult] = await Promise.all([
+    getBoardSections(),
+    getResearchSection(),
+    getFeaturedCommunities(),
+  ]);
+
+  const featuredCommunities = featuredCommunitiesResult.success
+    ? (featuredCommunitiesResult.communities ?? [])
+    : [];
+
+  return (
+    <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="flex flex-col items-center gap-12">
+        {/* Board Sections (general, functions, others, partners — no technical) */}
+        {boardSections.map((section) => (
+          <div key={section.sectionTitle} className="w-full max-w-5xl">
+            {section.layout === "grid" ? (
+              <FunctionGrid
+                title={section.sectionTitle}
+                feeds={section.feeds}
+                borderColor={section.borderColor}
+              />
+            ) : (
+              <ForumCategory
+                title={section.sectionTitle}
+                feeds={section.feeds}
+                borderColor={section.borderColor}
+                isLocked={section.isLocked}
+              />
+            )}
+          </div>
+        ))}
+
+        {/* Research Section (replaces technical boards) */}
+        {researchSection && (
+          <div className="w-full max-w-5xl">
+            <ResearchCategoryList section={researchSection} />
+          </div>
+        )}
+
+        {/* Featured Communities */}
+        <div className="w-full max-w-5xl">
+          <h2 className="mb-8 text-left text-xl font-bold text-slate-900 dark:text-gray-100">
+            LOCAL
+          </h2>
+          <CommunityGrid communities={featuredCommunities} />
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## PHASE 9: Editor Improvements
+
+**Goal:** Fix ContentRenderer for GFM and uncomment table support.
+
+**Commit message:** `fix(editor): add remarkGfm to ContentRenderer and enable tables`
+
+### File 9.1: `components/shared/content-renderer.tsx` (UPDATE)
+
+Add `remarkGfm` to the ReactMarkdown plugins:
+
+```typescript
+// Add import:
+import remarkGfm from "remark-gfm";
+
+// Change the ReactMarkdown line from:
+<ReactMarkdown remarkPlugins={[remarkBreaks]}>
+
+// To:
+<ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm]}>
+```
+
+### File 9.2: `components/editor/slash-menu.tsx` (UPDATE)
+
+Uncomment the table slash menu item:
+
+```typescript
+// Uncomment this line:
+<SlashMenuItem label="Table" onSelect={() => editor.commands.insertTable({ row: 3, col: 3 })} />
+```
+
+---
+
+## PHASE 10: Revalidation Helpers
+
+**Goal:** Add revalidation paths for research routes.
+
+**Commit message:** `feat(research): add revalidation helpers`
+
+### File 10.1: `app/actions/revalidate-path.ts` (UPDATE)
+
+Add these functions to the existing file:
+
+```typescript
+export async function revalidateResearchPath() {
+  revalidatePath("/research");
+}
+
+export async function revalidateResearchThreadPath(threadId: string) {
+  revalidatePath(`/research/thread/${threadId}`);
+}
+```
+
+---
+
+## PHASE 11: View Tracking API
+
+**Goal:** Add an API route for tracking research thread views.
+
+**Commit message:** `feat(research): add view tracking`
+
+### File 11.1: `app/api/research/[threadId]/view/route.ts` (CREATE)
+
+```typescript
+import { NextResponse } from "next/server";
+import { incrementResearchViews } from "@/lib/external/supabase/research-publications";
+
+export async function POST(_request: Request, { params }: { params: Promise<{ threadId: string }> }) {
+  try {
+    const { threadId } = await params;
+    await incrementResearchViews(threadId);
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ success: false }, { status: 500 });
+  }
+}
+```
+
+---
+
+## Summary: All Files
+
+### New files (22)
+
+| #   | File                                                 | Phase |
+| --- | ---------------------------------------------------- | ----- |
+| 1   | `lib/domain/research/types.ts`                       | 1     |
+| 2   | `lib/external/supabase/research-categories.ts`       | 2     |
+| 3   | `lib/external/supabase/research-publications.ts`     | 2     |
+| 4   | `lib/adapters/research-adapter.ts`                   | 3     |
+| 5   | `lib/services/research/get-research-categories.ts`   | 4     |
+| 6   | `lib/services/research/get-research-threads.ts`      | 4     |
+| 7   | `lib/services/research/get-research-thread.ts`       | 4     |
+| 8   | `lib/services/research/create-research-thread.ts`    | 4     |
+| 9   | `lib/services/research/create-research-response.ts`  | 4     |
+| 10  | `hooks/research/use-research-topic-create.ts`        | 5     |
+| 11  | `hooks/research/use-research-response-create.ts`     | 5     |
+| 12  | `components/research/research-nav-actions.tsx`       | 6     |
+| 13  | `components/research/research-sort-filter.tsx`       | 6     |
+| 14  | `components/research/research-thread-card.tsx`       | 6     |
+| 15  | `components/research/research-thread-list.tsx`       | 6     |
+| 16  | `components/research/research-post.tsx`              | 6     |
+| 17  | `components/research/research-post-list.tsx`         | 6     |
+| 18  | `components/research/research-reply-editor.tsx`      | 6     |
+| 19  | `components/research/research-topic-create-form.tsx` | 6     |
+| 20  | `components/research/research-thread-view.tsx`       | 7     |
+| 21  | `components/home/research-category-list.tsx`         | 8     |
+| 22  | `app/api/research/[threadId]/view/route.ts`          | 11    |
+
+### New route pages (3)
+
+| #   | Route                         | File                                      | Phase |
+| --- | ----------------------------- | ----------------------------------------- | ----- |
+| 1   | `/research`                   | `app/research/page.tsx`                   | 7     |
+| 2   | `/research/new`               | `app/research/new/page.tsx`               | 7     |
+| 3   | `/research/thread/[threadId]` | `app/research/thread/[threadId]/page.tsx` | 7     |
+
+### Updated files (5)
+
+| #   | File                                     | Phase | Change                                               |
+| --- | ---------------------------------------- | ----- | ---------------------------------------------------- |
+| 1   | `lib/shared/constants.ts`                | 4     | Add RESEARCH_GROUP_ADDRESS, RESEARCH_FEED_ADDRESS    |
+| 2   | `lib/services/board/get-boards.ts`       | 8     | Remove technical from boards, add getResearchSection |
+| 3   | `app/page.tsx`                           | 8     | Add ResearchCategoryList to homepage                 |
+| 4   | `components/shared/content-renderer.tsx` | 9     | Add remarkGfm                                        |
+| 5   | `components/editor/slash-menu.tsx`       | 9     | Uncomment table                                      |
+| 6   | `app/actions/revalidate-path.ts`         | 10    | Add research revalidation helpers                    |
+
+### Supabase (run manually)
+
+- Create `research_categories` table + seed 7 rows
+- Create `research_publications` table + indexes
+
+### Shared code reused (no changes needed)
+
+| Code                                                                                                     | Used for                              |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `lib/external/lens/primitives/articles.ts` → `createThreadArticle`                                       | Creating root publications            |
+| `lib/external/lens/primitives/posts.ts` → `fetchPostsByFeed`, `fetchPostsBatch`, `fetchCommentsByPostId` | Fetching posts                        |
+| `lib/domain/replies/content.ts` → `getReplyContent`                                                      | Extracting content from any Post      |
+| `lib/domain/threads/content.ts` → `stripThreadArticleFormatting`                                         | Stripping prefix from article content |
+| `components/shared/content-renderer.tsx` → `ContentRenderer`                                             | Rendering markdown                    |
+| `components/editor/text-editor.tsx` → `TextEditor`                                                       | Full rich editor for all posts        |
+| `components/notifications/avatar-profile-link.tsx` → `AvatarProfileLink`                                 | Author avatars                        |
+| `components/reply/reply-voting.tsx` → `ReplyVoting`                                                      | Voting on posts                       |
+| `components/ui/tags-input.tsx` → `TagsInput`                                                             | Tag input in create form              |
+| `hooks/forms/use-tags-input.ts` → `useTagsInput`                                                         | Tag state management                  |
+| `components/pages/protected-route.tsx` → `ProtectedRoute`                                                | Auth gate                             |
+
+---
+
+## Testing Checklist (Phase 12)
+
+After all phases are complete, verify:
+
+- [ ] `/research` page loads, shows threads sorted by recent activity
+- [ ] Category filter tabs work — clicking filters the list
+- [ ] Tag filter works
+- [ ] "All" tab shows everything
+- [ ] `/research/new` page loads with category selector, tag input, full editor
+- [ ] Creating a topic: appears on listing, category count increments on homepage
+- [ ] `/research/thread/[id]` page loads, shows all posts flat
+- [ ] Post #1 (root) looks identical to #2, #3 (responses)
+- [ ] Reply button on each post scrolls to editor with blockquote
+- [ ] Creating a response: appears in thread, total_posts increments
+- [ ] Homepage: technical section shows 7 categories with counts, links to `/research`
+- [ ] Homepage: technical section no longer shows as board links
+- [ ] ContentRenderer renders tables correctly (GFM)
+- [ ] Slash menu shows Table option
+- [ ] View count increments when visiting a thread
+- [ ] Build passes: `npm run build`
+- [ ] Type check passes: `npx tsc --noEmit` (for research files)
+
+---
+
+## Before You Start
+
+1. **User creates Lens Group** → provides address → update `RESEARCH_GROUP_ADDRESS` in constants
+2. **User creates Lens Feed** → provides address → update `RESEARCH_FEED_ADDRESS` in constants
+3. **User runs SQL** in Supabase to create tables and seed categories
+4. **Create branch:** `git checkout -b feature/research-system`
+5. **Follow phases top to bottom.** Commit after each phase.
+
+### System 2: Research Section (Article-Centric)
+
+- **Lens Primitive:** Lens Feeds + Lens Posts (article metadata type) + GroupGatedFeedRule
+- **Concept:** 7 Lens Feeds that look like boards from the outside, but inside they present an article/publication-centric layout (more like Discourse or a research journal)
+- **Behavior:** When you enter the Research section, you see a different layout — articles with titles, abstracts, full content. More editorial, less conversational
+- **Access:** Token-gated. Only members of a specific Lens Group (or token holders) can post. Everyone can read
+- **Feeds:** The 7 Technical feeds (General Architecture, State Machine, Architectural Objects, Consensus, Cryptography, Account System, Security)
+
+## 2. How Each System Maps to Lens Primitives
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        YOUR APP                                  │
+├──────────────────┬──────────────────┬────────────────────────────┤
+│   SYSTEM 1       │   SYSTEM 2       │   SYSTEM 3                 │
+│   Boards         │   Research        │   Communities              │
+│                  │                  │                            │
+│   24 Lens Feeds  │   7 Lens Feeds   │   N Lens Groups            │
+│   (open)         │   (gated)        │   (each with 1 Feed)       │
+│                  │                  │                            │
+│   Flat posts     │   Articles       │   Threads + replies        │
+│   + comments     │   + peer review  │   (existing system)        │
+│                  │   comments       │                            │
+│   Board layout   │   Journal layout │   Forum layout             │
+│   (Bitcointalk)  │   (Discourse)    │   (LensForum original)     │
+└──────────────────┴──────────────────┴────────────────────────────┘
+```
+
+### Lens Primitives Usage Per System
+
+| Primitive          | System 1 (Boards)     | System 2 (Research)        | System 3 (Communities)     |
+| ------------------ | --------------------- | -------------------------- | -------------------------- |
+| **Feed**           | 24 standalone feeds   | 7 standalone feeds (gated) | 1 per Group (auto-created) |
+| **Group**          | Not used              | 1 Group for gating         | 1 per community            |
+| **Post (article)** | Root posts in feed    | Research articles in feed  | Thread root posts          |
+| **Comment**        | Flat replies on posts | Peer review / discussion   | Thread replies             |
+| **Reaction**       | Upvote/downvote       | Upvote/downvote            | Upvote/downvote            |
+| **Feed Rules**     | None (open)           | GroupGatedFeedRule         | Managed by Group           |
+
+### System 2 (Research) — Not Built Yet
+
+**What exists that can be reused:**
+
+- The same Lens Feed infrastructure as Boards (feeds exist, posting works)
+- `createThreadArticle` already creates article-type metadata — perfect for research
+- The `is_locked` flag in Supabase already marks these 7 feeds
+- The lock UI already shows on the homepage
+
+**What needs to be built:**
+
+1. A different page layout for `/commons/[address]` when the feed is in the `technical` category — article-centric instead of board-centric
+2. Token gating enforcement — check group membership or token ownership before allowing posts
+3. Article detail page with full content rendering (longer form than board posts)
+4. Possibly: peer review comments with a different UI treatment than board comments
+
+## 4. Architecture: How the Three Systems Share Code
+
+The key insight is that all three systems use the same Lens primitives layer. The difference is in the **service layer** (business logic) and **UI layer** (presentation).
+
+```
+┌─────────────────────────────────────────────────┐
+│                   UI LAYER                       │
+│  Board Layout │ Research Layout │ Community Layout│
+├─────────────────────────────────────────────────┤
+│                SERVICE LAYER                     │
+│  Board Service│ Research Service│ Community Svc  │
+│  (get posts,  │ (get articles,  │ (get threads,  │
+│   create post)│  gate check)    │  join group)   │
+├─────────────────────────────────────────────────┤
+│              LENS PRIMITIVES LAYER               │
+│  (shared — articles.ts, posts.ts, groups.ts)     │
+├─────────────────────────────────────────────────┤
+│              SUPABASE LAYER                      │
+│  feeds table │ feed_posts table │ communities    │
+│              │                  │ community_threads│
+└─────────────────────────────────────────────────┘
+```
+
+### What's Shared (Don't Touch)
+
+- `lib/external/lens/primitives/` — all Lens API calls
+- `lib/external/grove/` — storage client
+- `lib/external/lens/protocol-client.ts` — Lens client
+- `hooks/common/use-voting.ts` — voting logic
+- `components/shared/content-renderer.tsx` — content display
+- `stores/auth-store.ts` — authentication state
+
+### What's System-Specific
+
+**Research:**
+
+- Needs new: `lib/services/research/` — article CRUD + gate check
+- Needs new: `lib/adapters/research-adapter.ts` — Lens Post → Research Article
+- Needs new: `components/research/` — article-centric UI
+- Routes: `/commons/[address]` (same route, different layout based on category)
+
+### Phase 2: Build Research Layout (System 2) — New UI, Same Backend (4-5 days)
+
+The Research section uses the same Lens Feeds as Boards but with a different presentation and access control.
+
+**Step 2.1:** Detect feed category in the commons page
+
+- In `/commons/[address]/page.tsx`, check if `feed.category === 'technical'`
+- If yes, render the Research layout instead of the Board layout
+
+**Step 2.2:** Build Research layout components
+
+- `components/research/research-article-list.tsx` — list of articles with title, author, abstract, date
+- `components/research/research-article-detail.tsx` — full article view with content, comments
+- Design should feel more like a journal/Discourse than a message board
+
+**Step 2.3:** Implement access control
+
+- Check if user is a member of the gating Group before showing "Create Article" button
+- Use existing `GroupGatedFeedRule` on the Lens Feed (if already configured) OR
+- Check membership client-side using `group.operations.isMember`
+- Non-members see a "Request Access" or "Join Research Group" prompt
+
+**Step 2.4:** Article creation form
+
+- Reuse `createThreadArticle` — it already creates article metadata
+- Add richer form: title, abstract/summary, full content, tags, references
+- More editorial than the board post form
+
+## 6. Key Decisions
+
+1. **Research section gating mechanism:** Use `GroupGatedFeedRule` on the Lens Feed contracts (enforced on-chain) or check membership client-side? On-chain is more secure but requires updating the Feed contracts. Client-side is faster to implement but can be bypassed.
+
+2. **Research section: same route or separate route?** Currently all feeds go to `/commons/[address]`. The Research feeds could stay there (with layout switching based on category) or get their own route like `/research/[address]`. Same route is simpler.
+
+# Research System Implementation Plan (v5)
+
+**Date:** March 17, 2026
+**Status:** Planning — All decisions confirmed, ready for build spec
+
+---
+
+## 1. Core Concept
+
+The Research section is a single unified space — like Discourse or ethresear.ch. From the outside (homepage), 7 category entries show publication counts. Clicking any of them sends the user to the Research page, which always shows the most recent threads first. Inside, the user can sort/filter by Recency, Categories, or Tags.
+
+Every piece of content is a full publication with the same rich editor. The root publication is simply post #1 in a thread. All posts are at the same level — same visual treatment, same formatting, same weight. No hierarchy, no nesting. Flat threads.
+
+---
+
+## 2. Confirmed Decisions
+
+| Question                    | Answer                                                                                                                               |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Q1: Research Group**      | Does not exist yet. User will create it. User is owner/admin.                                                                        |
+| **Q2: Research Feed**       | Does not exist yet. User will delete the 7 existing technical feeds and create 1 new Research Feed.                                  |
+| **Q3: Access model**        | Token-gated with ERC-1155. Initially approval-only to prevent bots until token is ready.                                             |
+| **Q4: Non-member posting**  | No. Only vetted members can write anything (root topics + responses). Exclusive.                                                     |
+| **Q5: Existing 7 feeds**    | Discarded. No longer needed.                                                                                                         |
+| **Categories/tags storage** | Supabase only. Not saved as separate Lens containers. Categories and tags are metadata in the `article()` content and Supabase rows. |
+| **Lens model**              | 1 Group + 1 Feed. Cleanest approach.                                                                                                 |
+| **Thread model**            | Flat. All posts same level. Root is just #1.                                                                                         |
+| **Board flat threads**      | User wants to retrofit Boards to flat model too, but AFTER Research is done.                                                         |
+
+---
+
+## 3. The Discourse/ethresear.ch Model
+
+### Creating a new topic
+
+1. User clicks "New Topic" on the Research page
+2. Fills in: title, category (one of 7), tags (optional), content (full rich editor)
+3. This creates a thread — the content becomes post #1
+4. The thread appears in the listing, filtered by its category
+
+### Inside a thread
+
+All posts are flat and visually identical:
+
+```
+Thread: "On the Impossibility of Stateless Consensus"
+Category: Consensus · Tags: #bft #proof · 👁 120 views
+
+┌──────────────────────────────────────────────────────────┐
+│ #1 · @researcher · March 15, 2026                ▲ 23   │
+│                                                          │
+│ We present a formal proof that any consensus             │
+│ mechanism requiring fewer than...                        │
+│                                                          │
+│ [Full rich content — same level as all others]           │
+│                                                          │
+│                                                  Reply   │
+├──────────────────────────────────────────────────────────┤
+│ #2 · @reviewer1 · March 16, 2026                 ▲ 8    │
+│                                                          │
+│ > @researcher wrote:                                     │
+│ > "any consensus mechanism requiring fewer than..."      │
+│                                                          │
+│ I disagree with this premise. Consider the case where... │
+│                                                          │
+│                                                  Reply   │
+├──────────────────────────────────────────────────────────┤
+│ #3 · @reviewer2 · March 16, 2026                 ▲ 5    │
+│                                                          │
+│ Building on what @reviewer1 said...                      │
+│                                                          │
+│                                                  Reply   │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│ [Full TextEditor — write your response here]             │
+│                                                          │
+│                                     [Post Response]      │
+└──────────────────────────────────────────────────────────┘
+```
+
+- Every post has a "Reply" button at the bottom right
+- Clicking "Reply" on any post → opens/scrolls to the composer at the bottom, pre-filled with a blockquote of that post's content and author attribution
+- The composer is always at the bottom — full TextEditor, same capabilities as the root post editor
+- Post #1 looks identical to #2, #3, etc.
+
+---
+
+## 4. Lens Primitive Mapping
+
+### Why 1 Group + 1 Feed is optimal
+
+| Alternative                | Problem                                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 7 Feeds (one per category) | Cross-category browsing requires 7 API calls. Categories become rigid Lens containers instead of flexible metadata. |
+| No Feed, just Group posts  | Feeds provide better query/filter APIs from Lens. Without a Feed, fetching posts is harder.                         |
+| Multiple Groups            | Unnecessary complexity. One Group gates access to one Feed.                                                         |
+
+**Chosen: 1 Group + 1 Feed.** Categories and tags are Supabase metadata only.
+
+### How it maps
+
+```
+Lens Group: "Society Protocol Research"
+  ├── Gates write access (ERC-1155 token / approval-only)
+  └── Lens Feed: "Research Feed"
+        ├── Post A (root, article metadata: title + content + tags)
+        │     ├── Post B (commentOn: A, article metadata: content only)
+        │     ├── Post C (commentOn: A, article metadata: content only)
+        │     └── Post D (commentOn: A, article metadata: content only)
+        └── Post E (root, article metadata: title + content + tags)
+              └── Post F (commentOn: E, article metadata: content only)
+```
+
+- Root posts = `post()` with `feed` + `article()` metadata (has title, tags)
+- Responses = `post()` with `commentOn: root` + `article()` metadata (content only)
+- ALL responses point to the ROOT (flat, not nested)
+- `article()` metadata supports full markdown — same as root posts
+
+### Existing Lens primitives (no new ones needed)
+
+| Operation        | Lens API                                                     | Exists?                                     |
+| ---------------- | ------------------------------------------------------------ | ------------------------------------------- |
+| Create root      | `post()` with `feed` + `article()`                           | ✅ `createThreadArticle`                    |
+| Create response  | `post()` with `commentOn` + `article()`                      | ✅ `createReply` (already uses `article()`) |
+| Fetch roots      | `fetchPosts({ filter: { feeds, postTypes: [Root] } })`       | ✅ `fetchPostsByFeed`                       |
+| Fetch responses  | `fetchPostReferences(post, { referenceTypes: [CommentOn] })` | ✅ `fetchCommentsByPostId`                  |
+| Check membership | `group.operations.isMember`                                  | ✅ `fetchGroupFromLens`                     |
+
+---
+
+## 5. UX: Outside (Homepage)
+
+The 7 category entries on the homepage show publication counts:
+
+```
+SOCIETY PROTOCOL TECHNICAL SECTION
+┌──────────────────────────┬────────┬───────┐
+│ General Architecture     │ 12 pub │ 340 👁│  → /research
+│ State Machine            │  8 pub │ 210 👁│  → /research
+│ Architectural Objects    │  5 pub │ 120 👁│  → /research
+│ Consensus                │ 15 pub │ 890 👁│  → /research
+│ Cryptography             │ 11 pub │ 560 👁│  → /research
+│ Account System           │  3 pub │  80 👁│  → /research
+│ Security                 │  7 pub │ 290 👁│  → /research
+└──────────────────────────┴────────┴───────┘
+```
+
+- All 7 link to `/research` (the same page)
+- Publication counts come from Supabase `research_categories.publication_count`
+- Counts track root publications only (new topics), not responses
+- The Research page always opens showing the most recent threads first
+
+---
+
+## 6. UX: Inside (Research Page)
+
+```
+/research
+
+┌─────────────────────────────────────────────────────────────┐
+│  SOCIETY PROTOCOL RESEARCH                                   │
+│  [Join Group]  or  [New Topic]                               │
+│                                                              │
+│  Sort by: [Recent ▾]  [Categories ▾]  [Tags ▾]              │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ 📄 On the Impossibility of Stateless Consensus      │    │
+│  │    by @researcher · 2 days ago · Consensus           │    │
+│  │    Tags: #bft #proof                                 │    │
+│  │    💬 4 posts · 👁 120 views · ▲ 23                 │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ 📄 Formal Verification of the Account Model         │    │
+│  │    by @author2 · 5 days ago · Account System         │    │
+│  │    Tags: #formal #model                              │    │
+│  │    💬 12 posts · 👁 340 views · ▲ 45                │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  [Load More]                                                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Sorting/filtering options
+
+- **Recent** (default): All threads sorted by most recent activity (last post date)
+- **Categories**: Filter by one of the 7 categories (or "All")
+- **Tags**: Filter by tag
+
+These are Supabase queries. Lens stores the content; Supabase handles filtering/sorting.
+
+---
+
+## 7. Data Model
+
+### Supabase
+
+```sql
+-- Categories (the 7 homepage entries + filtering)
+CREATE TABLE research_categories (
+  slug TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  display_order INTEGER DEFAULT 0,
+  publication_count INTEGER DEFAULT 0,  -- root topics only
+  views_count INTEGER DEFAULT 0
+);
+
+-- All publications (root + responses)
+CREATE TABLE research_publications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  lens_post_id TEXT NOT NULL UNIQUE,
+  root_lens_post_id TEXT,              -- NULL for root, root's ID for responses
+  category_slug TEXT NOT NULL REFERENCES research_categories(slug),
+  author_address TEXT NOT NULL,
+  title TEXT,                          -- root only
+  tags TEXT[],                         -- root only
+  post_number INTEGER NOT NULL,        -- #1, #2, #3 within thread
+  views_count INTEGER DEFAULT 0,       -- thread views (root only)
+  total_posts INTEGER DEFAULT 1,       -- thread post count (root only)
+  last_activity_at TIMESTAMPTZ DEFAULT now(),  -- for "recent" sorting (root only)
+  is_root BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+INSERT INTO research_categories (slug, name, description, display_order) VALUES
+  ('architecture', 'General Architecture', 'System design and architecture', 1),
+  ('state-machine', 'State Machine', 'State machine design and transitions', 2),
+  ('objects', 'Architectural Objects', 'Core objects and data structures', 3),
+  ('consensus', 'Consensus', 'Consensus mechanisms and protocols', 4),
+  ('cryptography', 'Cryptography', 'Cryptographic primitives and protocols', 5),
+  ('account-system', 'Account System', 'Account model and identity', 6),
+  ('security', 'Security', 'Security analysis and threat models', 7);
+```
+
+When a response is created:
+
+1. Insert into `research_publications` with `is_root = false`, `root_lens_post_id` set, `post_number` = next number
+2. Increment `total_posts` on the root publication row
+3. Update `last_activity_at` on the root publication row (for "recent" sorting)
+
+When a root topic is created:
+
+1. Insert into `research_publications` with `is_root = true`, `post_number = 1`
+2. Increment `publication_count` on the matching `research_categories` row
+
+---
+
+## 8. Application Architecture
+
+### Domain Types (`lib/domain/research/types.ts`)
+
+```typescript
+interface ResearchCategory {
+  slug: string;
+  name: string;
+  description: string;
+  displayOrder: number;
+  publicationCount: number;
+  viewsCount: number;
+}
+
+interface ResearchThread {
+  rootPublication: ResearchPublication;
+  category: ResearchCategory;
+  title: string;
+  tags: string[];
+  totalPosts: number;
+  viewsCount: number;
+  lastActivityAt: string;
+}
+
+interface ResearchPublication {
+  id: string;
+  lensPostId: string;
+  rootLensPostId: string | null;
+  post: Post; // Full Lens Post — never destructured
+  postNumber: number;
+  isRoot: boolean;
+  createdAt: string;
+}
+```
+
+### Services (`lib/services/research/`)
+
+```
+get-research-categories.ts        — all 7 categories with counts
+get-research-threads.ts           — thread listing (sorted by recency, filterable by category/tag)
+get-research-thread.ts            — single thread: root + all responses (flat, ordered by post_number)
+create-research-thread.ts         — create root topic (Lens post + Supabase)
+create-research-response.ts       — create response (Lens commentOn + Supabase)
+```
+
+### Components (`components/research/`)
+
+```
+research-sort-filter.tsx          — sort/filter controls (Recent, Categories, Tags)
+research-thread-card.tsx          — thread card for listing
+research-thread-list.tsx          — list with pagination
+research-post.tsx                 — single post in thread (all posts use this — #1, #2, #3...)
+research-post-list.tsx            — flat list of posts
+research-reply-editor.tsx         — full TextEditor at bottom + quote insertion
+research-nav-actions.tsx          — back + "New Topic"
+research-access-gate.tsx          — membership check / "Join Group"
+```
+
+### Routes (`app/research/`)
+
+```
+app/research/
+├── page.tsx                      — listing (recent threads, sort/filter)
+├── new/
+│   └── page.tsx                  — create topic (title, category, tags, content)
+└── thread/
+    └── [threadId]/
+        └── page.tsx              — thread page (flat posts + reply editor at bottom)
+```
+
+---
+
+## 9. Homepage Integration
+
+The 7 technical feeds in the `feeds` table are replaced by `research_categories`. The homepage component for the technical section reads from `research_categories` instead of `feeds`. Each entry links to `/research`.
+
+The `feeds` table keeps only the board feeds (24 entries). Clean separation.
+
+---
+
+## 10. Editor Improvements (Tracked in ComposerImprovements.md)
+
+Required for Research launch:
+
+1. Add `remarkGfm` to `ContentRenderer` — table/GFM rendering
+2. Quote-reply feature — "Reply" button on each post inserts blockquote with attribution into composer
+3. Uncomment table support in slash menu
+
+See `MyDataSource/ComposerImprovements.md` for full details.
+
+---
+
+## 11. Future: Board Flat Threads
+
+User wants to retrofit the Board system to use the same flat thread model after Research is complete. Currently Boards use nested comment replies. The Research implementation will establish the flat thread pattern that Boards can adopt later.
+
+---
+
+## 12. What Makes Research Different from Boards
+
+| Aspect       | Boards (current)                     | Research                             |
+| ------------ | ------------------------------------ | ------------------------------------ |
+| Container    | 24 separate Feeds                    | 1 Feed + 1 Group                     |
+| Categories   | Each feed IS a category              | Supabase metadata                    |
+| Thread model | Nested comment replies               | Flat — all posts same level          |
+| Root post    | Visually distinct                    | Same level as all others (#1)        |
+| Responses    | Short comments, nested               | Full publications, flat, same editor |
+| Access       | Open                                 | Token-gated / approval-only          |
+| Sorting      | By feed                              | By recency, category, or tag         |
+| Homepage     | 24 board links → `/boards/[address]` | 7 category entries → `/research`     |
+| Route        | `/boards/[address]/post/[id]`        | `/research/thread/[id]`              |
+| Editor       | Full TextEditor                      | Same + quote-reply                   |
+
+---
+
+## 13. Estimated Effort
+
+| Phase | Description                                    | Time      |
+| ----- | ---------------------------------------------- | --------- |
+| 1     | Lens Group + Feed creation (user does this)    | 30 min    |
+| 2     | Supabase migration (categories + publications) | 30 min    |
+| 3     | Domain types + adapters                        | 30 min    |
+| 4     | Services (5 files)                             | 2-3 hours |
+| 5     | Hooks                                          | 1 hour    |
+| 6     | Components (8 files)                           | 3-4 hours |
+| 7     | Routes (3 pages)                               | 1-2 hours |
+| 8     | Homepage integration                           | 1 hour    |
+| 9     | Editor improvements (remarkGfm + quote-reply)  | 1-2 hours |
+| 10    | Testing                                        | 1-2 hours |
+
+**Total: ~12-16 hours**
+
+---
+
+## 14. Next Steps
+
+1. ✅ All questions answered — plan is confirmed
+2. User creates the Lens Group (owner/admin) and provides the address
+3. User creates 1 Lens Feed for Research and provides the address
+4. User can delete the 7 old technical feed addresses
+5. Create `ResearchBuildSpec.md` — exact code for each phase (same format as `BoardBuildSpec.md`)
+6. Implement phase by phase

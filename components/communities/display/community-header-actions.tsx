@@ -7,29 +7,25 @@ import { LeaveCommunityButton } from "@/components/communities/display/leave-com
 import { NewThreadButton } from "@/components/communities/display/new-thread-button";
 import { Community } from "@/lib/domain/communities/types";
 import { getCommunity } from "@/lib/services/community/get-community";
-import { useAuthStore } from "@/stores/auth-store";
-import { Address } from "@/types/common";
 import { useSessionClient } from "@lens-protocol/react";
+import { Address } from "@/types/common";
 
 interface CommunityHeaderActionsProps {
   communityAddr: Address;
+  initialCommunity?: Community;
 }
 
-export function CommunityHeaderActions({ communityAddr }: CommunityHeaderActionsProps) {
-  const [community, setCommunity] = useState<Community | null>(null);
+export function CommunityHeaderActions({ communityAddr, initialCommunity }: CommunityHeaderActionsProps) {
+  const [community, setCommunity] = useState<Community | null>(initialCommunity ?? null);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
-
-  const { isLoggedIn } = useAuthStore();
   const sessionClient = useSessionClient();
 
   const refetchCommunity = async () => {
-    if (sessionClient.loading) {
-      return;
-    }
+    if (sessionClient.loading) return;
     try {
-      const community = await getCommunity(communityAddr, sessionClient.data);
-      if (community.success && community.community) {
-        setCommunity(community.community);
+      const result = await getCommunity(communityAddr, sessionClient.data);
+      if (result.success && result.community) {
+        setCommunity(result.community);
       }
     } catch (error) {
       console.error("Error fetching community data:", error);
@@ -41,11 +37,7 @@ export function CommunityHeaderActions({ communityAddr }: CommunityHeaderActions
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [communityAddr, sessionClient.data, sessionClient.loading]);
 
-  const handleDialogOpen = (open: boolean) => setShowLeaveDialog(open);
-
-  if (!community) {
-    return null;
-  }
+  if (!community) return null;
 
   return (
     <div className="mt-0 flex w-full flex-row items-center justify-between gap-2 md:mt-2">
@@ -54,7 +46,7 @@ export function CommunityHeaderActions({ communityAddr }: CommunityHeaderActions
       </div>
       <div className="flex flex-row items-center gap-1.5">
         <JoinCommunityButton community={community} onStatusChange={refetchCommunity} />
-        <LeaveCommunityButton community={community} onDialogOpen={handleDialogOpen} />
+        <LeaveCommunityButton community={community} onDialogOpen={(open) => setShowLeaveDialog(open)} />
       </div>
       <LeaveCommunityDialog
         open={showLeaveDialog}
