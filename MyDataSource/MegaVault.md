@@ -2417,6 +2417,22 @@ import { WalletClient } from "viem";
 
 // File: lib/services/feed/create-feed-reply.ts
 
+// File: lib/services/feed/create-feed-reply.ts
+
+// File: lib/services/feed/create-feed-reply.ts
+
+// File: lib/services/feed/create-feed-reply.ts
+
+// File: lib/services/feed/create-feed-reply.ts
+
+// File: lib/services/feed/create-feed-reply.ts
+
+// File: lib/services/feed/create-feed-reply.ts
+
+// File: lib/services/feed/create-feed-reply.ts
+
+// File: lib/services/feed/create-feed-reply.ts
+
 export interface CreateFeedReplyResult {
   success: boolean;
   reply?: {
@@ -2516,6 +2532,22 @@ import { fetchPostsByFeed } from "@/lib/external/lens/primitives/posts";
 import { fetchFeedPostByLensId, fetchFeedPosts } from "@/lib/external/supabase/feed-posts";
 import { Address } from "@/types/common";
 import { Post } from "@lens-protocol/client";
+
+// File: lib/services/feed/get-feed-posts.ts
+
+// File: lib/services/feed/get-feed-posts.ts
+
+// File: lib/services/feed/get-feed-posts.ts
+
+// File: lib/services/feed/get-feed-posts.ts
+
+// File: lib/services/feed/get-feed-posts.ts
+
+// File: lib/services/feed/get-feed-posts.ts
+
+// File: lib/services/feed/get-feed-posts.ts
+
+// File: lib/services/feed/get-feed-posts.ts
 
 // File: lib/services/feed/get-feed-posts.ts
 
@@ -2642,6 +2674,22 @@ import { Post } from "@lens-protocol/client";
 
 // File: lib/services/feed/get-feed-replies.ts
 
+// File: lib/services/feed/get-feed-replies.ts
+
+// File: lib/services/feed/get-feed-replies.ts
+
+// File: lib/services/feed/get-feed-replies.ts
+
+// File: lib/services/feed/get-feed-replies.ts
+
+// File: lib/services/feed/get-feed-replies.ts
+
+// File: lib/services/feed/get-feed-replies.ts
+
+// File: lib/services/feed/get-feed-replies.ts
+
+// File: lib/services/feed/get-feed-replies.ts
+
 export interface Reply {
   id: string;
   author: {
@@ -2725,6 +2773,22 @@ import { useSessionClient } from "@/hooks/lens/use-session-client";
 import { createFeedReply } from "@/lib/services/feed/create-feed-reply";
 import { Address } from "@/types/common";
 import { useAccount, useWalletClient } from "wagmi";
+
+// File: hooks/feeds/use-feed-reply-form.ts (NEW FILE)
+
+// File: hooks/feeds/use-feed-reply-form.ts (NEW FILE)
+
+// File: hooks/feeds/use-feed-reply-form.ts (NEW FILE)
+
+// File: hooks/feeds/use-feed-reply-form.ts (NEW FILE)
+
+// File: hooks/feeds/use-feed-reply-form.ts (NEW FILE)
+
+// File: hooks/feeds/use-feed-reply-form.ts (NEW FILE)
+
+// File: hooks/feeds/use-feed-reply-form.ts (NEW FILE)
+
+// File: hooks/feeds/use-feed-reply-form.ts (NEW FILE)
 
 // File: hooks/feeds/use-feed-reply-form.ts (NEW FILE)
 
@@ -11510,3 +11574,3572 @@ await addReaction(sessionClient, {
 **Document Status**: ✅ Planning Complete  
 **Next Review**: After beta launch feedback  
 **Priority**: Focus on immediate priorities first
+
+# Board System Build Spec — Step-by-Step Implementation Guide
+
+**Date:** March 16, 2026
+**Branch:** `feature/board-system-rebuild` (create before starting)
+**Prerequisite:** Read `MyDataSource/NewBoard.md` for architectural context
+
+This document is a spec-driven build guide. Each phase lists every file to create, with exact code, exact imports, and exact types. Follow it top to bottom. Commit after each phase.
+
+---
+
+## PHASE 1: Domain Layer
+
+**Goal:** Define the Board data types. One new file. No `BoardReply` — reuse `Reply` from communities.
+
+**Commit message:** `feat(boards): add domain types for Board and BoardPost`
+
+### File 1.1: `lib/domain/boards/types.ts` (CREATE)
+
+```typescript
+import { Address } from "@/types/common";
+import { Account, Post } from "@lens-protocol/client";
+
+/**
+ * A Board is a Lens Feed used as a fixed topic container.
+ * Mapped from the `feeds` Supabase table.
+ */
+export interface Board {
+  id: string;
+  name: string;
+  description: string;
+  feedAddress: Address;
+  category: string;
+  displayOrder: number;
+  isLocked: boolean;
+  postCount: number;
+  repliesCount: number;
+  viewsCount: number;
+  lastPostAt: string | null;
+}
+
+/**
+ * A BoardPost is a root-level Lens Post published to a Board's Feed.
+ * The full Lens Post and Account are preserved — never destructured.
+ */
+export interface BoardPost {
+  id: string;
+  lensPostId: string;
+  board: Board;
+  rootPost: Post;
+  author: Account;
+  title: string;
+  summary: string;
+  repliesCount: number;
+  viewsCount: number;
+  isVisible: boolean;
+  createdAt: string;
+  updatedAt: string;
+  app?: string;
+}
+
+/**
+ * Form data for creating a new board post.
+ */
+export interface CreateBoardPostFormData {
+  title: string;
+  summary: string;
+  content: string;
+  tags?: string;
+  author: Address;
+}
+```
+
+**Why no `BoardReply`?** Board replies are Lens Comments — identical to Community replies. Reuse:
+
+- Type: `Reply` from `lib/domain/replies/types.ts` → `{ id, thread, post: Post }`
+- The `post: Post` field preserves the full Lens Post, which means `reply.post.author` gives us the full `Account` (avatar, metadata, stats, operations). This is the key architectural fix.
+
+---
+
+## PHASE 2: Adapter Layer
+
+**Goal:** Two adapter functions that convert raw data into domain types. Never lose Lens data.
+
+**Commit message:** `feat(boards): add adapter layer for Board and BoardPost`
+
+### File 2.1: `lib/adapters/board-adapter.ts` (CREATE)
+
+```typescript
+import { Board, BoardPost } from "@/lib/domain/boards/types";
+import { getThreadTitleAndSummary } from "@/lib/domain/threads/content";
+import { Address } from "@/types/common";
+import { Post } from "@lens-protocol/client";
+
+/**
+ * Raw Supabase feed record shape.
+ * Matches the `feeds` table columns exactly.
+ */
+interface FeedSupabase {
+  id: string;
+  lens_feed_address: string;
+  title: string;
+  description: string | null;
+  category: string;
+  display_order: number;
+  is_locked: boolean | null;
+  featured: boolean | null;
+  post_count: number | null;
+  replies_count: number | null;
+  views_count: number | null;
+  last_post_at: string | null;
+}
+
+/**
+ * Raw Supabase feed_posts record shape.
+ * Matches the `feed_posts` table columns exactly.
+ */
+interface FeedPostSupabase {
+  id: string;
+  feed_id: string;
+  lens_post_id: string;
+  author: string;
+  title: string | null;
+  content: string | null;
+  replies_count: number;
+  views_count: number;
+  parent_post_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Converts a Supabase `feeds` row into a Board domain object.
+ */
+export function adaptFeedToBoard(dbFeed: FeedSupabase): Board {
+  return {
+    id: dbFeed.id,
+    name: dbFeed.title,
+    description: dbFeed.description || "",
+    feedAddress: dbFeed.lens_feed_address as Address,
+    category: dbFeed.category,
+    displayOrder: dbFeed.display_order,
+    isLocked: dbFeed.is_locked || false,
+    postCount: dbFeed.post_count || 0,
+    repliesCount: dbFeed.replies_count || 0,
+    viewsCount: dbFeed.views_count || 0,
+    lastPostAt: dbFeed.last_post_at || null,
+  };
+}
+
+/**
+ * Converts a Lens Post + optional Supabase record into a BoardPost domain object.
+ *
+ * CRITICAL: rootPost and author are preserved as full Lens objects.
+ * - rootPost.stats.comments is the source of truth for reply count (not Supabase).
+ * - Supabase only provides views_count (local tracking Lens can't do).
+ */
+export function adaptLensPostToBoardPost(board: Board, lensPost: Post, dbPost?: FeedPostSupabase): BoardPost {
+  const { title, summary } = getThreadTitleAndSummary(lensPost);
+
+  return {
+    id: dbPost?.id || lensPost.id,
+    lensPostId: lensPost.id,
+    board,
+    rootPost: lensPost,
+    author: lensPost.author,
+    title,
+    summary,
+    repliesCount: lensPost.stats.comments || 0,
+    viewsCount: dbPost?.views_count || 0,
+    isVisible: true,
+    createdAt: dbPost?.created_at || lensPost.timestamp || new Date().toISOString(),
+    updatedAt: dbPost?.updated_at || lensPost.timestamp || new Date().toISOString(),
+    app: lensPost.app?.metadata?.name || "Society Protocol",
+  };
+}
+```
+
+**Key difference from old `feed-adapter.ts`:**
+
+- Old adapter was `async` because it called `updateFeedPostStats` (syncing Supabase). New adapter is pure — no side effects, no async. Stats syncing is not the adapter's job.
+- Old adapter took `feedId` and `feedAddress` as separate strings. New adapter takes a `Board` object — cleaner, typed.
+- Reply adapter: **not needed**. Reuse `adaptPostToReply` from `lib/adapters/reply-adapter.ts` (already exists, already works).
+
+---
+
+## PHASE 3: Service Layer
+
+**Goal:** 5 new service files + verify 2 existing services work for boards. This is the biggest phase.
+
+**Commit message:** `feat(boards): add service layer for board operations`
+
+### File 3.1: `lib/services/board/get-board.ts` (CREATE)
+
+Fetches a single board by its Lens Feed address. Used by route pages.
+
+```typescript
+"use server";
+
+import { adaptFeedToBoard } from "@/lib/adapters/board-adapter";
+import { Board } from "@/lib/domain/boards/types";
+import { fetchFeedByAddress } from "@/lib/external/supabase/feeds";
+
+export interface GetBoardResult {
+  success: boolean;
+  board?: Board;
+  error?: string;
+}
+
+export async function getBoard(feedAddress: string): Promise<GetBoardResult> {
+  try {
+    const dbFeed = await fetchFeedByAddress(feedAddress);
+
+    if (!dbFeed) {
+      return { success: false, error: "Board not found" };
+    }
+
+    return { success: true, board: adaptFeedToBoard(dbFeed) };
+  } catch (error) {
+    console.error("Failed to fetch board:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to fetch board",
+    };
+  }
+}
+```
+
+**What it replaces:** The inline `fetchFeedByAddress` calls scattered across route pages. Now there's one service that returns a typed `Board`.
+
+### File 3.2: `lib/services/board/get-boards.ts` (CREATE)
+
+Fetches all boards grouped by category for the homepage. Replaces `get-feeds.ts`.
+
+```typescript
+"use server";
+
+import { adaptFeedToBoard } from "@/lib/adapters/board-adapter";
+import { Board } from "@/lib/domain/boards/types";
+import { fetchAllFeeds } from "@/lib/external/supabase/feeds";
+
+export interface BoardSection {
+  sectionTitle: string;
+  category: string;
+  boards: Board[];
+  borderColor: string;
+  layout: "list" | "grid";
+  isLocked: boolean;
+}
+
+const CATEGORY_CONFIG: Record<string, { title: string; layout: "list" | "grid"; borderColor: string }> = {
+  general: { title: "GENERAL DISCUSSION", layout: "list", borderColor: "blue" },
+  partners: { title: "PARTNER COMMUNITIES", layout: "list", borderColor: "green" },
+  functions: { title: "FUNCTIONS (VALUE SYSTEM)", layout: "grid", borderColor: "blue" },
+  technical: { title: "SOCIETY PROTOCOL TECHNICAL SECTION", layout: "list", borderColor: "blue" },
+  others: { title: "OTHERS", layout: "list", borderColor: "blue" },
+};
+
+export async function getBoardSections(): Promise<BoardSection[]> {
+  const allFeeds = await fetchAllFeeds();
+  const categories = ["general", "partners", "functions", "technical", "others"];
+
+  const sections: BoardSection[] = categories.map(category => {
+    const categoryFeeds = allFeeds.filter(feed => feed.category === category);
+    const config = CATEGORY_CONFIG[category];
+
+    return {
+      sectionTitle: config.title,
+      category,
+      boards: categoryFeeds.map(adaptFeedToBoard),
+      borderColor: config.borderColor,
+      layout: config.layout,
+      isLocked: category === "technical",
+    };
+  });
+
+  return sections.filter(section => section.boards.length > 0);
+}
+```
+
+**What it replaces:** `lib/services/feed/get-feeds.ts` (`getFeedSections`).
+**Key improvement:** Uses `adaptFeedToBoard` instead of inline mapping. Returns `Board[]` instead of anonymous objects.
+
+**Homepage integration note:** `app/page.tsx` currently imports `getFeedSections`. After Phase 6, it will import `getBoardSections`. The homepage components (`ForumCategory`, `FunctionGrid`) will need their props updated from `feeds` to `boards`. The shape is similar but typed — `Board` has `feedAddress` instead of `address`, `name` instead of `title`. We'll handle this in Phase 6.
+
+### File 3.3: `lib/services/board/get-board-posts.ts` (CREATE)
+
+Fetches paginated posts for a board. Replaces `get-feed-posts.ts`.
+
+```typescript
+"use server";
+
+import { adaptLensPostToBoardPost } from "@/lib/adapters/board-adapter";
+import { Board, BoardPost } from "@/lib/domain/boards/types";
+import { fetchPostsByFeed } from "@/lib/external/lens/primitives/posts";
+import { fetchFeedPostByLensId } from "@/lib/external/supabase/feed-posts";
+import { Post } from "@lens-protocol/client";
+
+export interface GetBoardPostsResult {
+  success: boolean;
+  posts?: BoardPost[];
+  nextCursor?: string | null;
+  prevCursor?: string | null;
+  error?: string;
+}
+
+export async function getBoardPosts(
+  board: Board,
+  options?: { limit?: number; cursor?: string },
+): Promise<GetBoardPostsResult> {
+  try {
+    // 1. Fetch posts from Lens Protocol feed
+    const lensResult = await fetchPostsByFeed(board.feedAddress, undefined, {
+      sort: "desc",
+      limit: options?.limit || 10,
+      cursor: options?.cursor,
+    });
+
+    const lensPosts = lensResult.posts;
+
+    if (!lensPosts || lensPosts.length === 0) {
+      return { success: true, posts: [], nextCursor: null, prevCursor: null };
+    }
+
+    // 2. Batch fetch DB records for view counts
+    const dbPosts = await Promise.all(lensPosts.map(post => fetchFeedPostByLensId(post.id)));
+
+    // 3. Filter out replies — only show root posts in the board list
+    const rootPostsData = lensPosts
+      .map((lensPost, idx) => ({ lensPost, dbPost: dbPosts[idx] }))
+      .filter(({ dbPost }) => !dbPost?.parent_post_id);
+
+    // 4. Adapt to BoardPost objects
+    const posts = rootPostsData.map(({ lensPost, dbPost }) =>
+      adaptLensPostToBoardPost(board, lensPost as Post, dbPost || undefined),
+    );
+
+    return {
+      success: true,
+      posts,
+      nextCursor: lensResult.pageInfo?.next ?? null,
+      prevCursor: lensResult.pageInfo?.prev ?? null,
+    };
+  } catch (error) {
+    console.error("Failed to fetch board posts:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to fetch board posts",
+    };
+  }
+}
+```
+
+**What it replaces:** `lib/services/feed/get-feed-posts.ts`.
+**Key improvement:** Takes a `Board` object instead of separate `feedId`/`feedAddress` strings. Returns `BoardPost[]` with full Lens `Post` and `Account` preserved.
+
+### File 3.4: `lib/services/board/get-board-post.ts` (CREATE)
+
+Fetches a single post by Lens post ID. Used by the post detail page.
+
+```typescript
+"use server";
+
+import { adaptLensPostToBoardPost } from "@/lib/adapters/board-adapter";
+import { Board, BoardPost } from "@/lib/domain/boards/types";
+import { fetchPostWithClient } from "@/lib/external/lens/primitives/posts";
+import { client } from "@/lib/external/lens/protocol-client";
+import { fetchFeedPostByLensId } from "@/lib/external/supabase/feed-posts";
+import { Post } from "@lens-protocol/client";
+
+export interface GetBoardPostResult {
+  success: boolean;
+  post?: BoardPost;
+  error?: string;
+}
+
+export async function getBoardPost(board: Board, postId: string): Promise<GetBoardPostResult> {
+  try {
+    const lensPost = await fetchPostWithClient(postId, client);
+
+    if (!lensPost || lensPost.__typename !== "Post") {
+      return { success: false, error: "Post not found" };
+    }
+
+    const dbPost = await fetchFeedPostByLensId(postId);
+
+    return {
+      success: true,
+      post: adaptLensPostToBoardPost(board, lensPost as Post, dbPost || undefined),
+    };
+  } catch (error) {
+    console.error("Failed to fetch board post:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to fetch post",
+    };
+  }
+}
+```
+
+**What it replaces:** `lib/services/feed/get-feed-post.ts`.
+
+### File 3.5: `lib/services/board/create-board-post.ts` (CREATE)
+
+Creates a new post in a board. Publishes to Lens, then persists metadata to Supabase.
+
+```typescript
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { Board } from "@/lib/domain/boards/types";
+import { fetchAccountFromLens } from "@/lib/external/lens/primitives/accounts";
+import { createThreadArticle } from "@/lib/external/lens/primitives/articles";
+import { persistFeedPost } from "@/lib/external/supabase/feed-posts";
+import { Address } from "@/types/common";
+import { SessionClient } from "@lens-protocol/client";
+import { WalletClient } from "viem";
+
+export interface CreateBoardPostResult {
+  success: boolean;
+  postId?: string;
+  error?: string;
+}
+
+export async function createBoardPost(
+  board: Board,
+  formData: {
+    title: string;
+    content: string;
+    summary: string;
+    tags?: string;
+    author: Address;
+  },
+  sessionClient: SessionClient,
+  walletClient: WalletClient,
+): Promise<CreateBoardPostResult> {
+  try {
+    // 1. Create article on Lens (same primitive as Communities)
+    const articleResult = await createThreadArticle(
+      {
+        title: formData.title,
+        content: formData.content,
+        author: formData.author,
+        summary: formData.summary,
+        tags: formData.tags,
+        feedAddress: board.feedAddress,
+        slug: `${Date.now()}-${formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      },
+      sessionClient,
+      walletClient,
+    );
+
+    if (!articleResult.success || !articleResult.post) {
+      return { success: false, error: articleResult.error || "Failed to create post" };
+    }
+
+    // 2. Persist metadata to Supabase
+    const authorAccount = await fetchAccountFromLens(formData.author);
+    const authorDb = authorAccount?.username?.localName || formData.author;
+
+    await persistFeedPost(board.id, articleResult.post.id, authorDb, formData.title, formData.content);
+
+    // 3. Revalidate paths
+    revalidatePath(`/commons/${board.feedAddress}`);
+    revalidatePath("/");
+
+    return { success: true, postId: articleResult.post.id };
+  } catch (error) {
+    console.error("Failed to create board post:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create post",
+    };
+  }
+}
+```
+
+**What it replaces:** `lib/services/feed/create-feed-post.ts` + `app/commons/[address]/new-post/actions.ts` (saveFeedPost).
+**Key improvement:** Single service handles both Lens creation and DB persistence. No split between client-side Lens call and server action DB save.
+
+### Existing Services — Verification Notes
+
+**`lib/services/reply/create-reply.ts` — WORKS AS-IS for boards.**
+
+- It accepts `parentId` (any Lens Post ID), `content`, `threadAddress` (any Lens Feed address), and `threadId`.
+- For board posts, pass: `parentId` = board post's Lens ID, `threadAddress` = board's feed address, `threadId` = board post's Lens ID (not a Supabase UUID, so the UUID check on line ~60 will skip the `incrementThreadRepliesCount` call — correct behavior since board reply counts come from Lens stats).
+- No changes needed.
+
+**`lib/services/reply/get-thread-replies.ts` — NEEDS MINOR GENERALIZATION.**
+
+- Currently takes a `Thread` object and uses `thread.rootPost.id` to fetch comments.
+- For boards, we need to pass a `BoardPost` instead.
+- **Solution:** Create a thin wrapper or change the function signature to accept `{ rootPostId: string }` instead of `Thread`. But to minimize changes to the working Community system, create a new wrapper:
+
+### File 3.6: `lib/services/board/get-board-post-replies.ts` (CREATE)
+
+```typescript
+"use server";
+
+import { adaptPostToReply } from "@/lib/adapters/reply-adapter";
+import { BoardPost } from "@/lib/domain/boards/types";
+import { Reply } from "@/lib/domain/replies/types";
+import { fetchCommentsByPostId } from "@/lib/external/lens/primitives/posts";
+import { SessionClient } from "@lens-protocol/client";
+
+export interface GetBoardPostRepliesResult {
+  success: boolean;
+  replies?: Reply[];
+  error?: string;
+}
+
+export async function getBoardPostReplies(
+  boardPost: BoardPost,
+  sessionClient?: SessionClient,
+): Promise<GetBoardPostRepliesResult> {
+  try {
+    const posts = await fetchCommentsByPostId(boardPost.rootPost.id, sessionClient);
+
+    if (!posts || posts.length === 0) {
+      return { success: true, replies: [] };
+    }
+
+    // Filter out the root post itself and non-comments, then adapt
+    const replies: Reply[] = posts
+      .filter(p => p.id !== boardPost.rootPost.id && p.commentOn !== null)
+      .map(adaptPostToReply);
+
+    return { success: true, replies };
+  } catch (error) {
+    console.error("Failed to fetch board post replies:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to fetch replies",
+    };
+  }
+}
+```
+
+**What it replaces:** `lib/services/feed/get-feed-replies.ts` — the file that defined its own flat `Reply` type and lost all the Lens data.
+**Key fix:** Uses `adaptPostToReply` (from communities) which preserves the full `Post` object. This is THE fix for the avatar bug.
+
+---
+
+## PHASE 4: Hook Layer
+
+**Goal:** 1 new hook for post creation. Reply hook is reused from communities.
+
+**Commit message:** `feat(boards): add hooks for board post creation`
+
+### File 4.1: `hooks/boards/use-board-post-create-form.ts` (CREATE)
+
+Pattern copied from `hooks/feeds/use-feed-post-create-form.ts` but simplified: calls the new `createBoardPost` service directly instead of splitting between client-side Lens call and server action.
+
+```typescript
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useTagsInput } from "@/hooks/forms/use-tags-input";
+import { Board, CreateBoardPostFormData } from "@/lib/domain/boards/types";
+import { createBoardPost } from "@/lib/services/board/create-board-post";
+import { useAuthStore } from "@/stores/auth-store";
+import { Address } from "@/types/common";
+import { useSessionClient } from "@lens-protocol/react";
+import { toast } from "sonner";
+import { useWalletClient } from "wagmi";
+
+interface FormErrors {
+  title?: string;
+  content?: string;
+}
+
+interface TouchedFields {
+  title: boolean;
+  content: boolean;
+}
+
+export function useBoardPostCreateForm({ board }: { board: Board }) {
+  const [formData, setFormData] = useState<CreateBoardPostFormData>({
+    title: "",
+    summary: "",
+    content: "",
+    tags: "",
+    author: "" as Address,
+  });
+  const [isCreating, setIsCreating] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<TouchedFields>({ title: false, content: false });
+
+  const { tags, setTags, tagInput, setTagInput, addTag, removeTag, handleTagInputKeyDown } = useTagsInput();
+  const { account } = useAuthStore();
+  const sessionClient = useSessionClient();
+  const walletClient = useWalletClient();
+  const router = useRouter();
+
+  const validateTitle = (value: string): string | undefined => {
+    if (!value.trim()) return "Title is required";
+    return undefined;
+  };
+
+  const validateContent = (value: string): string | undefined => {
+    if (!value.trim()) return "Content is required";
+    return undefined;
+  };
+
+  const validateField = (field: keyof FormErrors, value: string) => {
+    const error = field === "title" ? validateTitle(value) : validateContent(value);
+    setErrors(prev => ({ ...prev, [field]: error }));
+    return error;
+  };
+
+  const isFormValid = (): boolean => {
+    return !validateTitle(formData.title) && !validateContent(formData.content);
+  };
+
+  const handleChange = (field: keyof CreateBoardPostFormData, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    if (touched[field as keyof TouchedFields] && errors[field as keyof FormErrors]) {
+      validateField(field as keyof FormErrors, value);
+    }
+  };
+
+  const handleBlur = (field: keyof FormErrors) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    validateField(field, formData[field]);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setTouched({ title: true, content: true });
+    const titleError = validateTitle(formData.title);
+    const contentError = validateContent(formData.content);
+    setErrors({ title: titleError, content: contentError });
+
+    if (titleError || contentError) {
+      toast.error("Please fix the errors before submitting");
+      return;
+    }
+
+    if (!account?.address) {
+      toast.error("Authentication Error", { description: "Please log in again." });
+      return;
+    }
+    if (!sessionClient.data || sessionClient.loading) {
+      toast.error("Authentication Required", { description: "Please sign in to create a post." });
+      return;
+    }
+    if (!walletClient.data) {
+      toast.error("Wallet Connection Required", { description: "Please connect your wallet." });
+      return;
+    }
+
+    const loadingToast = toast.loading("Creating post...");
+
+    try {
+      setIsCreating(true);
+
+      const result = await createBoardPost(
+        board,
+        {
+          title: formData.title,
+          content: formData.content,
+          summary: formData.summary,
+          tags: tags.length > 0 ? tags.join(",") : undefined,
+          author: account.address,
+        },
+        sessionClient.data,
+        walletClient.data,
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to create post");
+      }
+
+      toast.success("Post created!", { id: loadingToast });
+      setFormData({ title: "", summary: "", content: "", tags: "", author: account.address });
+      setTags([]);
+      setTagInput("");
+      setErrors({});
+      setTouched({ title: false, content: false });
+      router.push(`/commons/${board.feedAddress}`);
+    } catch (error) {
+      toast.error("Failed to create post", {
+        description: error instanceof Error ? error.message : "An error occurred",
+        id: loadingToast,
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  return {
+    formData,
+    tags,
+    tagInput,
+    setTagInput,
+    addTag,
+    removeTag,
+    handleTagInputKeyDown,
+    handleChange,
+    handleBlur,
+    handleSubmit,
+    isCreating,
+    errors,
+    touched,
+    isFormValid: isFormValid(),
+  };
+}
+```
+
+**What it replaces:** `hooks/feeds/use-feed-post-create-form.ts`.
+**Key improvement:** Calls `createBoardPost` service directly (single call) instead of the old pattern that did `createThreadArticle` on client → then `saveFeedPost` server action separately. One service, one call, one error path.
+
+### Existing Hooks — Verification Notes
+
+**`hooks/replies/use-reply-create.ts` — WORKS AS-IS for boards.**
+
+- It calls `createReply(to, content, feedAddress, threadId)`.
+- For board posts: `to` = parent post ID, `feedAddress` = board's feed address, `threadId` = board post's Lens ID.
+- It invalidates `queryKey: ["thread-replies", threadId]`. For boards, we'll use the same query key pattern with the board post ID. This means the reply list auto-refreshes after posting. ✅
+- No changes needed.
+
+---
+
+## PHASE 5: Component Layer
+
+**Goal:** 9 new components. This is the UI layer. Every component receives typed domain objects as props.
+
+**Commit message:** `feat(boards): add board UI components`
+
+### File 5.1: `components/boards/board-nav-actions.tsx` (CREATE)
+
+Back button + New Post button. Replaces `components/commons/feed-nav-actions.tsx`.
+
+```typescript
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import Link from "next/link";
+
+interface BoardNavActionsProps {
+  feedAddress: string;
+  isLocked?: boolean;
+}
+
+export function BoardNavActions({ feedAddress, isLocked = false }: BoardNavActionsProps) {
+  return (
+    <div className="mb-6 flex items-center justify-between">
+      <Link href="/">
+        <Button variant="outline" size="sm">
+          ← Back to Home
+        </Button>
+      </Link>
+      <Link href={`/commons/${feedAddress}/new-post`}>
+        <Button
+          size="sm"
+          className="gap-2"
+          disabled={isLocked}
+          title={isLocked ? "Requires Society Protocol Pass" : "Create new post"}
+        >
+          <Plus className="h-4 w-4" />
+          New Post
+        </Button>
+      </Link>
+    </div>
+  );
+}
+```
+
+### File 5.2: `components/boards/board-post-voting.tsx` (CREATE)
+
+Up/down vote arrows for board posts. Reuses the existing `ReplyVoting` component since it already does exactly what we need (arrows + useVoting). But if we want a horizontal layout for post cards vs vertical for replies, create a thin wrapper:
+
+```typescript
+"use client";
+
+import { ReplyVoting } from "@/components/reply/reply-voting";
+import { PostId, postId } from "@lens-protocol/client";
+
+interface BoardPostVotingProps {
+  lensPostId: string;
+}
+
+export function BoardPostVoting({ lensPostId }: BoardPostVotingProps) {
+  return <ReplyVoting postid={postId(lensPostId) as PostId} />;
+}
+```
+
+**Why reuse `ReplyVoting`?** It already uses `useVoting` with arrows, loading states, and auth checks. No need to duplicate. The name `ReplyVoting` is misleading (it works for any post), but renaming is out of scope.
+
+### File 5.3: `components/boards/board-post-card.tsx` (CREATE)
+
+A single post card in the board list. Shows avatar, title, author, time, stats, voting.
+
+```typescript
+"use client";
+
+import { AvatarProfileLink } from "@/components/notifications/avatar-profile-link";
+import { BoardPostVoting } from "./board-post-voting";
+import { BoardPost } from "@/lib/domain/boards/types";
+import { LikeButton } from "@/components/ui/like-button";
+import { formatDistanceToNow } from "date-fns";
+import { MessageSquare, Eye } from "lucide-react";
+import Link from "next/link";
+import { PostId } from "@lens-protocol/client";
+
+interface BoardPostCardProps {
+  post: BoardPost;
+}
+
+export function BoardPostCard({ post }: BoardPostCardProps) {
+  const authorName = post.author.username?.localName || post.author.address.slice(0, 8);
+  const authorHandle = post.author.username?.value || `@${post.author.address.slice(0, 6)}`;
+  const timeAgo = formatDistanceToNow(new Date(post.createdAt), { addSuffix: true });
+
+  return (
+    <div className="flex gap-3 rounded-lg border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+      {/* Voting column */}
+      <div className="flex flex-col items-center pt-1">
+        <BoardPostVoting lensPostId={post.rootPost.id} />
+      </div>
+
+      {/* Content column */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start gap-3">
+          <AvatarProfileLink author={post.author} />
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-semibold text-slate-900 hover:text-blue-600 dark:text-gray-100 dark:hover:text-blue-400">
+              <Link href={`/commons/${post.board.feedAddress}/post/${post.rootPost.id}`}>
+                {post.title}
+              </Link>
+            </h3>
+            <div className="mt-1 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+              <Link
+                href={`/u/${authorName}`}
+                className="font-medium text-gray-700 hover:text-blue-600 dark:text-gray-300"
+              >
+                {authorName}
+              </Link>
+              <span>{authorHandle}</span>
+              <span>•</span>
+              <span>{timeAgo}</span>
+            </div>
+          </div>
+        </div>
+
+        {post.summary && (
+          <p className="mt-2 line-clamp-2 text-gray-600 dark:text-gray-400">{post.summary}</p>
+        )}
+
+        <div className="mt-3 flex items-center justify-between">
+          <div className="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-1">
+              <MessageSquare className="h-4 w-4" />
+              <span>{post.repliesCount} replies</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Eye className="h-4 w-4" />
+              <span>{post.viewsCount} views</span>
+            </div>
+          </div>
+          <LikeButton postid={post.rootPost.id as PostId} />
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+**Key difference from old `paginated-feed-posts-list.tsx`:**
+
+- Has `AvatarProfileLink` — works because `post.author` is a full `Account`
+- Has `BoardPostVoting` — up/down arrows instead of just a heart
+- Cleaner layout with voting column on the left (Bitcointalk/Reddit style)
+
+### File 5.4: `components/boards/board-post-list.tsx` (CREATE)
+
+Paginated list of post cards. Replaces `paginated-feed-posts-list.tsx`.
+
+```typescript
+"use client";
+
+import { useState } from "react";
+import { BoardPost } from "@/lib/domain/boards/types";
+import { BoardPostCard } from "./board-post-card";
+
+interface BoardPostListProps {
+  boardId: string;
+  feedAddress: string;
+  initialPosts: BoardPost[];
+  initialNextCursor: string | null;
+}
+
+export function BoardPostList({
+  boardId,
+  feedAddress,
+  initialPosts,
+  initialNextCursor,
+}: BoardPostListProps) {
+  const [posts, setPosts] = useState<BoardPost[]>(initialPosts);
+  const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLoadMore = async () => {
+    if (!nextCursor || isLoading) return;
+    setIsLoading(true);
+    try {
+      const { loadMoreBoardPosts } = await import("@/app/commons/[address]/actions");
+      const result = await loadMoreBoardPosts(boardId, feedAddress, nextCursor);
+      if (result.success && result.posts) {
+        setPosts([...posts, ...result.posts]);
+        setNextCursor(result.nextCursor || null);
+      }
+    } catch (error) {
+      console.error("Failed to load more posts:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (posts.length === 0) {
+    return (
+      <div className="rounded-lg border border-slate-200 bg-white p-12 text-center dark:border-gray-700 dark:bg-gray-800">
+        <p className="text-gray-600 dark:text-gray-400">
+          No posts yet. Be the first to create a post!
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {posts.map((post) => (
+        <BoardPostCard key={post.id} post={post} />
+      ))}
+
+      {nextCursor && (
+        <div className="flex justify-center pt-4">
+          <button
+            onClick={handleLoadMore}
+            disabled={isLoading}
+            className="rounded-lg border border-slate-300 bg-white px-6 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+          >
+            {isLoading ? "Loading..." : "Load More"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**Note:** This imports `loadMoreBoardPosts` from the route actions file. We'll create that in Phase 6.
+
+### File 5.5: `components/boards/board-reply-card.tsx` (CREATE)
+
+A single reply card. Uses the shared `Reply` type (with full `Post`). This is where the avatar bug gets fixed.
+
+```typescript
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { ContentRenderer } from "@/components/shared/content-renderer";
+import { ReplyVoting } from "@/components/reply/reply-voting";
+import { Reply } from "@/lib/domain/replies/types";
+import { getReplyContent } from "@/lib/domain/replies/content";
+import { useReplyCreate } from "@/hooks/replies/use-reply-create";
+import { getRepliesByParentId } from "@/lib/services/reply/get-replies-by-parent-id";
+import { getTimeAgo } from "@/lib/shared/utils";
+import { postId, useSessionClient } from "@lens-protocol/react";
+import { MessageCircle } from "lucide-react";
+
+interface BoardReplyCardProps {
+  reply: Reply;
+  boardFeedAddress: string;
+  rootPostId: string;
+}
+
+export function BoardReplyCard({ reply, boardFeedAddress, rootPostId }: BoardReplyCardProps) {
+  const { content, image, video } = getReplyContent(reply.post);
+
+  const [showReplyBox, setShowReplyBox] = useState(false);
+  const [replyContent, setReplyContent] = useState("");
+  const [showReplies, setShowReplies] = useState(false);
+  const [replies, setReplies] = useState<Reply[]>([]);
+  const [loadingReplies, setLoadingReplies] = useState(false);
+  const [localReplyCount, setLocalReplyCount] = useState(reply.post.stats.comments);
+
+  useEffect(() => {
+    setLocalReplyCount(reply.post.stats.comments);
+  }, [reply.post.stats.comments]);
+
+  const { createReply } = useReplyCreate();
+  const sessionClient = useSessionClient();
+
+  const handleReply = async () => {
+    if (!replyContent.trim()) return;
+    await createReply(reply.id, replyContent, boardFeedAddress, rootPostId);
+    setReplyContent("");
+    setShowReplyBox(false);
+    setLocalReplyCount((c) => c + 1);
+  };
+
+  const handleLoadReplies = async () => {
+    if (loadingReplies) return;
+    setLoadingReplies(true);
+    try {
+      const result = await getRepliesByParentId(reply.post.id, sessionClient.data ?? undefined);
+      if (result.success) {
+        setReplies(result.replies ?? []);
+      }
+      setShowReplies(true);
+    } catch (error) {
+      console.error("Failed to load replies:", error);
+    } finally {
+      setLoadingReplies(false);
+    }
+  };
+
+  const canReply = reply.post.operations?.canComment.__typename === "PostOperationValidationPassed";
+
+  return (
+    <div className="space-y-2" id={reply.id}>
+      <div className="rounded-lg bg-white p-3 shadow-sm dark:border-gray-700/60 dark:bg-gray-800 sm:p-4">
+        <div className="flex items-start gap-2 sm:gap-3">
+          {/* Voting */}
+          <div className="flex flex-col items-center">
+            <ReplyVoting postid={postId(reply.id)} />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            {/* Author row */}
+            <div className="mb-3 flex items-center justify-between">
+              <Link
+                href={`/u/${reply.post.author.username?.value}`}
+                className="flex items-center gap-2 hover:text-gray-900"
+              >
+                <Avatar className="h-5 w-5 sm:h-6 sm:w-6">
+                  <AvatarImage src={reply.post.author.metadata?.picture} />
+                  <AvatarFallback className="bg-muted text-xs text-muted-foreground">
+                    {reply.post.author.metadata?.name?.[0]?.toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium text-foreground">
+                  {reply.post.author.metadata?.name || reply.post.author.username?.localName}
+                </span>
+              </Link>
+              <span className="text-xs text-muted-foreground sm:text-sm">
+                {getTimeAgo(new Date(reply.post.timestamp))}
+              </span>
+            </div>
+
+            {/* Content */}
+            <ContentRenderer content={{ content, image, video }} className="rich-text-content mb-2" />
+
+            {/* Actions */}
+            <div className="mt-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {localReplyCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLoadReplies}
+                    disabled={loadingReplies}
+                    className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    <MessageCircle className="mr-1 h-3 w-3" />
+                    {loadingReplies ? "Loading..." : `${localReplyCount} ${localReplyCount === 1 ? "reply" : "replies"}`}
+                  </Button>
+                )}
+              </div>
+              {canReply && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowReplyBox(true)}
+                  className="h-auto p-1 text-xs"
+                >
+                  <MessageCircle className="mr-1 h-3 w-3" />
+                  Reply
+                </Button>
+              )}
+            </div>
+
+            {/* Inline reply box */}
+            {showReplyBox && (
+              <div className="mt-2 space-y-2">
+                <textarea
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  placeholder="Write a reply..."
+                  className="w-full rounded-md border p-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                  rows={3}
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleReply} disabled={!replyContent.trim()}>
+                    Post
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setShowReplyBox(false); setReplyContent(""); }}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Nested replies */}
+            {showReplies && replies.length > 0 && (
+              <div className="ml-6 mt-2 space-y-2">
+                {replies.map((nestedReply) => (
+                  <BoardReplyCard
+                    key={nestedReply.id}
+                    reply={nestedReply}
+                    boardFeedAddress={boardFeedAddress}
+                    rootPostId={rootPostId}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+**Key difference from old `reply-list.tsx`:**
+
+- `reply.post.author.metadata?.picture` → AVATAR WORKS because `Reply.post` is the full Lens `Post`
+- `reply.post.stats.comments` → nested reply count works
+- `reply.post.operations?.canComment` → permission check works
+- Uses `useReplyCreate` (shared) → cache invalidation works
+- Supports nested replies (recursive `BoardReplyCard`)
+
+### File 5.6: `components/boards/board-reply-list.tsx` (CREATE)
+
+List of reply cards. Simple wrapper.
+
+```typescript
+"use client";
+
+import { Reply } from "@/lib/domain/replies/types";
+import { BoardReplyCard } from "./board-reply-card";
+
+interface BoardReplyListProps {
+  replies: Reply[];
+  boardFeedAddress: string;
+  rootPostId: string;
+}
+
+export function BoardReplyList({ replies, boardFeedAddress, rootPostId }: BoardReplyListProps) {
+  if (replies.length === 0) {
+    return (
+      <div className="py-8 text-center">
+        <p className="text-gray-500 dark:text-gray-400">No replies yet. Be the first to reply!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {replies.map((reply) => (
+        <BoardReplyCard
+          key={reply.id}
+          reply={reply}
+          boardFeedAddress={boardFeedAddress}
+          rootPostId={rootPostId}
+        />
+      ))}
+    </div>
+  );
+}
+```
+
+### File 5.7: `components/boards/board-reply-box.tsx` (CREATE)
+
+Inline reply form shown at the bottom of the post detail page. Uses the shared `useReplyCreate` hook.
+
+```typescript
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { TextEditor } from "@/components/editor/text-editor";
+import { useReplyCreate } from "@/hooks/replies/use-reply-create";
+import { useAuthStore } from "@/stores/auth-store";
+import { Address } from "@/types/common";
+import { MessageCircle } from "lucide-react";
+
+interface BoardReplyBoxProps {
+  postId: string;
+  feedAddress: Address;
+}
+
+export function BoardReplyBox({ postId, feedAddress }: BoardReplyBoxProps) {
+  const [content, setContent] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editorKey, setEditorKey] = useState(0);
+  const { isLoggedIn, account } = useAuthStore();
+  const { createReply } = useReplyCreate();
+  const router = useRouter();
+
+  const handleSubmit = async () => {
+    if (!content.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const reply = await createReply(postId, content, feedAddress, postId);
+      if (reply) {
+        setContent("");
+        setEditorKey((prev) => prev + 1);
+        router.refresh();
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+        <p className="text-sm text-gray-600 dark:text-gray-400">Please sign in to reply.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex w-full min-w-0 items-start space-x-3">
+      <Avatar className="h-8 w-8 flex-shrink-0">
+        <AvatarImage src={account?.metadata?.picture} />
+        <AvatarFallback className="bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+          {account?.username?.localName?.[0]?.toUpperCase() || "U"}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1 space-y-3">
+        <TextEditor key={editorKey} onChange={setContent} />
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            className="gradient-button h-8 text-sm"
+            disabled={!content.trim() || isSubmitting}
+          >
+            {isSubmitting ? "Replying..." : (
+              <>
+                <MessageCircle className="mr-2 h-3 w-3" />
+                Reply
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+**What it replaces:** `components/commons/reply-form.tsx`.
+**Key improvement:** Uses `useReplyCreate` (shared hook with cache invalidation) instead of directly calling `createFeedReply` service.
+
+### File 5.8: `components/boards/board-post-detail.tsx` (CREATE)
+
+Full post view with content, stats, and reply section. Replaces `components/commons/post-detail.tsx`.
+
+```typescript
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import { formatDistanceToNow } from "date-fns";
+import { MessageSquare, Eye, ArrowLeft, MessageCircle } from "lucide-react";
+import { AvatarProfileLink } from "@/components/notifications/avatar-profile-link";
+import { BoardPostVoting } from "./board-post-voting";
+import { BoardReplyList } from "./board-reply-list";
+import { BoardReplyBox } from "./board-reply-box";
+import { LikeButton } from "@/components/ui/like-button";
+import { Button } from "@/components/ui/button";
+import { BoardPost } from "@/lib/domain/boards/types";
+import { Reply } from "@/lib/domain/replies/types";
+import { stripThreadArticleFormatting } from "@/lib/domain/threads/content";
+import { Address } from "@/types/common";
+import { PostId } from "@lens-protocol/client";
+
+interface BoardPostDetailProps {
+  post: BoardPost;
+  replies: Reply[];
+}
+
+export function BoardPostDetail({ post, replies }: BoardPostDetailProps) {
+  const [viewsCount, setViewsCount] = useState(post.viewsCount);
+  const authorName = post.author.username?.localName || post.author.address.slice(0, 8);
+  const authorHandle = post.author.username?.value || `@${post.author.address.slice(0, 6)}`;
+  const timeAgo = formatDistanceToNow(new Date(post.createdAt), { addSuffix: true });
+
+  const rawContent = post.rootPost.metadata?.content || post.summary || "No content available";
+  const content = stripThreadArticleFormatting(rawContent);
+
+  // Track view on mount
+  useEffect(() => {
+    async function trackView() {
+      try {
+        const response = await fetch(`/api/posts/${post.rootPost.id}/view`, { method: "POST" });
+        if (response.ok) setViewsCount((prev) => prev + 1);
+      } catch (error) {
+        console.error("Failed to track view:", error);
+      }
+    }
+    trackView();
+  }, [post.rootPost.id]);
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-8">
+      {/* Back Button */}
+      <Link
+        href={`/commons/${post.board.feedAddress}`}
+        className="mb-6 inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to board
+      </Link>
+
+      <div className="rounded-lg border border-slate-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+        {/* Post Header */}
+        <div className="border-b border-slate-200 p-6 dark:border-gray-700">
+          <div className="flex items-start gap-4">
+            <div className="flex flex-col items-center">
+              <BoardPostVoting lensPostId={post.rootPost.id} />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-gray-100">{post.title}</h1>
+              <div className="mt-4 flex items-center gap-3">
+                <AvatarProfileLink author={post.author} />
+                <div>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">{authorName}</span>
+                  <span className="ml-2 text-sm text-gray-500">{authorHandle}</span>
+                </div>
+                <span className="text-sm text-gray-500">•</span>
+                <span className="text-sm text-gray-500">{timeAgo}</span>
+              </div>
+              <div className="mt-4 flex items-center gap-6 text-sm text-gray-500">
+                <div className="flex items-center gap-1">
+                  <MessageSquare className="h-4 w-4" />
+                  <span>{post.repliesCount} replies</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Eye className="h-4 w-4" />
+                  <span>{viewsCount} views</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Post Content */}
+        <div className="p-6">
+          <div className="prose prose-slate max-w-none dark:prose-invert">
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <p className="mb-4 last:mb-0 whitespace-pre-wrap">{children}</p>,
+                br: () => <br />,
+              }}
+            >
+              {content}
+            </ReactMarkdown>
+          </div>
+        </div>
+
+        {/* Reply Section */}
+        <div className="p-6">
+          <hr className="mb-6 border-slate-200 dark:border-gray-700" />
+
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-gray-100">
+              {replies.length} {replies.length === 1 ? "Reply" : "Replies"}
+            </h2>
+            <LikeButton postid={post.rootPost.id as PostId} />
+          </div>
+
+          {/* Inline reply box */}
+          <div className="mb-6">
+            <BoardReplyBox postId={post.rootPost.id} feedAddress={post.board.feedAddress as Address} />
+          </div>
+
+          {/* Reply List */}
+          <BoardReplyList
+            replies={replies}
+            boardFeedAddress={post.board.feedAddress}
+            rootPostId={post.rootPost.id}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+**Key differences from old `post-detail.tsx`:**
+
+- Has `AvatarProfileLink` with full `Account` — avatar works ✅
+- Has `BoardPostVoting` — up/down arrows ✅
+- Has `BoardReplyBox` inline — reply without navigating to separate page ✅
+- Reply list uses `Reply` type with full `Post` — reply avatars work ✅
+- No longer needs `feedId` or `feedAddress` as separate props — gets them from `post.board`
+
+### File 5.9: `components/boards/board-post-create-form.tsx` (CREATE)
+
+Post creation form. Replaces `components/commons/create-post-form.tsx`.
+
+```typescript
+"use client";
+
+import { TextEditor } from "@/components/editor/text-editor";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { TagsInput } from "@/components/ui/tags-input";
+import { useBoardPostCreateForm } from "@/hooks/boards/use-board-post-create-form";
+import { Board } from "@/lib/domain/boards/types";
+import { Send } from "lucide-react";
+
+interface BoardPostCreateFormProps {
+  board: Board;
+}
+
+export function BoardPostCreateForm({ board }: BoardPostCreateFormProps) {
+  const {
+    formData,
+    tags,
+    tagInput,
+    setTagInput,
+    addTag,
+    removeTag,
+    handleTagInputKeyDown,
+    handleChange,
+    handleBlur,
+    handleSubmit,
+    isCreating,
+    errors,
+    touched,
+    isFormValid,
+  } = useBoardPostCreateForm({ board });
+
+  return (
+    <Card className="rounded-3xl border border-brand-200/60 bg-white backdrop-blur-sm dark:border-gray-700/60 dark:bg-gray-800">
+      <CardHeader className="pb-4">
+        <h1 className="text-2xl font-medium text-foreground">Create New Post</h1>
+        <p className="text-muted-foreground">Posting to: {board.name}</p>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="title" className="text-sm font-medium text-foreground">
+              Title <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => handleChange("title", e.target.value)}
+              onBlur={() => handleBlur("title")}
+              placeholder="What's your post about?"
+              className={touched.title && errors.title ? "border-red-500 focus-visible:ring-red-500" : ""}
+            />
+            {touched.title && errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="summary" className="text-sm font-medium text-foreground">Summary</Label>
+            <Input
+              id="summary"
+              value={formData.summary}
+              onChange={(e) => handleChange("summary", e.target.value)}
+              placeholder="Brief description (max 100 chars)"
+              maxLength={100}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">
+              Content <span className="text-red-500">*</span>
+            </Label>
+            <div
+              className={`rounded-2xl border backdrop-blur-sm dark:bg-gray-800 ${
+                touched.content && errors.content
+                  ? "border-red-500 bg-red-50/50"
+                  : "border-brand-200/40 bg-white/50"
+              }`}
+              onBlur={() => handleBlur("content")}
+            >
+              <TextEditor onChange={(value) => handleChange("content", value)} />
+            </div>
+            {touched.content && errors.content && <p className="text-sm text-red-500">{errors.content}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">
+              Tags (optional) {tags.length > 0 && <span className="text-slate-500">({tags.length}/5)</span>}
+            </Label>
+            <TagsInput
+              tags={tags}
+              tagInput={tagInput}
+              setTagInput={setTagInput}
+              addTag={addTag}
+              removeTag={removeTag}
+              handleTagInputKeyDown={handleTagInputKeyDown}
+              maxTags={5}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="submit" disabled={isCreating || !isFormValid} className="gap-2">
+              <Send className="h-4 w-4" />
+              {isCreating ? "Creating..." : "Create Post"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+**What it replaces:** `components/commons/create-post-form.tsx`.
+**Key improvement:** Takes a `Board` object instead of separate `feedId`/`feedAddress`/`feedTitle` strings. Uses `useBoardPostCreateForm` which calls the unified `createBoardPost` service.
+
+---
+
+## PHASE 6: Update Routes
+
+**Goal:** Update the 4 route pages + 1 actions file + homepage to use the new Board system.
+
+**Commit message:** `feat(boards): update routes to use new board components`
+
+### File 6.1: `app/commons/[address]/actions.ts` (REPLACE)
+
+```typescript
+"use server";
+
+import { getBoard } from "@/lib/services/board/get-board";
+import { getBoardPosts } from "@/lib/services/board/get-board-posts";
+import { Address } from "@/types/common";
+
+export async function loadMoreBoardPosts(boardId: string, feedAddress: Address, cursor: string, limit: number = 10) {
+  const boardResult = await getBoard(feedAddress);
+  if (!boardResult.success || !boardResult.board) {
+    return { success: false, error: "Board not found" };
+  }
+  return await getBoardPosts(boardResult.board, { limit, cursor });
+}
+```
+
+### File 6.2: `app/commons/[address]/page.tsx` (REPLACE)
+
+```typescript
+import { getBoard } from "@/lib/services/board/get-board";
+import { getBoardPosts } from "@/lib/services/board/get-board-posts";
+import { StatusBanner } from "@/components/shared/status-banner";
+import { BoardNavActions } from "@/components/boards/board-nav-actions";
+import { BoardPostList } from "@/components/boards/board-post-list";
+import { Lock } from "lucide-react";
+
+export default async function BoardPage({ params }: { params: Promise<{ address: string }> }) {
+  const { address } = await params;
+
+  const boardResult = await getBoard(address);
+
+  if (!boardResult.success || !boardResult.board) {
+    return (
+      <div className="flex min-h-screen items-start justify-center">
+        <div className="w-full max-w-md px-4 pt-12">
+          <StatusBanner type="info" title="Board not found" message="The requested board does not exist." />
+        </div>
+      </div>
+    );
+  }
+
+  const board = boardResult.board;
+  const postsResult = await getBoardPosts(board, { limit: 10 });
+  const posts = postsResult.success ? (postsResult.posts || []) : [];
+  const nextCursor = postsResult.success ? (postsResult.nextCursor ?? null) : null;
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-8">
+      <BoardNavActions feedAddress={address} isLocked={board.isLocked} />
+
+      {/* Board Header */}
+      <div className="mb-8 rounded-lg border border-slate-200 bg-white p-8 dark:border-gray-700 dark:bg-gray-800">
+        <div className="flex items-start gap-4">
+          {board.isLocked && <Lock className="h-6 w-6 flex-shrink-0 text-yellow-500" />}
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-gray-100">{board.name}</h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">{board.description}</p>
+            <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
+              <span className="rounded-full bg-blue-100 px-3 py-1 font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                {board.category}
+              </span>
+              <span>{posts.length}+ posts</span>
+            </div>
+          </div>
+        </div>
+        {board.isLocked && (
+          <div className="mt-6 rounded-md bg-yellow-50 p-4 dark:bg-yellow-900/20">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              🔒 This board requires a Society Protocol Pass to post. Read access is public.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <BoardPostList
+        boardId={board.id}
+        feedAddress={address}
+        initialPosts={posts}
+        initialNextCursor={nextCursor}
+      />
+    </div>
+  );
+}
+```
+
+### File 6.3: `app/commons/[address]/new-post/page.tsx` (REPLACE)
+
+```typescript
+import { getBoard } from "@/lib/services/board/get-board";
+import { StatusBanner } from "@/components/shared/status-banner";
+import { BoardPostCreateForm } from "@/components/boards/board-post-create-form";
+import { ProtectedRoute } from "@/components/pages/protected-route";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+
+export default async function NewPostPage({ params }: { params: Promise<{ address: string }> }) {
+  const { address } = await params;
+
+  const boardResult = await getBoard(address);
+
+  if (!boardResult.success || !boardResult.board) {
+    return (
+      <div className="flex min-h-screen items-start justify-center">
+        <div className="w-full max-w-md px-4 pt-12">
+          <StatusBanner type="info" title="Board not found" message="The requested board does not exist." />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ProtectedRoute>
+      <div className="mx-auto max-w-4xl px-4 py-8">
+        <div className="mb-6">
+          <Link href={`/commons/${address}`}>
+            <Button variant="outline" size="sm">← Back to {boardResult.board.name}</Button>
+          </Link>
+        </div>
+        <BoardPostCreateForm board={boardResult.board} />
+      </div>
+    </ProtectedRoute>
+  );
+}
+```
+
+### File 6.4: `app/commons/[address]/post/[postId]/page.tsx` (REPLACE)
+
+```typescript
+import { getBoard } from "@/lib/services/board/get-board";
+import { getBoardPost } from "@/lib/services/board/get-board-post";
+import { getBoardPostReplies } from "@/lib/services/board/get-board-post-replies";
+import { StatusBanner } from "@/components/shared/status-banner";
+import { BoardPostDetail } from "@/components/boards/board-post-detail";
+
+export default async function PostDetailPage({
+  params,
+}: {
+  params: Promise<{ address: string; postId: string }>;
+}) {
+  const { address, postId } = await params;
+
+  const boardResult = await getBoard(address);
+
+  if (!boardResult.success || !boardResult.board) {
+    return (
+      <div className="flex min-h-screen items-start justify-center">
+        <div className="w-full max-w-md px-4 pt-12">
+          <StatusBanner type="info" title="Board not found" message="The requested board does not exist." />
+        </div>
+      </div>
+    );
+  }
+
+  const [postResult, repliesResult] = await Promise.all([
+    getBoardPost(boardResult.board, postId),
+    getBoardPostReplies({ rootPost: { id: postId } } as any),
+  ]);
+
+  if (!postResult.success || !postResult.post) {
+    return (
+      <div className="flex min-h-screen items-start justify-center">
+        <div className="w-full max-w-md px-4 pt-12">
+          <StatusBanner type="error" title="Post not found" message={postResult.error || "The requested post does not exist."} />
+        </div>
+      </div>
+    );
+  }
+
+  const replies = repliesResult.success ? (repliesResult.replies || []) : [];
+
+  return <BoardPostDetail post={postResult.post} replies={replies} />;
+}
+```
+
+**Note on `getBoardPostReplies` call:** We pass a minimal object `{ rootPost: { id: postId } }` cast as `any` because `getBoardPostReplies` only uses `boardPost.rootPost.id`. This avoids needing to wait for the full `getBoardPost` result before starting the replies fetch (parallel execution). If this feels too hacky, you can instead change `getBoardPostReplies` to accept just a `postId: string` parameter — that's actually cleaner. Here's the alternative signature:
+
+**Alternative for `get-board-post-replies.ts` (cleaner):**
+Change the function signature to:
+
+```typescript
+export async function getBoardPostReplies(
+  rootPostId: string,
+  sessionClient?: SessionClient,
+): Promise<GetBoardPostRepliesResult> {
+```
+
+And use `rootPostId` directly instead of `boardPost.rootPost.id`. Then the route call becomes:
+
+```typescript
+getBoardPostReplies(postId);
+```
+
+### File 6.5: `app/commons/[address]/post/[postId]/reply/page.tsx` (REPLACE)
+
+This page is for the dedicated reply form (navigating to a separate page to write a reply). With the new inline `BoardReplyBox` on the post detail page, this route is less critical but we keep it for direct links.
+
+```typescript
+import { getBoard } from "@/lib/services/board/get-board";
+import { getBoardPost } from "@/lib/services/board/get-board-post";
+import { StatusBanner } from "@/components/shared/status-banner";
+import { BoardReplyBox } from "@/components/boards/board-reply-box";
+import { ProtectedRoute } from "@/components/pages/protected-route";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Address } from "@/types/common";
+
+export default async function NewReplyPage({
+  params,
+}: {
+  params: Promise<{ address: string; postId: string }>;
+}) {
+  const { address, postId } = await params;
+
+  const boardResult = await getBoard(address);
+
+  if (!boardResult.success || !boardResult.board) {
+    return (
+      <div className="flex min-h-screen items-start justify-center">
+        <div className="w-full max-w-md px-4 pt-12">
+          <StatusBanner type="info" title="Board not found" message="The requested board does not exist." />
+        </div>
+      </div>
+    );
+  }
+
+  const postResult = await getBoardPost(boardResult.board, postId);
+
+  if (!postResult.success || !postResult.post) {
+    return (
+      <div className="flex min-h-screen items-start justify-center">
+        <div className="w-full max-w-md px-4 pt-12">
+          <StatusBanner type="error" title="Post not found" message={postResult.error || "The requested post does not exist."} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ProtectedRoute>
+      <div className="mx-auto max-w-4xl px-4 py-8">
+        <div className="mb-6">
+          <Link href={`/commons/${address}/post/${postId}`}>
+            <Button variant="outline" size="sm">← Back to post</Button>
+          </Link>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+          <div className="mb-4 text-sm text-gray-500">
+            Replying to <span className="font-medium text-slate-900 dark:text-gray-100">{postResult.post.title}</span>
+          </div>
+          <BoardReplyBox postId={postId} feedAddress={address as Address} />
+        </div>
+      </div>
+    </ProtectedRoute>
+  );
+}
+```
+
+### File 6.6: `app/commons/[address]/new-post/actions.ts` (DELETE)
+
+This file contained `saveFeedPost` which was the server action for persisting to Supabase after client-side Lens creation. The new `createBoardPost` service handles both in one call. Delete this file.
+
+### File 6.7: `app/page.tsx` (UPDATE)
+
+Update the homepage to use `getBoardSections` instead of `getFeedSections`.
+
+**Change:**
+
+```typescript
+// OLD
+import { getFeedSections } from "@/lib/services/feed/get-feeds";
+// ...
+const [feedSections, ...] = await Promise.all([getFeedSections(), ...]);
+// ...
+{feedSections.map((section) => (
+
+// NEW
+import { getBoardSections } from "@/lib/services/board/get-boards";
+// ...
+const [boardSections, ...] = await Promise.all([getBoardSections(), ...]);
+// ...
+{boardSections.map((section) => (
+```
+
+**Homepage component props update:** The `ForumCategory` and `FunctionGrid` components currently receive `feeds` prop with shape `{ address, title, ... }`. After this change, they receive `boards` prop with shape `Board` (`{ feedAddress, name, ... }`).
+
+You have two options:
+
+1. **Quick:** Update `getBoardSections` to return the same shape as `getFeedSections` (map `Board` back to the old `{ address, title }` format). This avoids touching homepage components.
+2. **Clean:** Update `ForumCategory` and `FunctionGrid` to accept `Board[]` instead.
+
+**Recommended: Option 1 (quick).** Add a compatibility mapping in `getBoardSections`:
+
+In `get-boards.ts`, add after the `boards` mapping:
+
+```typescript
+// Compatibility: homepage components expect { address, title, ... } shape
+feeds: categoryFeeds.map((feed) => ({
+  id: feed.id,
+  address: feed.lens_feed_address,
+  title: feed.title,
+  description: feed.description || "",
+  isLocked: feed.is_locked || false,
+  featured: feed.featured || false,
+  postCount: feed.post_count || 0,
+  repliesCount: feed.replies_count || 0,
+  viewsCount: feed.views_count || 0,
+  lastPostAt: feed.last_post_at || null,
+})),
+```
+
+Actually, the simplest approach: keep the `BoardSection` type returning `boards: Board[]` but ALSO include a `feeds` field with the old shape for backward compatibility. Or just update the homepage components. Your call — both work.
+
+---
+
+## PHASE 7: Delete Old Code
+
+**Goal:** Remove all replaced files. Verify build passes.
+
+**Commit message:** `refactor(boards): remove old feed/commons code replaced by board system`
+
+### Files to DELETE:
+
+```
+# Old components (replaced by components/boards/)
+components/commons/create-post-form.tsx
+components/commons/create-reply-form.tsx
+components/commons/feed-nav-actions.tsx
+components/commons/feed-posts-list.tsx
+components/commons/paginated-feed-posts-list.tsx
+components/commons/post-detail.tsx
+components/commons/reply-form.tsx
+components/commons/reply-list.tsx
+
+# Old services (replaced by lib/services/board/)
+lib/services/feed/create-feed-post.ts
+lib/services/feed/create-feed-reply-client.ts
+lib/services/feed/get-feed-post.ts
+lib/services/feed/get-feed-posts.ts
+lib/services/feed/get-feed-replies.ts
+lib/services/feed/get-feeds.ts
+lib/services/feed/save-feed-reply.ts
+
+# Old domain types (replaced by lib/domain/boards/types.ts)
+lib/domain/feeds/types.ts
+
+# Old adapter (replaced by lib/adapters/board-adapter.ts)
+lib/adapters/feed-adapter.ts
+
+# Old hooks (replaced by hooks/boards/)
+hooks/feeds/use-feed-post-create-form.ts
+hooks/feeds/use-feed-reply-create.ts
+
+# Old route action (replaced by new actions.ts)
+app/commons/[address]/new-post/actions.ts
+```
+
+### Files to KEEP (shared infrastructure):
+
+```
+# Supabase data access (used by new board services)
+lib/external/supabase/feeds.ts          — fetchFeedByAddress, fetchAllFeeds
+lib/external/supabase/feed-posts.ts     — persistFeedPost, fetchFeedPostByLensId, etc.
+
+# Revalidation helpers (used by new components)
+app/actions/revalidate-path.ts          — revalidateFeedPostPath, revalidateFeedPath
+
+# Lens primitives (shared by both systems)
+lib/external/lens/primitives/posts.ts
+lib/external/lens/primitives/articles.ts
+
+# Reply system (shared by both systems)
+lib/domain/replies/types.ts
+lib/adapters/reply-adapter.ts
+lib/services/reply/create-reply.ts
+lib/services/reply/get-thread-replies.ts
+hooks/replies/use-reply-create.ts
+```
+
+### Verification Steps:
+
+1. After deleting, run: `npx tsc --noEmit` — check for import errors
+2. Search for any remaining imports of deleted files:
+   ```bash
+   grep -r "services/feed/" --include="*.ts" --include="*.tsx" app/ components/ hooks/ lib/
+   grep -r "domain/feeds/" --include="*.ts" --include="*.tsx" app/ components/ hooks/ lib/
+   grep -r "adapters/feed-adapter" --include="*.ts" --include="*.tsx" app/ components/ hooks/ lib/
+   grep -r "hooks/feeds/" --include="*.ts" --include="*.tsx" app/ components/ hooks/ lib/
+   grep -r "components/commons/" --include="*.ts" --include="*.tsx" app/ components/ hooks/ lib/
+   ```
+3. If any imports found, update them to point to new board equivalents
+4. Run: `npm run build` — full build check
+
+### Empty Directories to Remove:
+
+```bash
+rm -rf components/commons/
+rm -rf lib/services/feed/
+rm -rf lib/domain/feeds/
+rm -rf hooks/feeds/
+```
+
+---
+
+## PHASE 8: Test
+
+**Goal:** Verify everything works end-to-end.
+
+**Commit message:** `test(boards): verify board system works end-to-end`
+
+### Test 1: Homepage Loads
+
+1. Navigate to `/`
+2. Verify all board sections display (General Discussion, Partner Communities, etc.)
+3. Verify post counts and reply counts show
+4. Verify clicking a board navigates to `/commons/[address]`
+
+### Test 2: Board Page Loads
+
+1. Navigate to `/commons/[any-board-address]`
+2. Verify board header shows (name, description, category)
+3. Verify post list loads with avatars, titles, stats
+4. Verify voting arrows appear on each post card
+5. Verify "Load More" button works (if >10 posts)
+
+### Test 3: Post Detail Page
+
+1. Click any post title
+2. Verify post content renders (markdown)
+3. Verify author avatar shows (AvatarProfileLink)
+4. Verify voting arrows work on the post
+5. Verify view count increments
+6. Verify reply list shows with avatars (THE KEY TEST)
+7. Verify each reply has voting arrows
+8. Verify "Reply" button appears on each reply
+
+### Test 4: Create Post
+
+1. Navigate to `/commons/[address]/new-post`
+2. Fill in title, content, optional summary and tags
+3. Submit
+4. Verify redirect to board page
+5. Verify new post appears in the list
+6. Verify post appears on Hey.xyz / Soclly (Lens propagation)
+
+### Test 5: Create Reply (Inline)
+
+1. On a post detail page, use the inline reply box
+2. Type content and click Reply
+3. Verify reply appears in the list WITHOUT page refresh (cache invalidation)
+4. Verify reply has your avatar
+5. Verify reply appears on Hey.xyz (Lens propagation)
+
+### Test 6: Create Reply (Dedicated Page)
+
+1. Navigate to `/commons/[address]/post/[postId]/reply`
+2. Write reply and submit
+3. Verify redirect back to post detail
+4. Verify reply appears
+
+### Test 7: Voting
+
+1. Upvote a post → verify arrow turns blue, score increments
+2. Upvote a reply → same
+3. Verify you can't vote when not logged in (buttons disabled)
+
+### Test 8: Locked Board
+
+1. Navigate to a board in the "technical" category
+2. Verify lock icon shows
+3. Verify "New Post" button is disabled
+4. Verify posts are still readable
+
+### Test 9: Cross-System Verification
+
+1. Verify Communities still work (navigate to `/communities/`)
+2. Verify community threads still load with avatars
+3. Verify community replies still work
+4. This confirms we didn't break the shared reply system
+
+---
+
+## QUICK REFERENCE: File Map
+
+### New Files Created (16 total):
+
+```
+lib/domain/boards/types.ts                          Phase 1
+lib/adapters/board-adapter.ts                        Phase 2
+lib/services/board/get-board.ts                      Phase 3
+lib/services/board/get-boards.ts                     Phase 3
+lib/services/board/get-board-posts.ts                Phase 3
+lib/services/board/get-board-post.ts                 Phase 3
+lib/services/board/create-board-post.ts              Phase 3
+lib/services/board/get-board-post-replies.ts         Phase 3
+hooks/boards/use-board-post-create-form.ts           Phase 4
+components/boards/board-nav-actions.tsx               Phase 5
+components/boards/board-post-voting.tsx               Phase 5
+components/boards/board-post-card.tsx                 Phase 5
+components/boards/board-post-list.tsx                 Phase 5
+components/boards/board-reply-card.tsx                Phase 5
+components/boards/board-reply-list.tsx                Phase 5
+components/boards/board-reply-box.tsx                 Phase 5
+components/boards/board-post-detail.tsx               Phase 5
+components/boards/board-post-create-form.tsx          Phase 5
+```
+
+### Files Updated (6 total):
+
+```
+app/commons/[address]/actions.ts                     Phase 6
+app/commons/[address]/page.tsx                       Phase 6
+app/commons/[address]/new-post/page.tsx              Phase 6
+app/commons/[address]/post/[postId]/page.tsx         Phase 6
+app/commons/[address]/post/[postId]/reply/page.tsx   Phase 6
+app/page.tsx                                         Phase 6
+```
+
+### Files Deleted (17 total):
+
+```
+components/commons/create-post-form.tsx              Phase 7
+components/commons/create-reply-form.tsx              Phase 7
+components/commons/feed-nav-actions.tsx               Phase 7
+components/commons/feed-posts-list.tsx                Phase 7
+components/commons/paginated-feed-posts-list.tsx      Phase 7
+components/commons/post-detail.tsx                   Phase 7
+components/commons/reply-form.tsx                    Phase 7
+components/commons/reply-list.tsx                    Phase 7
+lib/services/feed/create-feed-post.ts                Phase 7
+lib/services/feed/create-feed-reply-client.ts        Phase 7
+lib/services/feed/get-feed-post.ts                   Phase 7
+lib/services/feed/get-feed-posts.ts                  Phase 7
+lib/services/feed/get-feed-replies.ts                Phase 7
+lib/services/feed/get-feeds.ts                       Phase 7
+lib/services/feed/save-feed-reply.ts                 Phase 7
+lib/domain/feeds/types.ts                            Phase 7
+lib/adapters/feed-adapter.ts                         Phase 7
+hooks/feeds/use-feed-post-create-form.ts             Phase 7
+hooks/feeds/use-feed-reply-create.ts                 Phase 7
+app/commons/[address]/new-post/actions.ts            Phase 7
+```
+
+### Directories to Remove:
+
+```
+components/commons/                                  Phase 7
+lib/services/feed/                                   Phase 7
+lib/domain/feeds/                                    Phase 7
+hooks/feeds/                                         Phase 7
+```
+
+# Codebase Analysis Summary
+
+**Date:** March 9, 2026  
+**Project:** Web3Forum (LensForum rebrand + communities)
+
+---
+
+## 🎯 Executive Summary
+
+**Good News:** Most of the "bugs" aren't actually missing features - they're already implemented in the communities section but not integrated into the main forum/feed sections!
+
+**The Pattern:** The original LensForum codebase has fully functional implementations for:
+
+- Voting (upvote/downvote)
+- Join/leave communities
+- Switch accounts
+- Notifications
+- User search
+- Avatar display
+- Profile stats
+
+**The Problem:** These features work in `/communities/*` routes but are either:
+
+1. Not connected to the main feed/forum pages
+2. Implemented but have integration bugs
+3. UI exists but backend logic isn't wired up
+
+---
+
+## 🔧 What Actually Needs to Be Done
+
+### Category 1: Integration Work (Not New Development)
+
+These features exist and work - just need to be connected:
+
+1. **Voting System** → Copy pattern from `components/thread/thread-voting.tsx` to feed posts
+2. **User Search** → Use existing `components/ui/user-search.tsx` component
+3. **Avatars** → Use existing `components/notifications/avatar-profile-link.tsx`
+4. **Join Community** → Debug existing `hooks/communities/use-join-community.ts`
+5. **Switch Account** → Debug existing `hooks/auth/use-switch-account.ts`
+6. **Notifications** → Debug existing `hooks/notifications/use-notifications.ts`
+
+### Category 2: Bug Fixes
+
+These are actual bugs that need debugging:
+
+1. **Post count showing "0"** → Stats fetching issue
+2. **Notifications not working** → API integration issue
+3. **Join button not working** → Hook integration issue
+4. **Error messages unclear** → Add proper validation feedback
+
+### Category 3: Cleanup/Removal
+
+Features to remove:
+
+1. **Rewards system** → Remove entirely (not in plan)
+2. **Reputation** → Remove or hide (no sybil resistance)
+
+### Category 4: New Development
+
+Actually new features:
+
+1. **Security/spam protection** → Rate limiting, spam detection
+2. **Info page** → About/how it works page
+3. **Link handling** → Make links clickable in posts
+
+---
+
+## 📁 Key Files Reference
+
+### Hooks (Business Logic)
+
+```
+hooks/
+├── common/
+│   └── use-voting.ts                    ✅ Complete voting implementation
+├── communities/
+│   ├── use-join-community.ts            ✅ Join logic
+│   └── use-leave-community.ts           ✅ Leave logic
+├── auth/
+│   └── use-switch-account.ts            ✅ Account switching
+├── notifications/
+│   └── use-notifications.ts             ✅ Notifications hook
+└── editor/
+    └── use-account-search.ts            ✅ User search logic
+```
+
+### Components (UI)
+
+```
+components/
+├── ui/
+│   ├── avatar.tsx                       ✅ Avatar component
+│   └── user-search.tsx                  ✅ Search UI
+├── notifications/
+│   ├── avatar-profile-link.tsx          ✅ Avatar with link
+│   ├── notifications-list.tsx           ✅ Notifications UI
+│   └── notifications-filter.tsx         ✅ Filter UI
+├── thread/
+│   └── thread-voting.tsx                ✅ Voting UI for threads
+├── reply/
+│   └── reply-voting.tsx                 ✅ Voting UI for replies
+└── profile/
+    └── profile-stats.tsx                ✅ Stats display
+```
+
+---
+
+## 🔑 Technical Patterns to Follow
+
+### 1. Lens Protocol Integration Pattern
+
+Every Lens action follows this pattern:
+
+```typescript
+export function useLensAction() {
+  const sessionClient = useSessionClient();
+  const walletClient = useWalletClient();
+
+  const performAction = async () => {
+    // 1. Check authentication
+    if (!sessionClient.data) {
+      toast.error("Not logged in", {
+        description: "Please log in to perform this action.",
+      });
+      return false;
+    }
+
+    // 2. Check wallet connection
+    if (!walletClient.data) {
+      toast.error("Wallet not connected", {
+        description: "Please connect your wallet.",
+      });
+      return false;
+    }
+
+    // 3. Show loading state
+    const toastId = toast.loading("Processing...");
+
+    try {
+      // 4. Call Lens Protocol API
+      const result = await lensApiCall(sessionClient.data, walletClient.data, params);
+
+      // 5. Handle result
+      if (result.isErr()) {
+        throw new Error(result.error);
+      }
+
+      toast.success("Action completed!");
+      return true;
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Action failed", {
+        description: "Please try again.",
+      });
+      return false;
+    } finally {
+      toast.dismiss(toastId);
+    }
+  };
+
+  return performAction;
+}
+```
+
+### 2. Component Pattern
+
+Separate concerns: hooks for logic, components for UI
+
+```typescript
+export function FeatureComponent({ data }: Props) {
+  // 1. Use custom hook for logic
+  const { state, loading, error, action } = useFeatureHook(data);
+
+  // 2. Handle loading state
+  if (loading) return <LoadingSpinner text="Loading..." />;
+
+  // 3. Handle error state
+  if (error) return <StatusBanner type="error" message={error} />;
+
+  // 4. Render UI
+  return (
+    <div>
+      <DisplayComponent data={state} />
+      <Button onClick={action}>Perform Action</Button>
+    </div>
+  );
+}
+```
+
+### 3. Error Handling Pattern
+
+Use sonner toast for all user feedback:
+
+```typescript
+// Loading
+const toastId = toast.loading("Action in progress...");
+
+// Success
+toast.success("Action completed!", {
+  description: "Optional details here",
+});
+
+// Error
+toast.error("Action failed", {
+  description: "Error details or help text",
+});
+
+// Dismiss
+toast.dismiss(toastId);
+```
+
+---
+
+## 🚀 Quick Win Opportunities
+
+### 1. Add Voting to Feed Posts (2-3 hours)
+
+**Why it's quick:** Complete implementation exists in `use-voting.ts`
+
+```typescript
+// In your feed post component:
+import { useVoting } from "@/hooks/common/use-voting";
+
+const { scoreState, handleUpvote, handleDownvote, isLoading } = useVoting({
+  postid: post.id,
+});
+
+// Then render the voting UI (copy from thread-voting.tsx)
+```
+
+### 2. Add Avatars to Posts (1 hour)
+
+**Why it's quick:** Component already exists
+
+```typescript
+import { AvatarProfileLink } from "@/components/notifications/avatar-profile-link";
+
+// In your post component:
+<AvatarProfileLink author={post.author} />
+```
+
+### 3. Add User Search (1-2 hours)
+
+**Why it's quick:** Full component ready to use
+
+```typescript
+import { UserSearch } from "@/components/ui/user-search";
+
+<UserSearch
+  onUserSelect={(user) => handleUserSelect(user)}
+  placeholder="Search users..."
+/>
+```
+
+---
+
+## 🐛 Debugging Priorities
+
+### High Priority (Fix First)
+
+1. **Notifications** - Debug why `use-notifications` isn't returning data
+   - Check: Lens API permissions
+   - Check: Session authentication
+   - Check: Network requests in dev tools
+
+2. **Join Community** - Debug why button doesn't work
+   - Check: Wallet connection state
+   - Check: Community membership API calls
+   - Check: Error logs in console
+
+3. **Switch Account** - Debug account switching
+   - Check: Auth store state updates
+   - Check: Lens session management
+   - Check: Account fetch after switch
+
+### Medium Priority
+
+4. **Post Count** - Debug stats fetching
+   - Check: `getAccountStats` service
+   - Check: Database triggers
+   - Check: Lens API response
+
+### Low Priority
+
+5. **Links** - Make links clickable
+   - Update: `ContentRenderer` component
+   - Add: URL parsing and link detection
+
+---
+
+## 📊 Effort Estimation
+
+### Phase 1: Critical Bugs (1 week)
+
+- Fix notifications: 1-2 days
+- Fix join community: 1 day
+- Fix switch account: 1 day
+- Add error messages: 1 day
+
+### Phase 2: Integration (1 week)
+
+- Add voting system: 2 days
+- Add search: 1 day
+- Fix post count: 1 day
+- Add avatars: 0.5 days
+
+### Phase 3: Cleanup (3-4 days)
+
+- Remove rewards: 1 day
+- Add security: 2 days
+- Fix links: 1 day
+
+### Phase 4: Polish (3-4 days)
+
+- Create info page: 1 day
+- UI improvements: 2 days
+- Testing: 1 day
+
+**Total Estimated Time:** 3-4 weeks
+
+---
+
+## ⚠️ Potential Blockers
+
+1. **Lens Protocol API Issues**
+   - Rate limits
+   - Permission issues
+   - API changes
+
+2. **Wallet Connection**
+   - Users not connecting wallet
+   - Wrong network
+   - Wallet compatibility
+
+3. **Database Issues**
+   - Migration problems
+   - Trigger failures
+   - Query performance
+
+4. **Authentication State**
+   - Session management
+   - Token expiration
+   - Multi-account handling
+
+---
+
+## 💡 Recommendations
+
+### Immediate Actions:
+
+1. Start with voting integration (quick win, high impact)
+2. Debug notifications (high priority, user engagement)
+3. Add avatars to posts (quick win, visual improvement)
+
+### Short-term:
+
+1. Fix join community (core feature)
+2. Add search functionality (user request)
+3. Improve error messages (UX critical)
+
+### Long-term:
+
+1. Add security measures (spam protection)
+2. Create info page (onboarding)
+3. Consider partner community features
+
+### Don't Forget:
+
+1. Test with real users
+2. Monitor Lens API usage
+3. Document all changes
+4. Update README with setup instructions
+
+---
+
+## 🎓 Learning from the Codebase
+
+### What the Original Developer Did Well:
+
+1. ✅ Clean separation of concerns (hooks vs components)
+2. ✅ Consistent error handling with toast notifications
+3. ✅ Proper TypeScript typing throughout
+4. ✅ Reusable components (Avatar, Search, etc.)
+5. ✅ Good integration with Lens Protocol SDK
+
+### What Needs Improvement:
+
+1. ❌ Features not connected between sections
+2. ❌ Some features half-implemented
+3. ❌ Missing documentation
+4. ❌ Inconsistent patterns between communities and main forum
+5. ❌ No error boundaries
+
+### Key Takeaway:
+
+The codebase is solid - it just needs integration work, not major rewrites. Most bugs are connection issues, not missing functionality.
+
+---
+
+## 📝 Next Steps
+
+1. **Review this analysis** with the team
+2. **Prioritize bugs** based on user impact
+3. **Start with quick wins** (voting, avatars)
+4. **Debug critical issues** (notifications, join)
+5. **Test thoroughly** after each fix
+6. **Document changes** as you go
+
+---
+
+## 🔗 Related Documents
+
+- `Feedback.md` - Original bug report
+- `BugFixPlan.md` - Detailed implementation plan
+- `codebase.md` - Full codebase reference
+
+---
+
+**Last Updated:** March 9, 2026  
+**Status:** Analysis Complete - Ready for Implementation
+
+# Future Roadmap - Society Protocol Forum
+
+**Created**: 2026-03-01  
+**Status**: Planning Phase  
+**Current Version**: v1.0 (Core Loop Complete + Reply System Working)
+
+---
+
+## Table of Contents
+
+1. [Critical Decision: Technical Section Architecture](#critical-decision-technical-section-architecture)
+2. [Immediate Priorities](#immediate-priorities)
+3. [Short-term Features](#short-term-features)
+4. [Medium-term Features](#medium-term-features)
+5. [Long-term Vision](#long-term-vision)
+6. [Technical Debt](#technical-debt)
+
+---
+
+# Critical Decision: Technical Section Architecture
+
+## Current Status
+
+- 7 technical feeds with placeholder addresses (feed-20, feed-20a, feed-21, feed-22, feed-23, feed-23a, feed-23b)
+- All marked as `is_locked: true`
+- Topics: Architecture, State Machine, Consensus, Cryptography, Account System, Security
+
+## 🎯 Three Architecture Options
+
+### **Option 1: Token-Gated Feeds (Simplest)**
+
+**How it works:**
+
+- Keep 7 separate Lens Feeds
+- Each feed has token-gating rule
+- Users need token to post/view
+
+**Pros:**
+
+- ✅ Simplest to implement (30 min)
+- ✅ Keeps current UI/UX
+- ✅ Each topic has clear boundary
+- ✅ Easy moderation per feed
+
+**Cons:**
+
+- ❌ Siloed discussions (no cross-pollination)
+- ❌ 7 separate token-gate checks
+- ❌ Rigid structure
+
+**Implementation:**
+
+```sql
+-- Just update Supabase with real Lens Feed addresses
+UPDATE feeds SET lens_feed_address = '0xTokenGatedFeed1' WHERE lens_feed_address = 'feed-20';
+UPDATE feeds SET lens_feed_address = '0xTokenGatedFeed2' WHERE lens_feed_address = 'feed-20a';
+-- Repeat for all 7
+```
+
+**Timeline:** 30 minutes (if you have token-gated feed addresses)
+
+---
+
+### **Option 2: Single Token-Gated Lens Group (Recommended)**
+
+**How it works:**
+
+- Create 1 Lens Group: "Society Protocol Research"
+- Token-gate the entire group
+- Use tags/categories for the 7 topics
+- Posts are Lens Publications with metadata tags
+
+**Pros:**
+
+- ✅ **Cross-pollination**: Posts can have multiple tags
+- ✅ Single token-gate check (better UX)
+- ✅ More flexible organization
+- ✅ Can add new topics without creating feeds
+- ✅ Better for research (topics naturally overlap)
+- ✅ Lens Groups have built-in moderation
+
+**Cons:**
+
+- ⚠️ Requires UI refactor (2-3 hours)
+- ⚠️ Different pattern from other sections
+
+**Implementation Steps:**
+
+1. **Create Your Token** (1-2 hours)
+
+```solidity
+// Option A: Simple ERC-20 on Lens Chain
+contract SocietyResearchToken is ERC20 {
+  constructor() ERC20("Society Research", "SRES") {
+    _mint(msg.sender, 1000000 * 10**18);
+  }
+}
+
+// Option B: Use existing token/NFT you control
+```
+
+2. **Create Token-Gated Lens Group** (30 min)
+
+```typescript
+import { TokenStandard } from "@lens-protocol/client";
+import { createGroup } from "@lens-protocol/client/actions";
+
+const group = await createGroup(sessionClient, {
+  name: "Society Protocol Research",
+  description: "Token-gated research discussions for Society Protocol",
+  rules: {
+    anyOf: [
+      {
+        rule: {
+          type: "TOKEN_OWNERSHIP",
+          token: {
+            address: evmAddress("0xYourTokenAddress"),
+            standard: TokenStandard.Erc20,
+            chainId: lensChain.id,
+          },
+          minBalance: bigDecimal("1"), // Need at least 1 token
+        },
+      },
+    ],
+  },
+});
+```
+
+3. **Update UI** (2-3 hours)
+
+```typescript
+// Create TechnicalSection component
+// Fetch posts from group
+// Filter/organize by tags
+// Show as categorized view with 7 topics
+
+const topics = [
+  { id: "architecture", name: "General Architecture", tag: "architecture" },
+  { id: "objects", name: "Architectural Objects & Functions", tag: "objects" },
+  { id: "state-machine", name: "State Machine", tag: "state-machine" },
+  { id: "consensus", name: "Consensus (Proof of Hunt)", tag: "consensus" },
+  { id: "cryptography", name: "Cryptography", tag: "cryptography" },
+  { id: "account", name: "Account System", tag: "account" },
+  { id: "security", name: "Security", tag: "security" },
+];
+
+// Posts have tags in metadata
+const metadata = {
+  content: "Discussion about state machine...",
+  tags: ["state-machine", "cryptography"], // Can have multiple!
+  category: "technical",
+};
+```
+
+**Timeline:** 3-4 hours total
+
+---
+
+### **Option 3: Hybrid - Group + Virtual Feeds**
+
+**How it works:**
+
+- Backend: Single token-gated Lens Group
+- Frontend: Show as 7 separate "feeds" (virtual)
+- Filter posts by tags to simulate feeds
+
+**Pros:**
+
+- ✅ Cross-pollination in backend
+- ✅ Familiar UI (looks like separate feeds)
+- ✅ Single token-gate
+- ✅ Flexible tagging
+
+**Cons:**
+
+- ⚠️ More complex implementation
+- ⚠️ Posts can appear in multiple "feeds"
+
+**Timeline:** 4-5 hours
+
+---
+
+## 💡 Recommendation: Option 2
+
+**Why:**
+
+1. Research discussions naturally overlap (Consensus involves Cryptography + State Machine)
+2. Lens Groups have native, robust token-gating
+3. Future-proof: Easy to add topics, reorganize
+4. Better UX: One token check vs 7
+5. Aligns with Lens Protocol best practices
+
+**When to use:**
+
+- If you have 1+ week before demo
+- If you want best long-term architecture
+- If cross-topic discussions are valuable
+
+**When to use Option 1 instead:**
+
+- If you need demo ready in 1-2 days
+- If you already have token-gated feed addresses
+- If strict topic separation is required
+
+---
+
+## 🛠️ Token Creation Guide
+
+### Option A: Deploy Your Own ERC-20
+
+**Contract:**
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract SocietyResearchToken is ERC20, Ownable {
+    constructor() ERC20("Society Research Token", "SRES") {
+        _mint(msg.sender, 1000000 * 10**18); // 1M tokens
+    }
+
+    // Mint more tokens to grant access
+    function grantAccess(address to, uint256 amount) external onlyOwner {
+        _mint(to, amount);
+    }
+}
+```
+
+**Deploy:**
+
+1. Use Remix IDE or Hardhat
+2. Deploy to Lens Chain (or your preferred chain)
+3. Mint tokens to addresses you want to grant access
+4. Use contract address in Lens Group rules
+
+### Option B: Use Existing Token/NFT
+
+- Use any ERC-20 or ERC-721 you control
+- Just need the contract address
+- Set minimum balance requirement
+
+---
+
+## 🎯 Decision Checklist
+
+Before choosing, answer:
+
+1. **Timeline**: When do you need this for your boss?
+   - < 2 days → Option 1
+   - 1 week → Option 2
+   - 2+ weeks → Option 2 or 3
+
+2. **Token**: Do you want to create your own?
+   - Yes → Need 1-2 hours for deployment
+   - No → Use existing token
+
+3. **Access Control**: Who should have access?
+   - Small team → Manually mint tokens
+   - Community → Token sale/distribution
+   - Hybrid → Start small, expand later
+
+4. **Discussion Style**: How do topics relate?
+   - Separate → Option 1
+   - Overlapping → Option 2
+   - Mixed → Option 3
+
+5. **UI Preference**: How should it look?
+   - Like other sections (separate feeds) → Option 1 or 3
+   - Unified research hub → Option 2
+
+---
+
+# Immediate Priorities
+
+**Timeline**: 1-2 weeks  
+**Goal**: Production readiness for demo
+
+## 1. Decide on Technical Section Architecture (CRITICAL)
+
+See above section. Must decide before proceeding.
+
+## 2. Loading States & Skeletons (4 hours)
+
+### Why
+
+Better perceived performance and user experience.
+
+### What to Build
+
+- Skeleton loaders for feed lists
+- Skeleton loaders for post lists
+- Loading spinners for post creation
+- Loading states for pagination
+- Shimmer effects
+
+### Files to Create
+
+- `components/shared/skeleton-post.tsx`
+- `components/shared/skeleton-feed.tsx`
+- `components/shared/skeleton-reply.tsx`
+
+### Implementation
+
+```typescript
+// components/shared/skeleton-post.tsx
+export function SkeletonPost() {
+  return (
+    <div className="animate-pulse rounded-lg border p-6">
+      <div className="h-6 w-3/4 bg-gray-200 rounded"></div>
+      <div className="mt-2 h-4 w-1/2 bg-gray-200 rounded"></div>
+      <div className="mt-4 h-20 bg-gray-200 rounded"></div>
+    </div>
+  );
+}
+```
+
+---
+
+## 3. Error Boundaries (2 hours)
+
+### Why
+
+Graceful error handling prevents full app crashes.
+
+### What to Build
+
+- React error boundaries
+- Error fallback UI
+- Retry mechanisms
+- Better error messages
+
+### Files to Create
+
+- `components/shared/error-boundary.tsx`
+- `components/shared/error-fallback.tsx`
+
+### Implementation
+
+```typescript
+// components/shared/error-boundary.tsx
+export class ErrorBoundary extends React.Component {
+  state = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <ErrorFallback error={this.state.error} />;
+    }
+    return this.props.children;
+  }
+}
+```
+
+---
+
+## 4. Test Production Build (30 min)
+
+### Commands
+
+```bash
+npm run build
+npm start
+```
+
+### What to Check
+
+- No build errors
+- All features work
+- Performance is good
+- No console errors
+
+---
+
+## 5. Environment Setup Documentation (30 min)
+
+### Create .env.example
+
+```bash
+# Lens Protocol
+NEXT_PUBLIC_LENS_ENVIRONMENT=production
+
+# WalletConnect
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=
+
+# Supabase
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+
+# Grove (Storage)
+GROVE_API_KEY=
+
+# Optional: Analytics
+NEXT_PUBLIC_ANALYTICS_ID=
+```
+
+### Create SETUP.md
+
+- Installation steps
+- Environment variables
+- How to run locally
+- How to deploy
+
+---
+
+## 6. README for Evaluators (30 min)
+
+### What to Include
+
+- What is Society Protocol Forum
+- How to connect wallet
+- How to get Lens account
+- What features to test
+- Known limitations
+- Feedback channels
+
+---
+
+# Short-term Features
+
+**Timeline**: 2-4 weeks  
+**Goal**: Enhanced user experience
+
+## 5. Search & Filter (6 hours)
+
+### Features
+
+- Search posts by title/content
+- Filter by author
+- Filter by date range
+- Filter by popularity
+- Sort options
+
+### Files to Create
+
+- `components/commons/search-bar.tsx`
+- `components/commons/filter-dropdown.tsx`
+- `lib/services/feed/search-feed-posts.ts`
+
+### Implementation
+
+```typescript
+// lib/services/feed/search-feed-posts.ts
+export async function searchFeedPosts(
+  feedAddress: Address,
+  query: string,
+  filters?: {
+    author?: Address;
+    dateFrom?: Date;
+    dateTo?: Date;
+    sortBy?: "recent" | "popular";
+  },
+): Promise<SearchResult>;
+```
+
+---
+
+## 6. User Profile Pages (8 hours)
+
+### Features
+
+- View user's posts
+- View user's replies
+- User bio and metadata
+- Activity history
+- Follow/unfollow (if Lens supports)
+
+### Route
+
+`/u/[username]` or `/u/[address]`
+
+### Files to Create
+
+- `app/u/[username]/page.tsx`
+- `components/user/user-profile.tsx`
+- `components/user/user-posts-list.tsx`
+- `lib/services/user/get-user-profile.ts`
+- `lib/services/user/get-user-posts.ts`
+
+---
+
+## 7. Post Editing (4 hours)
+
+### Features
+
+- Edit own posts
+- Edit history (if needed)
+- Update on Lens Protocol
+- Revalidate cache
+
+### Files to Create
+
+- `app/commons/[address]/post/[postId]/edit/page.tsx`
+- `components/commons/edit-post-form.tsx`
+- `lib/services/feed/update-feed-post.ts`
+- `hooks/feeds/use-feed-post-edit-form.ts`
+
+### Implementation
+
+```typescript
+// lib/services/feed/update-feed-post.ts
+export async function updateFeedPost(
+  postId: string,
+  updates: {
+    title?: string;
+    content?: string;
+    summary?: string;
+  },
+  sessionClient: SessionClient,
+  walletClient: WalletClient,
+): Promise<UpdateResult>;
+```
+
+---
+
+## 8. Infinite Scroll (3 hours)
+
+### Features
+
+- Auto-load on scroll
+- Replace "Load More" button
+- Intersection Observer
+- Loading indicator
+
+### Files to Modify
+
+- `components/commons/paginated-feed-posts-list.tsx`
+
+### Implementation
+
+```typescript
+// Use Intersection Observer
+const observerRef = useRef<IntersectionObserver>();
+const lastPostRef = useCallback(
+  node => {
+    if (isLoading) return;
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && nextCursor) {
+        loadMore();
+      }
+    });
+
+    if (node) observerRef.current.observe(node);
+  },
+  [isLoading, nextCursor],
+);
+```
+
+---
+
+# Medium-term Features
+
+**Timeline**: 1-3 months  
+**Goal**: Advanced functionality
+
+## 9. Notifications System (2 weeks)
+
+### Features
+
+- Real-time notifications for replies
+- Notification bell icon
+- Notification list
+- Mark as read
+- Email notifications (optional)
+- Push notifications (optional)
+
+### Files to Create
+
+- `app/notifications/page.tsx`
+- `components/layout/notification-bell.tsx`
+- `components/notifications/notification-list.tsx`
+- `lib/services/notifications/get-notifications.ts`
+- `lib/services/notifications/mark-as-read.ts`
+
+### Implementation
+
+- Use Lens Protocol notification API
+- Poll for new notifications
+- WebSocket for real-time (optional)
+
+---
+
+## 10. Rich Media Support (1 week)
+
+### Features
+
+- Image upload and display
+- Video embeds (YouTube, Vimeo)
+- GIF support
+- Link previews
+- File attachments
+
+### Files to Create
+
+- `components/commons/media-uploader.tsx`
+- `components/commons/media-preview.tsx`
+- `lib/services/media/upload-image.ts`
+
+### Implementation
+
+- Upload to IPFS/Grove
+- Store URI in post metadata
+- Display in post content
+
+---
+
+## 11. Post Reactions (1 week)
+
+### Features
+
+- Like/upvote posts
+- Reaction counts
+- User's reaction status
+- Multiple reaction types (optional)
+
+### Files to Create
+
+- `components/commons/post-reactions.tsx`
+- `lib/services/feed/react-to-post.ts`
+- `hooks/feeds/use-post-reactions.ts`
+
+### Implementation
+
+```typescript
+// Use Lens Protocol reactions
+await addReaction(sessionClient, {
+  post: postId(postId),
+  reaction: PostReactionType.Upvote,
+});
+```
+
+---
+
+## 12. Moderation Tools (2 weeks)
+
+### Features
+
+- Report posts/replies
+- Hide posts
+- Delete posts (own posts)
+- Ban users (admin only)
+- Moderator dashboard
+
+### Files to Create
+
+- `app/admin/moderation/page.tsx`
+- `components/moderation/report-button.tsx`
+- `components/moderation/moderation-queue.tsx`
+- `lib/services/moderation/report-content.ts`
+- `lib/services/moderation/hide-content.ts`
+
+---
+
+# Long-term Vision
+
+**Timeline**: 3-6 months  
+**Goal**: Platform maturity
+
+## 13. Analytics Dashboard (2 weeks)
+
+### Features
+
+- Post views tracking
+- User engagement metrics
+- Popular posts/feeds
+- Growth charts
+- User retention
+
+### Implementation
+
+- Integrate with analytics service (Plausible, Umami)
+- Track events client-side
+- Dashboard for admins
+
+---
+
+## 14. Mobile App (2-3 months)
+
+### Features
+
+- React Native app
+- iOS and Android
+- Push notifications
+- Offline support
+- Native feel
+
+### Tech Stack
+
+- React Native
+- Expo
+- Lens Protocol SDK
+- WalletConnect
+
+---
+
+## 15. Advanced Search (1 week)
+
+### Features
+
+- Full-text search
+- Fuzzy matching
+- Search suggestions
+- Search history
+- Advanced filters
+
+### Implementation
+
+- Integrate with search service (Algolia, Meilisearch)
+- Index posts and replies
+- Real-time updates
+
+---
+
+## 16. Gamification (2 weeks)
+
+### Features
+
+- User reputation points
+- Badges and achievements
+- Leaderboards
+- Rewards for contributions
+- NFT badges
+
+### Implementation
+
+- Track user actions
+- Award points
+- Mint NFT badges on milestones
+
+---
+
+# Technical Debt
+
+**Priority**: Ongoing
+
+## Code Quality
+
+### 1. Remove Deprecated Code
+
+- Clean up unused components
+- Remove old config files
+- Delete commented code
+
+### 2. Add Tests
+
+- Unit tests for services
+- Integration tests for flows
+- E2E tests for critical paths
+
+### 3. Performance Optimization
+
+- Code splitting
+- Lazy loading
+- Image optimization
+- Bundle size reduction
+
+### 4. Documentation
+
+- API documentation
+- Component documentation
+- Architecture diagrams
+- Deployment guide
+
+---
+
+# Implementation Priority Matrix
+
+## High Priority (Do First)
+
+1. Loading States & Skeletons
+2. Error Boundaries
+3. Update Placeholder Addresses
+4. Optimistic Updates
+
+## Medium Priority (Do Next)
+
+5. Search & Filter
+6. User Profile Pages
+7. Post Editing
+8. Infinite Scroll
+
+## Low Priority (Nice to Have)
+
+9. Notifications System
+10. Rich Media Support
+11. Post Reactions
+12. Moderation Tools
+
+## Future (Long-term)
+
+13. Analytics Dashboard
+14. Mobile App
+15. Advanced Search
+16. Gamification
+
+---
+
+# Success Metrics
+
+## User Engagement
+
+- Daily active users
+- Posts per day
+- Replies per post
+- Time spent on site
+- Return rate
+
+## Technical Performance
+
+- Page load time < 2s
+- Time to interactive < 3s
+- Lighthouse score > 90
+- Error rate < 1%
+- Uptime > 99.9%
+
+## Business Goals
+
+- User growth rate
+- Content creation rate
+- Community health
+- Platform adoption
+
+---
+
+# Deployment Strategy
+
+## Phase 1: Beta Launch (Week 1-2)
+
+- Deploy with current features
+- Invite beta testers
+- Collect feedback
+- Fix critical bugs
+
+## Phase 2: Public Launch (Week 3-4)
+
+- Implement high-priority polish
+- Marketing push
+- Monitor performance
+- Scale infrastructure
+
+## Phase 3: Feature Expansion (Month 2-3)
+
+- Roll out medium-priority features
+- A/B test new features
+- Iterate based on data
+
+## Phase 4: Platform Maturity (Month 4-6)
+
+- Implement long-term vision
+- Optimize performance
+- Build community
+- Expand ecosystem
+
+---
+
+**Document Status**: ✅ Planning Complete  
+**Next Review**: After beta launch feedback  
+**Priority**: Focus on immediate priorities first
+
+# Composer & TextEditor Improvements
+
+**Date:** March 17, 2026
+**Status:** Reference document — improvements to implement alongside or after Research section
+
+---
+
+## 1. Current State
+
+### Stack
+
+- **ProseKit** v0.14.2 — React wrapper around ProseMirror
+- **Location:** `components/editor/`
+- **Used by:** Board reply boxes, Thread reply boxes, Post creation forms — same component everywhere
+
+### What the editor supports today
+
+**Toolbar buttons:**
+Undo, Redo, Bold, Italic, Underline, Strikethrough, Inline Code, Code Block (Shiki syntax highlighting), H1, H2, H3, Horizontal Rule, Bullet List, Ordered List, Task List, Toggle List, Indent, Dedent, Image Upload
+
+**Slash menu (`/` commands):**
+Text, H1, H2, H3, Bullet List, Ordered List, Quote (blockquote), Divider, Code Block
+
+- Table: coded but commented out
+- Task List: coded but commented out
+
+**Inline menu (select text → floating popup):**
+Bold, Italic, Underline, Strikethrough, Inline Code, Link
+
+**Other:**
+
+- @mentions (user and tag)
+- Block drag handle
+- Image drag-and-drop / paste upload
+- GFM markdown in conversion pipeline (remark-gfm)
+
+### Markdown pipeline
+
+- **Editor → Storage:** ProseKit HTML → `markdownFromHTML()` (rehype-remark + remark-gfm) → markdown string → stored in Lens `article()` metadata
+- **Storage → Display:** markdown string → `ContentRenderer` (ReactMarkdown + remarkBreaks) → rendered HTML
+
+### Known gap
+
+`ContentRenderer` uses only `remarkBreaks` but NOT `remarkGfm`. So tables, strikethrough, and other GFM features that the editor outputs won't render properly on display. The conversion pipeline supports GFM both ways, but the renderer doesn't.
+
+---
+
+## 2. Required Improvements
+
+### 2.1 Add remarkGfm to ContentRenderer
+
+**Problem:** Editor outputs GFM markdown (tables, strikethrough) but ContentRenderer doesn't parse it.
+
+**Fix:** Add `remarkGfm` to the ReactMarkdown plugins in `components/shared/content-renderer.tsx`.
+
+**File:** `components/shared/content-renderer.tsx`
+
+```tsx
+// Change:
+<ReactMarkdown remarkPlugins={[remarkBreaks]}>
+
+// To:
+<ReactMarkdown remarkPlugins={[remarkBreaks, remarkGfm]}>
+```
+
+**Effort:** 5 minutes. One import, one array entry.
+
+---
+
+### 2.2 Quote-Reply Feature
+
+**What it does:** User clicks "Reply" on any post → the reply editor opens (or scrolls to it) with a blockquote pre-filled:
+
+```markdown
+> @researcher wrote:
+> "any consensus mechanism requiring fewer than..."
+
+[cursor here — user types their response]
+```
+
+**Implementation approach:**
+
+1. Each post has a "Reply" button
+2. Clicking it:
+   a. Scrolls to the reply editor at the bottom of the page
+   b. Inserts a blockquote into the editor with the quoted text and author attribution
+3. If the user has selected/highlighted specific text from that post before clicking Reply, only the selected text is quoted
+4. If no text is selected, quote the first ~200 characters of the post content
+
+**Technical details:**
+
+- The `TextEditor` component needs an imperative method to insert content (e.g., `editor.commands.insertText()` or inserting a blockquote node)
+- ProseKit supports programmatic content insertion via `editor.commands.setBlockquote()` and `editor.commands.insertText()`
+- We need to expose the editor instance or provide a callback prop like `onQuote(text: string, author: string)`
+- The `TextEditor` component currently doesn't accept an `editorRef` — we'd add one
+
+**New prop for TextEditor:**
+
+```tsx
+interface TextEditorProps {
+  onChange: (value: string) => void;
+  initialValue?: string;
+  editorRef?: React.MutableRefObject<Editor<EditorExtension> | null>; // NEW
+}
+```
+
+**Quote insertion logic:**
+
+```tsx
+function insertQuote(editor: Editor, text: string, author: string) {
+  // Insert: "> @author wrote:\n> quoted text\n\n"
+  // Then place cursor after the blockquote
+}
+```
+
+**Effort:** ~1-2 hours. New prop on TextEditor, quote insertion function, Reply button wiring.
+
+---
+
+### 2.3 Uncomment Table Support
+
+**Problem:** Table insertion is coded in the slash menu but commented out.
+
+**Fix:** Uncomment in `components/editor/slash-menu.tsx`:
+
+```tsx
+// Uncomment this line:
+<SlashMenuItem label="Table" onSelect={() => editor.commands.insertTable({ row: 3, col: 3 })} />
+```
+
+The `TableHandle` component for resizing/managing tables is already mounted in `TextEditor`.
+
+**Effort:** 1 minute. Uncomment one line.
+
+---
+
+## 3. Nice-to-Have Improvements (Later)
+
+### 3.1 Emoji Picker
+
+ProseKit doesn't have a built-in emoji picker, but we can add one using a React emoji picker library (e.g., `emoji-mart`) that inserts emoji text into the editor.
+
+### 3.2 File Attachments (non-image)
+
+Currently only images are supported. PDFs, documents, etc. would need a file upload service and a custom node view.
+
+### 3.3 Math/LaTeX Support
+
+For a research forum, LaTeX rendering could be valuable. Would need `remark-math` + `rehype-katex` in the rendering pipeline, and a math input mode in the editor.
+
+### 3.4 Collaborative Editing
+
+ProseKit supports Yjs integration for real-time collaboration. Not needed now but possible.
+
+### 3.5 TipTap Migration
+
+If ProseKit ever becomes limiting, TipTap is the natural next step — same ProseMirror base, larger ecosystem. The editor is isolated in `components/editor/` so the swap would be ~2-3 days without touching the rest of the app.
+
+---
+
+## 4. File Inventory
+
+All editor files live in `components/editor/`:
+
+```
+components/editor/
+├── text-editor.tsx          — Main component (used everywhere)
+├── extension.ts             — ProseKit extension definition
+├── toolbar.tsx              — Toolbar buttons
+├── toolbar-button.tsx       — Reusable toolbar button
+├── inline-menu.tsx          — Floating menu on text selection
+├── slash-menu.tsx           — Slash command menu
+├── slash-menu-item.tsx      — Slash menu item component
+├── slash-menu-empty.tsx     — Empty state for slash menu
+├── block-handle.tsx         — Block drag handle
+├── table-handle.tsx         — Table resize/manage handle
+├── code-block-view.tsx      — Code block with Shiki highlighting
+├── image-view.tsx           — Image node view
+├── image-upload-popover.tsx — Image upload UI
+├── upload-file.tsx          — Image file handler
+├── mention.tsx              — Mention display component
+├── mention-picker.tsx       — Mention autocomplete
+├── mention-popover.tsx      — Mention popover UI
+├── emojis.ts                — Emoji data
+```
+
+Rendering lives in:
+
+```
+components/shared/content-renderer.tsx  — Markdown → HTML display
+lib/external/prosekit/markdown.ts       — HTML ↔ Markdown conversion
+```
