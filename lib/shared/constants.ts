@@ -2,9 +2,9 @@ import { Env, getCurrentEnv } from "@/lib/env";
 import { Address } from "@/types/common";
 
 // Mainnet addresses
-const MAINNET_APP_ADDRESS: Address = "0x30BB11c7A400cE65Fc13f345AA4c5FFC1C333603";
+const MAINNET_APP_ADDRESS: Address = "0x637E685eF29403831dE51A58Bc8230b88549745E";
 const MAINNET_BASE_FEED_ADDRESS: Address = "0x3BF4Eb9725232130F5dA804cD16bBdb61171cf28";
-const MAINNET_ADMIN_USER_ADDRESS: Address = "0xaa4C60b784E2b3E485035399bF1b1aBDeD66A60f"; //LensForum
+const MAINNET_ADMIN_USER_ADDRESS: Address = "0xc93947ed78d87bdeb232d9c29c07fd0e8cf0a43e"; //LensForum
 const MAINNET_LENS_CONTRACT_GROUP_MANAGER_ADDRESS: Address = "0xe12543e5f917adA5aeF92B26Bc08E1925ec9F53F";
 
 // Testnet addresses

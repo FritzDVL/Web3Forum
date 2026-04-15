@@ -3,18 +3,17 @@ import { APP_URL } from "@/lib/shared/constants";
 import { Address } from "@/types/common";
 import { Account, MediaImage, MediaVideo, Post } from "@lens-protocol/client";
 
-export const THREAD_CONTENT_PREFIX = "LensForum Thread: ";
+export const THREAD_CONTENT_PREFIX = "";
 
 export const formatThreadArticleContent = (
   content: string,
-  threadUrl: string,
+  _threadUrl: string,
   title?: string,
   summary?: string,
 ): string => {
-  const prefixSection = `${THREAD_CONTENT_PREFIX}${threadUrl}\n\n`;
   const titleSection = title ? `# **${title}**\n\n` : "";
   const summarySection = summary ? `*${summary}*\n\n` : "";
-  return `${prefixSection}${titleSection}${summarySection}${content}`;
+  return `${titleSection}${summarySection}${content}`;
 };
 
 export const stripThreadArticleFormatting = (content: string): string => {
