@@ -1,15 +1,14 @@
 "use client";
 
-import { Reply } from "@/lib/domain/replies/types";
+import { ForumReply } from "@/lib/domain/forum/types";
 import { BoardReplyCard } from "./board-reply-card";
 
 interface BoardReplyListProps {
-  replies: Reply[];
-  boardFeedAddress: string;
-  rootPostId: string;
+  replies: ForumReply[];
+  boardSlug: string;
 }
 
-export function BoardReplyList({ replies, boardFeedAddress, rootPostId }: BoardReplyListProps) {
+export function BoardReplyList({ replies, boardSlug }: BoardReplyListProps) {
   if (replies.length === 0) {
     return (
       <div className="py-8 text-center">
@@ -21,12 +20,7 @@ export function BoardReplyList({ replies, boardFeedAddress, rootPostId }: BoardR
   return (
     <div className="space-y-3">
       {replies.map((reply) => (
-        <BoardReplyCard
-          key={reply.id}
-          reply={reply}
-          boardFeedAddress={boardFeedAddress}
-          rootPostId={rootPostId}
-        />
+        <BoardReplyCard key={reply.id} reply={reply} />
       ))}
     </div>
   );

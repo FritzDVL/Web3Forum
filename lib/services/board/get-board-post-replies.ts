@@ -1,38 +1,38 @@
 "use server";
 
-import { adaptPostToReply } from "@/lib/adapters/reply-adapter";
-import { Reply } from "@/lib/domain/replies/types";
-import { fetchCommentsByPostId } from "@/lib/external/lens/primitives/posts";
-import { SessionClient, postId as toPostId } from "@lens-protocol/client";
+import { ForumReply } from "@/lib/domain/forum/types";
+import { fetchForumRepliesByThread, ForumReplyRow } from "@/lib/external/supabase/forum-replies";
 
 export interface GetBoardPostRepliesResult {
   success: boolean;
-  replies?: Reply[];
+  replies?: ForumReply[];
   error?: string;
 }
 
-export async function getBoardPostReplies(
-  rootPostId: string,
-  sessionClient?: SessionClient,
-): Promise<GetBoardPostRepliesResult> {
+function rowToReply(row: ForumReplyRow): ForumReply {
+  return {
+    id: row.id,
+    threadId: row.thread_id,
+    lensPostId: row.lens_post_id,
+    contentUri: row.content_uri,
+    position: row.position,
+    contentMarkdown: row.content_markdown,
+    contentJson: row.content_json,
+    authorAddress: row.author_address,
+    authorUsername: row.author_username,
+    isHidden: row.is_hidden,
+    publishStatus: row.publish_status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function getBoardPostReplies(threadId: string): Promise<GetBoardPostRepliesResult> {
   try {
-    const posts = await fetchCommentsByPostId(toPostId(rootPostId), sessionClient);
-
-    if (!posts || posts.length === 0) {
-      return { success: true, replies: [] };
-    }
-
-    // Filter out the root post itself and non-comments, then adapt
-    const replies: Reply[] = posts
-      .filter((p) => p.id !== rootPostId && p.commentOn !== null)
-      .map(adaptPostToReply);
-
-    return { success: true, replies };
+    const rows = await fetchForumRepliesByThread(threadId);
+    return { success: true, replies: rows.map(rowToReply) };
   } catch (error) {
     console.error("Failed to fetch board post replies:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Failed to fetch replies",
-    };
+    return { success: false, error: error instanceof Error ? error.message : "Failed to fetch replies" };
   }
 }

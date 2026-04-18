@@ -1,17 +1,15 @@
 import { CommunityGrid } from "@/components/home/community-grid";
 import { ForumCategory } from "@/components/home/forum-category";
 import { FunctionGrid } from "@/components/home/function-grid";
-import { ResearchCategoryList } from "@/components/home/research-category-list";
 import { getFeaturedCommunities } from "@/lib/services/community/get-featured-communities";
-import { getBoardSections, getResearchSection, getPartnerSection } from "@/lib/services/board/get-boards";
+import { getBoardSections, getPartnerSection } from "@/lib/services/board/get-boards";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function HomePage() {
-  const [boardSections, researchSection, partnerSection, featuredCommunitiesResult] = await Promise.all([
+  const [boardSections, partnerSection, featuredCommunitiesResult] = await Promise.all([
     getBoardSections(),
-    getResearchSection(),
     getPartnerSection(),
     getFeaturedCommunities(),
   ]);
@@ -40,13 +38,6 @@ export default async function HomePage() {
             )}
           </div>
         ))}
-
-        {/* Research Section (technical) */}
-        {researchSection && (
-          <div className="w-full max-w-5xl">
-            <ResearchCategoryList section={researchSection} />
-          </div>
-        )}
 
         {/* Partner Communities */}
         {partnerSection && (

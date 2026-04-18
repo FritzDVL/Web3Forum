@@ -33,6 +33,7 @@ export function useResearchResponseCreate(rootLensPostId: string) {
       const result = await createResearchResponse(
         rootLensPostId,
         content,
+        null, // contentJson — not available from markdown-only editor
         account.address,
         sessionClient.data,
         walletClient.data,
@@ -41,9 +42,7 @@ export function useResearchResponseCreate(rootLensPostId: string) {
       if (!result.success) throw new Error(result.error || "Failed to post response");
 
       toast.success("Response posted!", { id: loadingToast });
-      setContent("");
-      setEditorKey((prev) => prev + 1);
-      router.refresh();
+      window.location.reload();
     } catch (error) {
       toast.error("Failed to post response", {
         description: error instanceof Error ? error.message : "An error occurred",

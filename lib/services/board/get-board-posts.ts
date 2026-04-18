@@ -1,98 +1,55 @@
 "use server";
 
-import { adaptLensPostToBoardPost } from "@/lib/adapters/board-adapter";
-import { Board, BoardPost, BoardParticipant } from "@/lib/domain/boards/types";
-import { fetchPostsByFeed, fetchCommentsByPostId } from "@/lib/external/lens/primitives/posts";
-import { fetchFeedPostByLensId } from "@/lib/external/supabase/feed-posts";
-import { Post, postId as toPostId } from "@lens-protocol/client";
+import { ForumThread } from "@/lib/domain/forum/types";
+import { fetchForumThreadsByBoard, ForumThreadRow } from "@/lib/external/supabase/forum-threads";
 
 export interface GetBoardPostsResult {
   success: boolean;
-  posts?: BoardPost[];
-  nextCursor?: string | null;
-  prevCursor?: string | null;
+  posts?: ForumThread[];
   error?: string;
 }
 
+function rowToThread(row: ForumThreadRow): ForumThread {
+  return {
+    id: row.id,
+    lensPostId: row.lens_post_id,
+    contentUri: row.content_uri,
+    boardSlug: row.board_slug,
+    feedType: row.feed_type,
+    title: row.title,
+    summary: row.summary || "",
+    contentMarkdown: row.content_markdown,
+    contentJson: row.content_json,
+    authorAddress: row.author_address,
+    authorUsername: row.author_username,
+    replyCount: row.reply_count,
+    viewsCount: row.views_count,
+    isPinned: row.is_pinned,
+    isLocked: row.is_locked,
+    isHidden: row.is_hidden,
+    publishStatus: row.publish_status,
+    tags: row.tags,
+    slug: row.slug,
+    lastReplyAt: row.last_reply_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 export async function getBoardPosts(
-  board: Board,
-  options?: { limit?: number; cursor?: string },
+  boardSlug: string,
+  options?: { limit?: number; offset?: number },
 ): Promise<GetBoardPostsResult> {
   try {
-    const lensResult = await fetchPostsByFeed(board.feedAddress, undefined, {
-      sort: "desc",
-      limit: options?.limit || 10,
-      cursor: options?.cursor,
-    });
-
-    const lensPosts = lensResult.posts;
-
-    if (!lensPosts || lensPosts.length === 0) {
-      return { success: true, posts: [], nextCursor: null, prevCursor: null };
-    }
-
-    // Batch fetch DB records for view counts
-    const dbPosts = await Promise.all(
-      lensPosts.map((post) => fetchFeedPostByLensId(post.id)),
+    const rows = await fetchForumThreadsByBoard(
+      boardSlug,
+      options?.limit || 20,
+      options?.offset || 0,
     );
 
-    // Filter out replies — only show root posts in the board list
-    const rootPostsData = lensPosts
-      .map((lensPost, idx) => ({ lensPost, dbPost: dbPosts[idx] }))
-      .filter(({ dbPost }) => !dbPost?.parent_post_id);
-
-    const posts = rootPostsData.map(({ lensPost, dbPost }) =>
-      adaptLensPostToBoardPost(board, lensPost as Post, dbPost || undefined),
-    );
-
-    // Enrich posts with participants and lastActivityAt
-    const enrichedPosts = await Promise.all(
-      posts.map(async (post) => {
-        try {
-          const comments = await fetchCommentsByPostId(toPostId(post.lensPostId));
-          const filtered = (comments || []).filter((c) => c.id !== post.lensPostId && c.commentOn !== null);
-
-          // Deduplicate reply authors (exclude OP)
-          const seen = new Set<string>([post.author.address]);
-          const participants: BoardParticipant[] = [];
-          for (const c of filtered) {
-            const addr = c.author.address;
-            if (!seen.has(addr) && participants.length < 4) {
-              seen.add(addr);
-              participants.push({
-                address: addr,
-                username: c.author.username?.localName,
-                avatar: c.author.metadata?.picture || undefined,
-              });
-            }
-          }
-
-          const lastComment = filtered.length > 0
-            ? filtered.reduce((latest, c) => (c.timestamp > latest.timestamp ? c : latest))
-            : null;
-
-          return {
-            ...post,
-            participants,
-            lastActivityAt: lastComment?.timestamp || post.createdAt,
-          };
-        } catch {
-          return { ...post, participants: [], lastActivityAt: post.createdAt };
-        }
-      }),
-    );
-
-    return {
-      success: true,
-      posts: enrichedPosts,
-      nextCursor: lensResult.pageInfo?.next ?? null,
-      prevCursor: lensResult.pageInfo?.prev ?? null,
-    };
+    return { success: true, posts: rows.map(rowToThread) };
   } catch (error) {
     console.error("Failed to fetch board posts:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Failed to fetch board posts",
-    };
+    return { success: false, error: error instanceof Error ? error.message : "Failed to fetch posts" };
   }
 }

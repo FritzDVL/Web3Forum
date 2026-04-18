@@ -64,6 +64,7 @@ export function useResearchTopicCreate(categories: ResearchCategory[]) {
         {
           title,
           content,
+          contentJson: null, // contentJson — not available from markdown-only editor
           categorySlug,
           tags,
           author: account.address,
@@ -75,7 +76,7 @@ export function useResearchTopicCreate(categories: ResearchCategory[]) {
       if (!result.success) throw new Error(result.error || "Failed to create topic");
 
       toast.success("Topic created!", { id: loadingToast });
-      router.push(`/research/thread/${result.lensPostId}`);
+      window.location.href = "/research";
     } catch (error) {
       toast.error("Failed to create topic", {
         description: error instanceof Error ? error.message : "An error occurred",

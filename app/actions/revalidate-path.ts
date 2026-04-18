@@ -46,3 +46,11 @@ export async function revalidateResearchPath() {
 export async function revalidateResearchThreadPath(threadId: string) {
   revalidatePath(`/research/thread/${threadId}`);
 }
+
+export async function revalidateBoardPath(boardSlug: string) {
+  revalidatePath(`/boards/${boardSlug}`);
+}
+
+export async function revalidateBoardPostPath(boardSlug: string, postId: string) {
+  revalidatePath(`/boards/${boardSlug}/post/${postId}`);
+}

@@ -18,7 +18,7 @@ import {
 import { useLogout } from "@/hooks/auth/use-logout";
 import { useSwitchAccount } from "@/hooks/auth/use-switch-account";
 import { useAuthStore } from "@/stores/auth-store";
-import { Bell, Gift, Home, LogOut, RefreshCw, User } from "lucide-react";
+import { Bell, FlaskConical, Gift, Home, LogOut, RefreshCw, User } from "lucide-react";
 
 export function NavbarDesktop() {
   const [showLensDialog, setShowLensDialog] = useState(false);
@@ -64,6 +64,16 @@ export function NavbarDesktop() {
             >
               <Home className="mr-2 h-4 w-4" />
               Home
+            </Button>
+          </Link>
+          <Link href="/research">
+            <Button
+              variant={pathname.startsWith("/research") ? "default" : "yellow"}
+              size="sm"
+              className="rounded-full px-4 py-2 transition-all duration-300"
+            >
+              <FlaskConical className="mr-2 h-4 w-4" />
+              Research
             </Button>
           </Link>
           <div className="flex items-center gap-3">

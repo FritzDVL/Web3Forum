@@ -96,22 +96,21 @@ export function ResearchThreadList({ initialThreads, categories, allTags }: Rese
           No topics yet. Be the first to start a discussion!
         </div>
       ) : (
-        <table className="w-full table-fixed border-collapse">
-          <thead>
-            <tr className="border-b-2 border-slate-400 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:border-gray-500 dark:text-gray-400">
-              <th className="w-[58%] pb-3 pr-2">Topic</th>
-              <th className="relative w-[12%] pb-3 text-center before:absolute before:left-0 before:top-1/2 before:h-[60%] before:-translate-y-1/2 before:border-l before:border-slate-300 dark:before:border-gray-600">Started by</th>
-              <th className="relative w-[10%] pb-3 text-center before:absolute before:left-0 before:top-1/2 before:h-[60%] before:-translate-y-1/2 before:border-l before:border-slate-300 dark:before:border-gray-600">Replies</th>
-              <th className="relative w-[10%] pb-3 text-center before:absolute before:left-0 before:top-1/2 before:h-[60%] before:-translate-y-1/2 before:border-l before:border-slate-300 dark:before:border-gray-600">Views</th>
-              <th className="relative w-[10%] pb-3 text-center before:absolute before:left-0 before:top-1/2 before:h-[60%] before:-translate-y-1/2 before:border-l before:border-slate-300 dark:before:border-gray-600">Activity</th>
-            </tr>
-          </thead>
-          <tbody>
+        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+          {/* Column Headers */}
+          <div className="grid grid-cols-[1fr_100px_70px_70px_90px] gap-2 border-b-2 border-slate-300 bg-slate-50 px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-gray-400">
+            <span>Topic</span>
+            <span className="text-center">Started by</span>
+            <span className="text-center">Replies</span>
+            <span className="text-center">Views</span>
+            <span className="text-center">Activity</span>
+          </div>
+          <div className="divide-y divide-slate-200 dark:divide-gray-700">
             {threads.map((thread) => (
-              <ResearchThreadCard key={thread.lensPostId} thread={thread} />
+              <ResearchThreadCard key={thread.id} thread={thread} />
             ))}
-          </tbody>
-        </table>
+          </div>
+        </div>
       )}
     </div>
   );

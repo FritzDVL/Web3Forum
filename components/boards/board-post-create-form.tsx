@@ -7,11 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TagsInput } from "@/components/ui/tags-input";
 import { useBoardPostCreateForm } from "@/hooks/boards/use-board-post-create-form";
-import { Board } from "@/lib/domain/boards/types";
+import { ForumBoard } from "@/lib/domain/forum/types";
 import { Send } from "lucide-react";
 
 interface BoardPostCreateFormProps {
-  board: Board;
+  board: ForumBoard;
 }
 
 export function BoardPostCreateForm({ board }: BoardPostCreateFormProps) {

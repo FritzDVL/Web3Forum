@@ -5,10 +5,10 @@ import { ProtectedRoute } from "@/components/pages/protected-route";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-export default async function NewPostPage({ params }: { params: Promise<{ address: string }> }) {
-  const { address } = await params;
+export default async function NewPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
 
-  const boardResult = await getBoard(address);
+  const boardResult = await getBoard(slug);
 
   if (!boardResult.success || !boardResult.board) {
     return (
@@ -24,7 +24,7 @@ export default async function NewPostPage({ params }: { params: Promise<{ addres
     <ProtectedRoute>
       <div className="mx-auto max-w-4xl px-4 py-8">
         <div className="mb-6">
-          <Link href={`/boards/${address}`}>
+          <Link href={`/boards/${slug}`}>
             <Button variant="outline" size="sm">← Back to {boardResult.board.name}</Button>
           </Link>
         </div>

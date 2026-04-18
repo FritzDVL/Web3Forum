@@ -3,7 +3,7 @@ import { Sparkles } from "lucide-react";
 
 interface Feed {
   title: string;
-  address: string;
+  slug: string;
   description: string;
 }
 
@@ -31,8 +31,8 @@ export function FunctionGrid({ title, feeds, borderColor = "blue" }: FunctionGri
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {feeds.slice(0, 2).map((feed) => (
             <Link
-              key={feed.address}
-              href={`/boards/${feed.address}`}
+              key={feed.slug}
+              href={`/boards/${feed.slug}`}
               className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/50"
             >
               <Sparkles className="h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
@@ -47,8 +47,8 @@ export function FunctionGrid({ title, feeds, borderColor = "blue" }: FunctionGri
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {feeds.slice(2, 5).map((feed) => (
             <Link
-              key={feed.address}
-              href={`/boards/${feed.address}`}
+              key={feed.slug}
+              href={`/boards/${feed.slug}`}
               className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/50"
             >
               <Sparkles className="h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
@@ -63,8 +63,8 @@ export function FunctionGrid({ title, feeds, borderColor = "blue" }: FunctionGri
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {feeds.slice(5, 8).map((feed) => (
             <Link
-              key={feed.address}
-              href={`/boards/${feed.address}`}
+              key={feed.slug}
+              href={`/boards/${feed.slug}`}
               className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/50"
             >
               <Sparkles className="h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
@@ -79,8 +79,8 @@ export function FunctionGrid({ title, feeds, borderColor = "blue" }: FunctionGri
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {feeds.slice(8, 11).map((feed) => (
             <Link
-              key={feed.address}
-              href={`/boards/${feed.address}`}
+              key={feed.slug}
+              href={`/boards/${feed.slug}`}
               className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/50"
             >
               <Sparkles className="h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />

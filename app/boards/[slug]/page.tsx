@@ -5,10 +5,12 @@ import { BoardNavActions } from "@/components/boards/board-nav-actions";
 import { BoardPostList } from "@/components/boards/board-post-list";
 import { Lock } from "lucide-react";
 
-export default async function BoardPage({ params }: { params: Promise<{ address: string }> }) {
-  const { address } = await params;
+export const dynamic = "force-dynamic";
 
-  const boardResult = await getBoard(address);
+export default async function BoardPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+
+  const boardResult = await getBoard(slug);
 
   if (!boardResult.success || !boardResult.board) {
     return (
@@ -21,15 +23,13 @@ export default async function BoardPage({ params }: { params: Promise<{ address:
   }
 
   const board = boardResult.board;
-  const postsResult = await getBoardPosts(board, { limit: 10 });
+  const postsResult = await getBoardPosts(slug, { limit: 20 });
   const posts = postsResult.success ? (postsResult.posts || []) : [];
-  const nextCursor = postsResult.success ? (postsResult.nextCursor ?? null) : null;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <BoardNavActions feedAddress={address} isLocked={board.isLocked} />
+      <BoardNavActions feedAddress={slug} isLocked={board.isLocked} />
 
-      {/* Board Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3">
           {board.isLocked && <Lock className="h-5 w-5 flex-shrink-0 text-yellow-500" />}
@@ -44,10 +44,8 @@ export default async function BoardPage({ params }: { params: Promise<{ address:
       </div>
 
       <BoardPostList
-        boardId={board.id}
-        feedAddress={address}
+        boardSlug={slug}
         initialPosts={posts}
-        initialNextCursor={nextCursor}
       />
     </div>
   );

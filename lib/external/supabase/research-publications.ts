@@ -95,6 +95,9 @@ export async function persistResearchPublication(params: {
   tags: string[] | null;
   postNumber: number;
   isRoot: boolean;
+  contentMarkdown?: string;
+  contentJson?: any;
+  contentUri?: string;
 }): Promise<ResearchPublicationRow> {
   const { data, error } = await supabase
     .from("research_publications")
@@ -107,6 +110,9 @@ export async function persistResearchPublication(params: {
       tags: params.tags,
       post_number: params.postNumber,
       is_root: params.isRoot,
+      ...(params.contentMarkdown !== undefined && { content_markdown: params.contentMarkdown }),
+      ...(params.contentJson !== undefined && { content_json: params.contentJson }),
+      ...(params.contentUri !== undefined && { content_uri: params.contentUri }),
     })
     .select("*")
     .single();

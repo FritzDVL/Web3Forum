@@ -19,6 +19,26 @@ export interface ArticleCreationData {
   tags?: string;
   feedAddress: string;
   slug: string;
+  /** Forum metadata attributes for recovery */
+  forumCategory?: string;
+  forumType?: string;
+  contentJson?: string;
+}
+
+export interface ForumReplyArticleData {
+  threadTitle: string;
+  content: string;
+  author: string;
+  feedAddress: string;
+  slug: string;
+  forumThreadId: string;
+  forumReplyPosition: number;
+  forumCategory?: string;
+  contentJson?: string;
+}
+
+export interface GroveUploadResult {
+  contentUri: string;
 }
 
 export interface ArticleCreationResult {
@@ -59,9 +79,19 @@ export async function createThreadArticle(
   try {
     // 1. Build article attributes
     const attributes: any[] = [];
+    attributes.push({ key: "app", type: MetadataAttributeType.STRING, value: "lensforum" });
     attributes.push({ key: "author", type: MetadataAttributeType.STRING, value: articleData.author });
     if (articleData.summary) {
       attributes.push({ key: "subtitle", type: MetadataAttributeType.STRING, value: articleData.summary });
+    }
+    if (articleData.forumType) {
+      attributes.push({ key: "forumType", type: MetadataAttributeType.STRING, value: articleData.forumType });
+    }
+    if (articleData.forumCategory) {
+      attributes.push({ key: "forumCategory", type: MetadataAttributeType.STRING, value: articleData.forumCategory });
+    }
+    if (articleData.contentJson) {
+      attributes.push({ key: "contentJson", type: MetadataAttributeType.STRING, value: articleData.contentJson });
     }
 
     // 2. Add thread content prefix with URL, title and summary
@@ -145,6 +175,7 @@ export async function updateThreadArticle(
     );
 
     const attributes: any[] = [];
+    attributes.push({ key: "app", type: MetadataAttributeType.STRING, value: "lensforum" });
     attributes.push({ key: "author", type: MetadataAttributeType.STRING, value: updateData.author });
     if (updateData.summary) {
       attributes.push({ key: "subtitle", type: MetadataAttributeType.STRING, value: updateData.summary });
@@ -191,5 +222,73 @@ export async function updateThreadArticle(
       success: false,
       error: error instanceof Error ? error.message : "Failed to update thread",
     };
+  }
+}
+
+/**
+ * Uploads article metadata to Grove and returns the contentUri.
+ * Shared by publish and retry flows.
+ */
+export async function uploadArticleToGrove(metadata: any): Promise<GroveUploadResult> {
+  const acl = immutable(lensChain.id);
+  const { uri: contentUri } = await storageClient.uploadAsJson(metadata, { acl });
+  return { contentUri };
+}
+
+/**
+ * Creates a standalone reply article on Lens (NO commentOn).
+ * The reply's thread relationship is encoded in metadata attributes only.
+ */
+export async function createForumReplyArticle(
+  data: ForumReplyArticleData,
+  sessionClient: SessionClient,
+  walletClient: WalletClient,
+): Promise<ArticleCreationResult> {
+  try {
+    const displayContent = `Re: ${data.threadTitle} — ${APP_URL}/thread/${data.slug}`;
+
+    const attributes: any[] = [
+      { key: "app", type: MetadataAttributeType.STRING, value: "lensforum" },
+      { key: "forumType", type: MetadataAttributeType.STRING, value: "reply" },
+      { key: "forumThreadId", type: MetadataAttributeType.STRING, value: data.forumThreadId },
+      { key: "forumReplyPosition", type: MetadataAttributeType.NUMBER, value: String(data.forumReplyPosition) },
+      { key: "author", type: MetadataAttributeType.STRING, value: data.author },
+    ];
+    if (data.forumCategory) {
+      attributes.push({ key: "forumCategory", type: MetadataAttributeType.STRING, value: data.forumCategory });
+    }
+    if (data.contentJson) {
+      attributes.push({ key: "contentJson", type: MetadataAttributeType.STRING, value: data.contentJson });
+    }
+
+    const articleMetadata = article({
+      title: `Re: ${data.threadTitle}`,
+      content: displayContent,
+      attributes,
+    });
+
+    const { contentUri } = await uploadArticleToGrove(articleMetadata);
+
+    const postResult = await post(sessionClient, {
+      contentUri: uri(contentUri),
+      feed: evmAddress(data.feedAddress),
+    })
+      .andThen(handleOperationWith(walletClient))
+      .andThen(sessionClient.waitForTransaction)
+      .andThen((txHash: unknown) => fetchPost(client, { txHash: txHash as string }));
+
+    if (postResult.isErr()) {
+      return { success: false, error: postResult.error.message };
+    }
+
+    const createdPost = postResult.value;
+    if (createdPost && createdPost.__typename !== "Post") {
+      return { success: false, error: `Unexpected post type: ${createdPost.__typename}` };
+    }
+
+    return { success: true, post: createdPost as Post };
+  } catch (error) {
+    console.error("Reply article creation failed:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Failed to create reply article" };
   }
 }

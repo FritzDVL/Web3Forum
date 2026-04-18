@@ -1,40 +1,51 @@
 "use server";
 
-import { adaptLensPostToBoardPost } from "@/lib/adapters/board-adapter";
-import { Board, BoardPost } from "@/lib/domain/boards/types";
-import { fetchPostWithClient } from "@/lib/external/lens/primitives/posts";
-import { fetchFeedPostByLensId } from "@/lib/external/supabase/feed-posts";
-import { client } from "@/lib/external/lens/protocol-client";
-import { Post } from "@lens-protocol/client";
+import { ForumThread } from "@/lib/domain/forum/types";
+import { fetchForumThreadBySlug, fetchForumThreadById, ForumThreadRow } from "@/lib/external/supabase/forum-threads";
 
 export interface GetBoardPostResult {
   success: boolean;
-  post?: BoardPost;
+  post?: ForumThread;
   error?: string;
 }
 
-export async function getBoardPost(
-  board: Board,
-  postId: string,
-): Promise<GetBoardPostResult> {
+function rowToThread(row: ForumThreadRow): ForumThread {
+  return {
+    id: row.id,
+    lensPostId: row.lens_post_id,
+    contentUri: row.content_uri,
+    boardSlug: row.board_slug,
+    feedType: row.feed_type,
+    title: row.title,
+    summary: row.summary || "",
+    contentMarkdown: row.content_markdown,
+    contentJson: row.content_json,
+    authorAddress: row.author_address,
+    authorUsername: row.author_username,
+    replyCount: row.reply_count,
+    viewsCount: row.views_count,
+    isPinned: row.is_pinned,
+    isLocked: row.is_locked,
+    isHidden: row.is_hidden,
+    publishStatus: row.publish_status,
+    tags: row.tags,
+    slug: row.slug,
+    lastReplyAt: row.last_reply_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function getBoardPost(postId: string): Promise<GetBoardPostResult> {
   try {
-    const lensPost = await fetchPostWithClient(postId, client);
+    // Try by slug first, then by UUID
+    let row = await fetchForumThreadBySlug(postId);
+    if (!row) row = await fetchForumThreadById(postId);
+    if (!row) return { success: false, error: "Post not found" };
 
-    if (!lensPost || lensPost.__typename !== "Post") {
-      return { success: false, error: "Post not found" };
-    }
-
-    const dbPost = await fetchFeedPostByLensId(postId);
-
-    return {
-      success: true,
-      post: adaptLensPostToBoardPost(board, lensPost as Post, dbPost || undefined),
-    };
+    return { success: true, post: rowToThread(row) };
   } catch (error) {
     console.error("Failed to fetch board post:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Failed to fetch post",
-    };
+    return { success: false, error: error instanceof Error ? error.message : "Failed to fetch post" };
   }
 }

@@ -16,9 +16,16 @@ function generateBaseSlug(title: string): string {
  */
 async function slugExists(slug: string): Promise<boolean> {
   const supabase = await supabaseClient();
-  const { data, error } = await supabase.from("community_threads").select("slug").eq("slug", slug).single();
 
-  return !error && !!data;
+  // Check community_threads
+  const { data: ct } = await supabase.from("community_threads").select("slug").eq("slug", slug).single();
+  if (ct) return true;
+
+  // Check forum_threads
+  const { createClient } = await import("@supabase/supabase-js");
+  const rawSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+  const { data: ft } = await rawSupabase.from("forum_threads").select("slug").eq("slug", slug).single();
+  return !!ft;
 }
 
 /**

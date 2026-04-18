@@ -1,13 +1,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTagsInput } from "@/hooks/forms/use-tags-input";
-import { Board, CreateBoardPostFormData } from "@/lib/domain/boards/types";
-import { createBoardPost } from "@/lib/services/board/create-board-post";
+import { ForumBoard } from "@/lib/domain/forum/types";
+import { saveForumThread } from "@/lib/services/forum/publish-thread";
 import { useAuthStore } from "@/stores/auth-store";
-import { Address } from "@/types/common";
 import { useSessionClient } from "@lens-protocol/react";
 import { toast } from "sonner";
 import { useWalletClient } from "wagmi";
+
+interface FormData {
+  title: string;
+  summary: string;
+  content: string;
+}
 
 interface FormErrors {
   title?: string;
@@ -19,14 +24,8 @@ interface TouchedFields {
   content: boolean;
 }
 
-export function useBoardPostCreateForm({ board }: { board: Board }) {
-  const [formData, setFormData] = useState<CreateBoardPostFormData>({
-    title: "",
-    summary: "",
-    content: "",
-    tags: "",
-    author: "" as Address,
-  });
+export function useBoardPostCreateForm({ board }: { board: ForumBoard }) {
+  const [formData, setFormData] = useState<FormData>({ title: "", summary: "", content: "" });
   const [isCreating, setIsCreating] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<TouchedFields>({ title: false, content: false });
@@ -37,27 +36,15 @@ export function useBoardPostCreateForm({ board }: { board: Board }) {
   const walletClient = useWalletClient();
   const router = useRouter();
 
-  const validateTitle = (value: string): string | undefined => {
-    if (!value.trim()) return "Title is required";
-    return undefined;
-  };
-
-  const validateContent = (value: string): string | undefined => {
-    if (!value.trim()) return "Content is required";
-    return undefined;
-  };
-
   const validateField = (field: keyof FormErrors, value: string) => {
-    const error = field === "title" ? validateTitle(value) : validateContent(value);
+    const error = !value.trim() ? `${field === "title" ? "Title" : "Content"} is required` : undefined;
     setErrors((prev) => ({ ...prev, [field]: error }));
     return error;
   };
 
-  const isFormValid = (): boolean => {
-    return !validateTitle(formData.title) && !validateContent(formData.content);
-  };
+  const isFormValid = (): boolean => !(!formData.title.trim() || !formData.content.trim());
 
-  const handleChange = (field: keyof CreateBoardPostFormData, value: string) => {
+  const handleChange = (field: keyof FormData, value: string) => {
     setFormData({ ...formData, [field]: value });
     if (touched[field as keyof TouchedFields] && errors[field as keyof FormErrors]) {
       validateField(field as keyof FormErrors, value);
@@ -73,57 +60,40 @@ export function useBoardPostCreateForm({ board }: { board: Board }) {
     e.preventDefault();
 
     setTouched({ title: true, content: true });
-    const titleError = validateTitle(formData.title);
-    const contentError = validateContent(formData.content);
-    setErrors({ title: titleError, content: contentError });
-
+    const titleError = validateField("title", formData.title);
+    const contentError = validateField("content", formData.content);
     if (titleError || contentError) {
       toast.error("Please fix the errors before submitting");
       return;
     }
 
-    if (!account?.address) {
-      toast.error("Authentication Error", { description: "Please log in again." });
-      return;
-    }
-    if (!sessionClient.data || sessionClient.loading) {
-      toast.error("Authentication Required", { description: "Please sign in to create a post." });
-      return;
-    }
-    if (!walletClient.data) {
-      toast.error("Wallet Connection Required", { description: "Please connect your wallet." });
+    if (!account?.address || !sessionClient.data || !walletClient.data) {
+      toast.error("Please sign in and connect your wallet");
       return;
     }
 
     const loadingToast = toast.loading("Creating post...");
+    setIsCreating(true);
 
     try {
-      setIsCreating(true);
+      // Step 1: Save to Supabase instantly
+      const saveResult = await saveForumThread({
+        boardSlug: board.slug,
+        title: formData.title,
+        summary: formData.summary,
+        contentMarkdown: formData.content,
+        contentJson: null,
+        authorAddress: account.address,
+        tags: tags.length > 0 ? tags : undefined,
+      });
 
-      const result = await createBoardPost(
-        board,
-        {
-          title: formData.title,
-          content: formData.content,
-          summary: formData.summary,
-          tags: tags.length > 0 ? tags.join(",") : undefined,
-          author: account.address,
-        },
-        sessionClient.data,
-        walletClient.data,
-      );
-
-      if (!result.success) {
-        throw new Error(result.error || "Failed to create post");
-      }
+      if (!saveResult.success) throw new Error(saveResult.error || "Failed to save post");
 
       toast.success("Post created!", { id: loadingToast });
-      setFormData({ title: "", summary: "", content: "", tags: "", author: account.address });
-      setTags([]);
-      setTagInput("");
-      setErrors({});
-      setTouched({ title: false, content: false });
-      router.push(`/boards/${board.feedAddress}`);
+
+      // Redirect to board page — hard navigation guarantees fresh data
+      // Lens on-chain publish happens later via the "Publish on-chain" button in thread view
+      window.location.href = `/boards/${board.slug}`;
     } catch (error) {
       toast.error("Failed to create post", {
         description: error instanceof Error ? error.message : "An error occurred",

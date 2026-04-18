@@ -4,7 +4,7 @@ import { Address } from "@/types/common";
 // Mainnet addresses
 const MAINNET_APP_ADDRESS: Address = "0x637E685eF29403831dE51A58Bc8230b88549745E";
 const MAINNET_BASE_FEED_ADDRESS: Address = "0x3BF4Eb9725232130F5dA804cD16bBdb61171cf28";
-const MAINNET_ADMIN_USER_ADDRESS: Address = "0xc93947ed78d87bdeb232d9c29c07fd0e8cf0a43e"; //LensForum
+const MAINNET_ADMIN_USER_ADDRESS: Address = "0xc93947ed78d87bdeb232d9c29c07fd0e8cf0a43e"; //My user
 const MAINNET_LENS_CONTRACT_GROUP_MANAGER_ADDRESS: Address = "0xe12543e5f917adA5aeF92B26Bc08E1925ec9F53F";
 
 // Testnet addresses
@@ -36,10 +36,14 @@ export const GROVE_API_URL = "https://api.grove.storage/";
 
 export const APP_NAME = isTestnet ? "LensForumV1" : "LensForum";
 
-// Research
-export const RESEARCH_GROUP_ADDRESS: Address = "0x7303D4F3e6499C24A1A2902261B848F7bBC6B914";
-export const RESEARCH_FEED_ADDRESS: Address = "0xDfe0F7fdf80Df515D396470e6bB1d8f398ddF25F";
+// Commons (Boards) — single group + single feed for all child-boards
+// TODO: Replace with actual addresses after creating the Commons Group and Feed on Lens
+export const COMMONS_GROUP_ADDRESS: Address = "0x724CCb155b813b8a21E7C452167d22828871c7E1";
+export const COMMONS_FEED_ADDRESS: Address = "0x7d0aA1975693926708327d665Af10C0c68Ecb096";
 
-// Paginations
+// Research — single group + single feed, posts separated by category/tags
+export const RESEARCH_GROUP_ADDRESS: Address = "0x7f2b18933152DF1c6ded211583c95A739831743d";
+export const RESEARCH_FEED_ADDRESS: Address = "0xB9feACdd4A9f575b71D15152fd17B0902F454fDA";
+
 export const COMMUNITIES_PER_PAGE = 10;
 export const THREADS_PER_PAGE = 10;

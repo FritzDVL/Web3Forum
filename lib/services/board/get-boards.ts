@@ -1,22 +1,16 @@
 "use server";
 
-import { adaptFeedToBoard } from "@/lib/adapters/board-adapter";
-import { Board } from "@/lib/domain/boards/types";
-import { fetchAllFeeds } from "@/lib/external/supabase/feeds";
+import { fetchAllForumBoards, ForumBoardRow } from "@/lib/external/supabase/forum-boards";
 import { fetchAllResearchCategories } from "@/lib/external/supabase/research-categories";
 
 export interface BoardSection {
   sectionTitle: string;
   category: string;
-  boards: Board[];
-  /** Backward-compatible shape for homepage components (ForumCategory, FunctionGrid) */
   feeds: Array<{
-    id: string;
-    address: string;
+    slug: string;
     title: string;
     description: string;
     isLocked: boolean;
-    featured: boolean;
     postCount: number;
     repliesCount: number;
     viewsCount: number;
@@ -35,38 +29,37 @@ const CATEGORY_CONFIG: Record<string, { title: string; layout: "list" | "grid"; 
   others: { title: "OTHERS", layout: "list", borderColor: "blue" },
 };
 
+function boardRowToFeed(row: ForumBoardRow) {
+  return {
+    slug: row.slug,
+    title: row.name,
+    description: row.description || "",
+    isLocked: row.is_locked,
+    postCount: row.thread_count,
+    repliesCount: row.reply_count,
+    viewsCount: row.views_count,
+    lastPostAt: row.last_activity_at,
+  };
+}
+
 export async function getBoardSections(): Promise<BoardSection[]> {
-  const allFeeds = await fetchAllFeeds();
+  const allBoards = await fetchAllForumBoards();
   const categories = ["general", "functions", "others"];
 
-  const sections: BoardSection[] = categories.map((category) => {
-    const categoryFeeds = allFeeds.filter((feed) => feed.category === category);
-    const config = CATEGORY_CONFIG[category];
-    const boards = categoryFeeds.map(adaptFeedToBoard);
-
-    return {
-      sectionTitle: config.title,
-      category,
-      boards,
-      feeds: boards.map((b) => ({
-        id: b.id,
-        address: b.feedAddress,
-        title: b.name,
-        description: b.description,
-        isLocked: b.isLocked,
-        featured: false,
-        postCount: b.postCount,
-        repliesCount: b.repliesCount,
-        viewsCount: b.viewsCount,
-        lastPostAt: b.lastPostAt,
-      })),
-      borderColor: config.borderColor,
-      layout: config.layout,
-      isLocked: category === "technical",
-    };
-  });
-
-  return sections.filter((section) => section.feeds.length > 0);
+  return categories
+    .map((category) => {
+      const config = CATEGORY_CONFIG[category];
+      const boards = allBoards.filter((b) => b.section === category);
+      return {
+        sectionTitle: config.title,
+        category,
+        feeds: boards.map(boardRowToFeed),
+        borderColor: config.borderColor,
+        layout: config.layout,
+        isLocked: category === "technical",
+      };
+    })
+    .filter((s) => s.feeds.length > 0);
 }
 
 export interface ResearchSection {
@@ -97,29 +90,15 @@ export async function getResearchSection(): Promise<ResearchSection | null> {
 }
 
 export async function getPartnerSection(): Promise<BoardSection | null> {
-  const allFeeds = await fetchAllFeeds();
-  const partnerFeeds = allFeeds.filter((feed) => feed.category === "partners");
-  if (partnerFeeds.length === 0) return null;
+  const allBoards = await fetchAllForumBoards();
+  const partnerBoards = allBoards.filter((b) => b.section === "partners");
+  if (partnerBoards.length === 0) return null;
 
   const config = CATEGORY_CONFIG["partners"];
-  const boards = partnerFeeds.map(adaptFeedToBoard);
-
   return {
     sectionTitle: config.title,
     category: "partners",
-    boards,
-    feeds: boards.map((b) => ({
-      id: b.id,
-      address: b.feedAddress,
-      title: b.name,
-      description: b.description,
-      isLocked: b.isLocked,
-      featured: false,
-      postCount: b.postCount,
-      repliesCount: b.repliesCount,
-      viewsCount: b.viewsCount,
-      lastPostAt: b.lastPostAt,
-    })),
+    feeds: partnerBoards.map(boardRowToFeed),
     borderColor: config.borderColor,
     layout: config.layout,
     isLocked: false,

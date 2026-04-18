@@ -1,38 +1,55 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { TextEditor } from "@/components/editor/text-editor";
-import { useReplyCreate } from "@/hooks/replies/use-reply-create";
+import { saveForumReply } from "@/lib/services/forum/publish-reply";
 import { useAuthStore } from "@/stores/auth-store";
-import { Address } from "@/types/common";
+import { toast } from "sonner";
 import { MessageCircle } from "lucide-react";
 
 interface BoardReplyBoxProps {
   postId: string;
-  feedAddress: Address;
+  threadId: string;
 }
 
-export function BoardReplyBox({ postId, feedAddress }: BoardReplyBoxProps) {
+export function BoardReplyBox({ postId, threadId }: BoardReplyBoxProps) {
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
   const { isLoggedIn, account } = useAuthStore();
-  const { createReply } = useReplyCreate();
-  const router = useRouter();
 
   const handleSubmit = async () => {
     if (!content.trim()) return;
+    if (!account?.address) {
+      toast.error("Please sign in to reply");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const reply = await createReply(postId, content, feedAddress, postId);
-      if (reply) {
-        setContent("");
-        setEditorKey((prev) => prev + 1);
-        router.refresh();
+      // Step 1: Save to Supabase instantly
+      const saveResult = await saveForumReply({
+        threadId,
+        contentMarkdown: content,
+        contentJson: null,
+        authorAddress: account.address,
+      });
+
+      if (!saveResult.success) {
+        toast.error(saveResult.error || "Failed to post reply");
+        return;
       }
+
+      toast.success("Reply posted!");
+      setContent("");
+      setEditorKey((prev) => prev + 1);
+
+      // Hard refresh to show the new reply
+      window.location.reload();
+    } catch (error) {
+      toast.error("Failed to post reply");
     } finally {
       setIsSubmitting(false);
     }

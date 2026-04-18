@@ -376,73 +376,167 @@ Supabase already has the updated content — the UI is correct. The Lens version
 
 ## 8. Failure Scenarios & Handling
 
+### Shared UI Component: `<PublishStatusBadge />`
+
+Every thread and reply card renders a small status indicator based on `publish_status`:
+
+```
+confirmed  →  ✓ On-chain  (green, subtle, links to on-chain viewer)
+pending    →  ⏳ Publishing...  (amber, auto-animating)
+failed     →  ⚠️ Failed · Retry  (red, clickable → triggers retry)
+```
+
+This is a single component reused on `ThreadCard`, `ReplyCard`, `ResearchPost`, etc. It's small — a badge next to the timestamp, not a banner.
+
+---
+
 ### Scenario 1: Grove upload fails
 
-**When:** Network issue, Grove service down.
+**When:** Network issue, Grove service down, timeout.
 **Impact:** Can't get contentUri → can't publish to Lens.
-**Handling:**
-- Supabase row already saved → post visible in UI
-- Set `publish_status = "failed"`
-- Show retry button on the post: "Publish to chain"
-- Retry uploads to Grove then publishes to Lens
-- **This is rare.** Grove has been reliable.
 
-### Scenario 2: Lens transaction fails (user rejects wallet signature)
+**Solution:**
+1. Supabase row already saved with content → post visible in UI immediately
+2. Set `publish_status = 'failed'` in Supabase
+3. `<PublishStatusBadge />` shows: `⚠️ Failed · Retry`
+4. Clicking Retry calls `retryPublish(postId)` which:
+   - Reads `content_markdown` + `content_json` from Supabase (already stored)
+   - Attempts Grove upload again
+   - If Grove succeeds → continues to Lens publish
+   - If Grove fails again → stays `failed`, user can retry later
+5. No data loss. Content is safe in Supabase regardless.
 
-**When:** User clicks "Reject" in MetaMask/wallet popup.
-**Impact:** No Lens publication created.
-**Handling:**
-- Supabase row exists → post visible in UI
-- `publish_status = "pending"` (never got to sign)
-- Show: "This post hasn't been published on-chain yet. [Publish now]"
-- User can click to retry the full Lens flow
-- **Most common failure scenario.**
+**Rarity:** Very rare. Grove has high uptime. Most likely cause is user's own network.
 
-### Scenario 3: Lens transaction fails (on-chain error)
+---
 
-**When:** Gas issues, nonce conflicts, Lens contract revert.
-**Impact:** Transaction submitted but reverted.
-**Handling:**
-- Same as Scenario 2 from user's perspective
-- `publish_status = "failed"`
-- Retry button available
-- Log the error for debugging
+### Scenario 2: User rejects wallet signature
 
-### Scenario 4: Lens transaction succeeds but app loses connection before getting post ID
+**When:** User clicks "Reject" in wallet popup (MetaMask, Rabby, etc).
+**Impact:** No Lens publication created. Grove upload may or may not have happened.
 
-**When:** User closes browser mid-transaction, network drops after signing.
-**Impact:** Lens post exists but Supabase doesn't have the `lens_post_id`.
-**Handling:**
-- `publish_status = "pending"` with no `lens_post_id`
-- **Recovery path:** When user returns, check if a matching post exists on the feed by scanning recent posts for matching `forumCategory` + `author` + approximate timestamp
-- Or: the recovery script (§13) will eventually catch it
-- This is an edge case. Acceptable to handle via recovery script rather than complex real-time detection.
+**Solution:**
+1. Supabase row exists → post visible in UI
+2. Set `publish_status = 'failed'`
+3. `<PublishStatusBadge />` shows: `⚠️ Failed · Retry`
+4. Retry triggers the full flow: Grove upload (skipped if `content_uri` already set) → Lens publish → wallet signature
+5. User gets another wallet popup to sign
 
-### Scenario 5: Reply published but root thread is still "pending"
+**This is the most common failure.** The UX must be forgiving — the post is already visible, the user just needs to sign when ready.
 
-**When:** Root thread's Lens publish hasn't confirmed, but user already replied.
-**Impact:** Reply's `forumThreadId` attribute needs the root's `lens_post_id`, which doesn't exist yet.
-**Handling:**
-- Save reply to Supabase immediately (it references `thread_id` UUID, not `lens_post_id`)
-- Reply is visible in UI from Supabase
-- Defer Lens publish of the reply until root is confirmed
-- When root confirms → publish queued replies with correct `forumThreadId`
-- If root never confirms → replies exist in Supabase only (still visible, just not on-chain)
+---
+
+### Scenario 3: On-chain transaction reverts
+
+**When:** Gas estimation fails, nonce conflict, Lens contract revert, network congestion.
+**Impact:** Transaction submitted but failed on-chain.
+
+**Solution:**
+1. Catch the error from `sessionClient.waitForTransaction`
+2. Set `publish_status = 'failed'`
+3. Log the specific error (gas, nonce, revert reason) to console for debugging
+4. `<PublishStatusBadge />` shows: `⚠️ Failed · Retry`
+5. Retry re-attempts the Lens publish (Grove upload already done, `content_uri` exists)
+
+**Note:** Lens on GHO chain has low gas costs and reliable block times. This is uncommon but possible during network congestion.
+
+---
+
+### Scenario 4: App loses connection after signing
+
+**When:** User closes browser tab after wallet signature, network drops mid-confirmation, app crashes.
+**Impact:** Lens post likely exists on-chain but Supabase doesn't have the `lens_post_id`.
+
+**Solution:**
+1. `publish_status` stays `'pending'` with `lens_post_id = NULL`
+2. `<PublishStatusBadge />` shows: `⏳ Publishing...`
+3. **On next page load** (or when user visits the post): run a lightweight reconciliation check:
+   ```
+   If publish_status = 'pending' AND lens_post_id IS NULL AND created_at > 5 minutes ago:
+     → Query Lens feed for recent posts by this author
+     → Match by forumCategory + author_address + approximate timestamp (±10 min)
+     → If match found: UPDATE lens_post_id, content_uri, publish_status = 'confirmed'
+     → If no match: SET publish_status = 'failed' (user can retry)
+   ```
+4. This reconciliation runs client-side when the post author views their own pending post. Not a cron — just a lazy check.
+5. Fallback: the recovery script (§13) catches any orphans.
+
+**Edge case frequency:** Rare. Only happens if browser closes in the ~5 second window between signing and confirmation.
+
+---
+
+### Scenario 5: Reply on a thread whose root is still pending
+
+**When:** Root thread's Lens publish hasn't confirmed yet, but someone (likely the same user) posts a reply.
+**Impact:** Reply's `forumThreadId` metadata attribute needs the root's `lens_post_id`, which is NULL.
+
+**Solution:**
+1. Save reply to Supabase immediately — it references `thread_id` (UUID), not `lens_post_id`
+2. Reply is visible in UI from Supabase. No problem for reads.
+3. For the Lens publish of the reply:
+   - Check if parent thread has `lens_post_id`
+   - **If yes:** publish reply with `forumThreadId = thread.lens_post_id`
+   - **If no:** set reply `publish_status = 'pending'`, skip Lens publish for now
+4. When the root thread eventually confirms (gets its `lens_post_id`):
+   - Query: `SELECT * FROM forum_replies WHERE thread_id = ? AND publish_status = 'pending' AND lens_post_id IS NULL`
+   - For each queued reply: trigger Lens publish with the now-available `forumThreadId`
+5. If root thread never confirms (stays `failed`):
+   - Replies remain Supabase-only. Still visible in the forum.
+   - If root is retried and succeeds later, queued replies get published then.
+
+**In practice:** This mostly affects the thread author replying to their own thread immediately. The 5-second confirmation window means other users rarely encounter this.
+
+---
 
 ### Scenario 6: User wants to delete a post
 
-**When:** User regrets posting.
-**Impact:** Lens posts are permanent (can't truly delete).
-**Handling:**
-- Set `is_hidden = true` in Supabase → disappears from UI
-- Lens post still exists but forum doesn't display it
-- Admin moderation uses the same mechanism
+**When:** User regrets posting, wants content removed.
+**Impact:** Lens posts are permanent — can't truly delete from the blockchain.
 
-### Is Lens publication "non-binding"?
+**Solution:**
+1. Set `is_hidden = true` in Supabase → post disappears from forum UI
+2. Lens post still exists on-chain but the forum doesn't render it
+3. Admin moderation uses the same `is_hidden` flag
+4. For the author: show a "Hide post" option (not "Delete") to set expectations correctly
+5. Hidden posts are excluded from all queries: `WHERE is_hidden = false`
 
-No. The Supabase-first approach doesn't make Lens non-binding — it makes it **eventually consistent**. The forum works immediately from Supabase. Lens is the permanent backup that makes the content censorship-resistant and recoverable. A post that only exists in Supabase is "local" — it works but isn't permanent. The retry mechanism ensures most posts eventually get on-chain.
+**No delete button.** The UI says "Hide" to be honest about what's happening. The on-chain record is permanent by design.
 
-For critical use cases (governance proposals, official announcements), you could require `publish_status = "confirmed"` before the post is visible. But for general discussion, eventual consistency is the right tradeoff.
+---
+
+### Scenario 7: Edit fails to sync to Lens
+
+**When:** User edits a post, Supabase updates fine, but `editPost` on Lens fails (wallet reject, network issue).
+**Impact:** Supabase has new content, Lens has old content.
+
+**Solution:**
+1. Supabase is the primary read layer → UI shows the updated content immediately
+2. The Lens version is stale but still valid (old content, old Grove URI)
+3. Show a subtle indicator: `⏳ Edit pending sync` next to the post
+4. User can retry the on-chain sync from the post's menu
+5. If they never retry: the forum works fine from Supabase. The on-chain version just has the pre-edit content.
+6. This is acceptable because Supabase is the display layer. Lens is the backup.
+
+---
+
+### Summary: The Retry Flow
+
+All failure scenarios converge on the same mechanism:
+
+```
+publish_status = 'failed' or 'pending' (stale)
+  → <PublishStatusBadge /> shows retry option
+  → User clicks Retry
+  → retryPublish(postId, type) is called
+  → Reads content from Supabase
+  → Uploads to Grove (if content_uri missing)
+  → Publishes to Lens (standalone article)
+  → Wallet signature requested
+  → On success: UPDATE publish_status = 'confirmed', lens_post_id, content_uri
+  → On failure: stays 'failed', user can try again
+```
+
+One function, one UI component, handles everything. No complex queuing system needed.
 
 ---
 

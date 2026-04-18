@@ -5,7 +5,7 @@ import { Lock } from "lucide-react";
 
 interface Feed {
   title: string;
-  address: string;
+  slug: string;
   description: string;
   repliesCount: number;
   viewsCount: number;
@@ -63,8 +63,8 @@ export function ForumCategory({ title, feeds, borderColor = "blue", isLocked = f
       <div className={`divide-y ${isLocked ? "divide-slate-600/50" : "divide-slate-200 dark:divide-gray-700"}`}>
         {feeds.map((feed) => (
           <Link
-            key={feed.address}
-            href={`/boards/${feed.address}`}
+            key={feed.slug}
+            href={`/boards/${feed.slug}`}
             onClick={handleLockedClick}
             className={`block transition-colors ${isLocked ? "hover:bg-[#252663]" : "hover:bg-slate-50 dark:hover:bg-gray-700/50"}`}
           >
