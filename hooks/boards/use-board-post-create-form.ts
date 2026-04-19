@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTagsInput } from "@/hooks/forms/use-tags-input";
 import { ForumBoard } from "@/lib/domain/forum/types";
 import { saveForumThread, publishForumThreadToLens } from "@/lib/services/forum/publish-thread";
@@ -33,6 +34,7 @@ export function useBoardPostCreateForm({ board }: { board: ForumBoard }) {
   const { account } = useAuthStore();
   const sessionClient = useSessionClient();
   const walletClient = useWalletClient();
+  const router = useRouter();
 
   const validateField = (field: keyof FormErrors, value: string) => {
     const error = !value.trim() ? `${field === "title" ? "Title" : "Content"} is required` : undefined;
@@ -96,11 +98,12 @@ export function useBoardPostCreateForm({ board }: { board: ForumBoard }) {
 
       if (!saveResult.success) throw new Error(saveResult.error || "Failed to save post");
 
-      toast.success("Post created! Publishing on-chain...", { id: loadingToast });
+      toast.success("Post created! Publishing on-chain in background...", { id: loadingToast });
 
-      // Step 2: Publish to Lens simultaneously (wallet popup appears)
-      // This runs but we don't wait for it to redirect
-      const lensPromise = publishForumThreadToLens(
+      // Step 2: Fire Lens publish in the BACKGROUND. Do NOT await.
+      // The wallet popup will appear on the destination page; the status
+      // badge there will flip from "Publishing..." to "✓ On-chain" when done.
+      publishForumThreadToLens(
         saveResult.threadId!,
         {
           title: formData.title,
@@ -114,20 +117,22 @@ export function useBoardPostCreateForm({ board }: { board: ForumBoard }) {
         },
         sessionClient.data,
         walletClient.data,
-      );
+      )
+        .then((lensResult) => {
+          console.log("[CreatePost] Lens result:", lensResult);
+          if (lensResult.success) {
+            toast.success("Published on-chain ✓");
+          } else {
+            toast.info("Post saved. On-chain publish can be retried later.");
+          }
+        })
+        .catch((err) => {
+          console.error("[CreatePost] Lens publish error:", err);
+          toast.info("Post saved. On-chain publish can be retried later.");
+        });
 
-      // Wait for Lens publish (user signs wallet), then redirect
-      const lensResult = await lensPromise;
-      console.log("[CreatePost] Lens result:", lensResult);
-
-      if (lensResult.success) {
-        toast.success("Published on-chain ✓");
-      } else {
-        toast.info("Post saved. On-chain publish can be retried later.");
-      }
-
-      // Redirect to board page
-      window.location.href = `/boards/${board.slug}`;
+      // Redirect immediately (soft navigation) so the in-flight Lens promise above keeps running.
+      router.push(`/boards/${board.slug}/post/${saveResult.slug || saveResult.threadId}`);
     } catch (error) {
       toast.error("Failed to create post", {
         description: error instanceof Error ? error.message : "An error occurred",

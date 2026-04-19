@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { formatDistanceToNow } from "date-fns";
@@ -16,9 +17,34 @@ interface BoardPostDetailProps {
 }
 
 export function BoardPostDetail({ post, replies }: BoardPostDetailProps) {
+  const router = useRouter();
+
   useEffect(() => {
     fetch(`/api/posts/${post.id}/view`, { method: "POST" }).catch(() => {});
   }, [post.id]);
+
+  // Poll for status updates while anything is still pending. As soon as Lens
+  // confirms in the background, router.refresh() re-fetches server data and
+  // the PublishStatusBadge flips from "Publishing..." to "✓ On-chain".
+  // Capped at ~3 minutes (60 attempts × 3s) to avoid runaway polling.
+  useEffect(() => {
+    const hasPending =
+      post.publishStatus === "pending" ||
+      replies.some((r) => r.publishStatus === "pending");
+    if (!hasPending) return;
+
+    let attempts = 0;
+    const MAX_ATTEMPTS = 60;
+    const interval = setInterval(() => {
+      attempts += 1;
+      if (attempts > MAX_ATTEMPTS) {
+        clearInterval(interval);
+        return;
+      }
+      router.refresh();
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [post.publishStatus, replies, router]);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">

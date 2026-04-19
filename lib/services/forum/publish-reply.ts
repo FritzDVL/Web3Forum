@@ -77,7 +77,12 @@ export async function publishForumReplyToLens(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const thread = await fetchForumThreadById(params.threadId);
-    if (!thread || !thread.lens_post_id) return { success: false, error: "Thread not on-chain yet" };
+    if (!thread || !thread.lens_post_id) {
+      // Parent thread isn't on-chain yet. Mark this reply as failed so the
+      // status badge stops showing "Publishing..." forever and the user can retry.
+      try { await updateForumReplyStatus(replyId, "failed"); } catch {}
+      return { success: false, error: "Thread not on-chain yet" };
+    }
 
     const reply = await fetchForumReplyById(replyId);
     if (!reply) return { success: false, error: "Reply not found" };
