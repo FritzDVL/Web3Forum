@@ -32,14 +32,32 @@ function isAlreadyMemberError(msg: string): boolean {
 // Member-side actions: join (open groups) / request membership (gated groups)
 // ─────────────────────────────────────────────────────────────────────────────
 
+export interface JoinGroupResult extends GroupActionResult {
+  /** True when the group required approval and a request was submitted instead. */
+  requested?: boolean;
+  /** Rule types still attached to the group, when join failed because of rules. */
+  blockingRuleTypes?: string[];
+}
+
+function isRulesUnsatisfiedError(msg: string): boolean {
+  return /not all rules satisf/i.test(msg) || /rules.*not.*satisf/i.test(msg);
+}
+
 /**
- * Join a Lens Group directly. Use only for OPEN groups (no MEMBERSHIP_APPROVAL rule).
+ * Join a Lens Group with automatic fallback:
+ *  - Try direct join (works when group is fully open).
+ *  - If "Not all rules satisfied", inspect the group's actual rules.
+ *      • If the only blocker is MEMBERSHIP_APPROVAL → submit a join request
+ *        and return { success: true, requested: true } so the UI can say
+ *        "request submitted, awaiting admin approval".
+ *      • Otherwise → return a descriptive error listing the blocking rule
+ *        types so the admin knows what to remove.
  */
 export async function joinLensGroup(
   groupAddress: string,
   sessionClient: SessionClient,
   walletClient: WalletClient,
-): Promise<GroupActionResult> {
+): Promise<JoinGroupResult> {
   try {
     const result = await joinGroup(sessionClient, {
       group: evmAddress(groupAddress),
@@ -50,16 +68,67 @@ export async function joinLensGroup(
     if (result.isErr()) {
       const msg = result.error?.message || String(result.error);
       const alreadyMember = isAlreadyMemberError(msg);
+      if (alreadyMember) return { success: true, alreadyMember };
+
       console.error("[Groups] joinGroup failed:", msg);
-      return { success: alreadyMember, alreadyMember, error: alreadyMember ? undefined : msg };
+
+      if (isRulesUnsatisfiedError(msg)) {
+        return await fallbackForRuleBlock(groupAddress, sessionClient, walletClient);
+      }
+      return { success: false, error: msg };
     }
     return { success: true };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     const alreadyMember = isAlreadyMemberError(msg);
+    if (alreadyMember) return { success: true, alreadyMember };
     console.error("[Groups] joinGroup exception:", msg);
-    return { success: alreadyMember, alreadyMember, error: alreadyMember ? undefined : msg };
+    if (isRulesUnsatisfiedError(msg)) {
+      return await fallbackForRuleBlock(groupAddress, sessionClient, walletClient);
+    }
+    return { success: false, error: msg };
   }
+}
+
+async function fallbackForRuleBlock(
+  groupAddress: string,
+  sessionClient: SessionClient,
+  walletClient: WalletClient,
+): Promise<JoinGroupResult> {
+  const rulesResult = await fetchGroupRules(groupAddress, sessionClient);
+  if (!rulesResult.success || !rulesResult.rules) {
+    return {
+      success: false,
+      error:
+        "Join blocked by group rules and the group's rule list could not be read.",
+    };
+  }
+  const types = rulesResult.rules.map((r) => r.type);
+  const onlyBlockerIsApproval =
+    rulesResult.rules.length > 0 &&
+    rulesResult.rules.every((r) => r.type === "MEMBERSHIP_APPROVAL");
+
+  if (onlyBlockerIsApproval) {
+    const reqResult = await requestLensGroupMembership(
+      groupAddress,
+      sessionClient,
+      walletClient,
+    );
+    if (reqResult.success) {
+      return { success: true, requested: true };
+    }
+    return {
+      success: false,
+      error: reqResult.error || "Could not submit membership request.",
+      blockingRuleTypes: types,
+    };
+  }
+
+  return {
+    success: false,
+    error: `Join blocked by group rules: ${types.join(", ")}. An admin must remove them at /admin/group-rules.`,
+    blockingRuleTypes: types,
+  };
 }
 
 /**

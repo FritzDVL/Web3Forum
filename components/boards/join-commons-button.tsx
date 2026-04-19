@@ -35,12 +35,15 @@ export function JoinCommonsButton() {
         walletClient.data,
       );
       if (result.success) {
-        toast.success(
-          result.alreadyMember
-            ? "You're already a member ✓"
-            : "Joined Society-Commons ✓ You can now post.",
-          { id: loading },
-        );
+        let msg: string;
+        if (result.alreadyMember) {
+          msg = "You're already a member ✓";
+        } else if (result.requested) {
+          msg = "Request submitted ✓ An admin must approve before you can post.";
+        } else {
+          msg = "Joined Society-Commons ✓ You can now post.";
+        }
+        toast.success(msg, { id: loading });
       } else {
         toast.error("Could not join Society-Commons", {
           description: result.error || "Unknown error",
