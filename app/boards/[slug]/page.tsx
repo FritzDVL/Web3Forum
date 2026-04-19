@@ -27,7 +27,7 @@ export default async function BoardPage({ params }: { params: Promise<{ slug: st
   const posts = postsResult.success ? (postsResult.posts || []) : [];
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       <BoardNavActions boardSlug={slug} isLocked={board.isLocked} />
 
       <div className="mb-8">
