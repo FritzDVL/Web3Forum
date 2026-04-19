@@ -198,18 +198,102 @@ export async function rejectLensGroupMembershipRequests(
 // Admin-side actions: toggle MEMBERSHIP_APPROVAL rule on a group
 // ─────────────────────────────────────────────────────────────────────────────
 
+export interface GroupRuleSummary {
+  id: string;
+  type: string;
+  scope: "required" | "anyOf";
+}
+
+/**
+ * Inspect the on-chain rules attached to a group (required + anyOf).
+ * Returns each rule's id, type, and which scope it's in.
+ */
+export async function fetchGroupRules(
+  groupAddress: string,
+  client: AnyClient,
+): Promise<{ success: boolean; rules?: GroupRuleSummary[]; error?: string }> {
+  try {
+    const result = await fetchGroup(client, { group: evmAddress(groupAddress) });
+    if (result.isErr()) {
+      const msg = result.error?.message || String(result.error);
+      return { success: false, error: msg };
+    }
+    if (!result.value) return { success: true, rules: [] };
+    const group: any = result.value;
+    const required = (group.rules?.required ?? []).map((r: any) => ({
+      id: r.id,
+      type: r.type,
+      scope: "required" as const,
+    }));
+    const anyOf = (group.rules?.anyOf ?? []).map((r: any) => ({
+      id: r.id,
+      type: r.type,
+      scope: "anyOf" as const,
+    }));
+    return { success: true, rules: [...required, ...anyOf] };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    return { success: false, error: msg };
+  }
+}
+
 export async function getMembershipApprovalRuleIds(
   groupAddress: string,
   client: AnyClient,
 ): Promise<string[]> {
-  const result = await fetchGroup(client, { group: evmAddress(groupAddress) });
-  if (result.isErr() || !result.value) return [];
-  const group: any = result.value;
-  const required = group.rules?.required ?? [];
-  const anyOf = group.rules?.anyOf ?? [];
-  return [...required, ...anyOf]
-    .filter((r: any) => r.type === "MEMBERSHIP_APPROVAL")
-    .map((r: any) => r.id);
+  const r = await fetchGroupRules(groupAddress, client);
+  if (!r.success || !r.rules) return [];
+  return r.rules
+    .filter((rule) => rule.type === "MEMBERSHIP_APPROVAL")
+    .map((rule) => rule.id);
+}
+
+/**
+ * Get IDs of every rule on the group (regardless of type).
+ * Use to fully open a group by stripping all join-time rules.
+ */
+export async function getAllGroupRuleIds(
+  groupAddress: string,
+  client: AnyClient,
+): Promise<string[]> {
+  const r = await fetchGroupRules(groupAddress, client);
+  if (!r.success || !r.rules) return [];
+  return r.rules.map((rule) => rule.id);
+}
+
+/**
+ * Remove ALL rules from a group so anyone can join in one click.
+ * Caller must be the group owner/admin.
+ */
+export async function removeAllGroupRules(
+  groupAddress: string,
+  sessionClient: SessionClient,
+  walletClient: WalletClient,
+): Promise<GroupActionResult> {
+  try {
+    const ruleIds = await getAllGroupRuleIds(groupAddress, sessionClient);
+    if (ruleIds.length === 0) {
+      return { success: true };
+    }
+    const result = await updateGroupRules(sessionClient, {
+      group: evmAddress(groupAddress),
+      toAdd: { required: [], anyOf: [] },
+      toRemove: ruleIds as any,
+    })
+      .andThen(handleOperationWith(walletClient))
+      .andThen(sessionClient.waitForTransaction);
+
+    if (result.isErr()) {
+      const msg = result.error?.message || String(result.error);
+      console.error("[Groups] removeAllGroupRules failed:", msg);
+      return { success: false, error: msg };
+    }
+    return { success: true };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[Groups] removeAllGroupRules exception:", msg);
+    return { success: false, error: msg };
+  }
 }
 
 /**
