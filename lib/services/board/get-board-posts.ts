@@ -1,5 +1,3 @@
-"use server";
-
 import { ForumThread } from "@/lib/domain/forum/types";
 import { fetchForumThreadsByBoard, ForumThreadRow } from "@/lib/external/supabase/forum-threads";
 

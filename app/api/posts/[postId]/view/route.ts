@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseClient } from "@/lib/external/supabase/client";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
 
 export async function POST(
   request: NextRequest,
@@ -7,32 +9,17 @@ export async function POST(
 ) {
   try {
     const { postId } = params;
-    const supabase = await supabaseClient();
 
-    // Increment view count using direct update
-    const { data: post, error: fetchError } = await supabase
-      .from("feed_posts")
-      .select("views_count")
-      .eq("lens_post_id", postId)
-      .single();
+    // Try forum_threads first (by UUID id)
+    const { error } = await supabase.rpc("increment_forum_views", { t_id: postId });
 
-    if (fetchError || !post) {
-      // Post not in DB yet - this is OK for Lens-only posts
-      return NextResponse.json({ success: true });
-    }
-
-    const { error: updateError } = await supabase
-      .from("feed_posts")
-      .update({ views_count: (post.views_count || 0) + 1 })
-      .eq("lens_post_id", postId);
-
-    if (updateError) {
-      console.error("Failed to increment view count:", updateError);
+    if (error) {
+      // Silently fail — view tracking is non-critical
+      console.warn("View tracking failed:", error.message);
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error tracking view:", error);
+  } catch {
     return NextResponse.json({ success: true });
   }
 }

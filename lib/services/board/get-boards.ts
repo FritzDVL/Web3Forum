@@ -1,5 +1,3 @@
-"use server";
-
 import { fetchAllForumBoards, ForumBoardRow } from "@/lib/external/supabase/forum-boards";
 import { fetchAllResearchCategories } from "@/lib/external/supabase/research-categories";
 

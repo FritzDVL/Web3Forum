@@ -28,7 +28,7 @@ export default async function BoardPage({ params }: { params: Promise<{ slug: st
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <BoardNavActions feedAddress={slug} isLocked={board.isLocked} />
+      <BoardNavActions boardSlug={slug} isLocked={board.isLocked} />
 
       <div className="mb-8">
         <div className="flex items-center gap-3">

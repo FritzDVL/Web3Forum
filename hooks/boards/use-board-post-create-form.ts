@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTagsInput } from "@/hooks/forms/use-tags-input";
 import { ForumBoard } from "@/lib/domain/forum/types";
-import { saveForumThread } from "@/lib/services/forum/publish-thread";
+import { saveForumThread, publishForumThreadToLens } from "@/lib/services/forum/publish-thread";
 import { useAuthStore } from "@/stores/auth-store";
 import { useSessionClient } from "@lens-protocol/react";
 import { toast } from "sonner";
@@ -34,7 +33,6 @@ export function useBoardPostCreateForm({ board }: { board: ForumBoard }) {
   const { account } = useAuthStore();
   const sessionClient = useSessionClient();
   const walletClient = useWalletClient();
-  const router = useRouter();
 
   const validateField = (field: keyof FormErrors, value: string) => {
     const error = !value.trim() ? `${field === "title" ? "Title" : "Content"} is required` : undefined;
@@ -67,8 +65,13 @@ export function useBoardPostCreateForm({ board }: { board: ForumBoard }) {
       return;
     }
 
-    if (!account?.address || !sessionClient.data || !walletClient.data) {
-      toast.error("Please sign in and connect your wallet");
+    if (!account?.address) {
+      toast.error("Please sign in to create a post");
+      return;
+    }
+
+    if (!sessionClient.data || !walletClient.data) {
+      toast.error("Please connect your wallet");
       return;
     }
 
@@ -76,6 +79,8 @@ export function useBoardPostCreateForm({ board }: { board: ForumBoard }) {
     setIsCreating(true);
 
     try {
+      console.log("[CreatePost] Saving to Supabase...", { boardSlug: board.slug, title: formData.title });
+      
       // Step 1: Save to Supabase instantly
       const saveResult = await saveForumThread({
         boardSlug: board.slug,
@@ -87,12 +92,41 @@ export function useBoardPostCreateForm({ board }: { board: ForumBoard }) {
         tags: tags.length > 0 ? tags : undefined,
       });
 
+      console.log("[CreatePost] Save result:", saveResult);
+
       if (!saveResult.success) throw new Error(saveResult.error || "Failed to save post");
 
-      toast.success("Post created!", { id: loadingToast });
+      toast.success("Post created! Publishing on-chain...", { id: loadingToast });
 
-      // Redirect to board page — hard navigation guarantees fresh data
-      // Lens on-chain publish happens later via the "Publish on-chain" button in thread view
+      // Step 2: Publish to Lens simultaneously (wallet popup appears)
+      // This runs but we don't wait for it to redirect
+      const lensPromise = publishForumThreadToLens(
+        saveResult.threadId!,
+        {
+          title: formData.title,
+          summary: formData.summary,
+          contentMarkdown: formData.content,
+          contentJson: null,
+          authorAddress: account.address,
+          boardSlug: board.slug,
+          slug: saveResult.slug!,
+          tags: tags.length > 0 ? tags : undefined,
+        },
+        sessionClient.data,
+        walletClient.data,
+      );
+
+      // Wait for Lens publish (user signs wallet), then redirect
+      const lensResult = await lensPromise;
+      console.log("[CreatePost] Lens result:", lensResult);
+
+      if (lensResult.success) {
+        toast.success("Published on-chain ✓");
+      } else {
+        toast.info("Post saved. On-chain publish can be retried later.");
+      }
+
+      // Redirect to board page
       window.location.href = `/boards/${board.slug}`;
     } catch (error) {
       toast.error("Failed to create post", {

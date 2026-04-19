@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/pages/protected-route";
 import { BackNavigationLink } from "@/components/ui/back-navigation-link";
 import { MembershipApprovalGroupRule, SimplePaymentGroupRule, TokenGatedGroupRule } from "@/lib/domain/rules/types";
 import { useAuthStore } from "@/stores/auth-store";
+import { useIsAdmin } from "@/hooks/admin/use-is-admin";
 
 export default function NewCommunityPage() {
   const [groupRule, setGroupRule] = useState<
@@ -15,6 +16,17 @@ export default function NewCommunityPage() {
   >(undefined);
 
   const { account } = useAuthStore();
+  const isAdmin = useIsAdmin();
+
+  if (!isAdmin) {
+    return (
+      <ProtectedRoute>
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <p className="text-gray-500">Only administrators can create new communities.</p>
+        </div>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>

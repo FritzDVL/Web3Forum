@@ -3,11 +3,11 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 
 interface BoardNavActionsProps {
-  feedAddress: string;
+  boardSlug: string;
   isLocked?: boolean;
 }
 
-export function BoardNavActions({ feedAddress, isLocked = false }: BoardNavActionsProps) {
+export function BoardNavActions({ boardSlug, isLocked = false }: BoardNavActionsProps) {
   return (
     <div className="mb-6 flex items-center justify-between">
       <Link href="/">
@@ -15,7 +15,7 @@ export function BoardNavActions({ feedAddress, isLocked = false }: BoardNavActio
           ← Back to Home
         </Button>
       </Link>
-      <Link href={`/boards/${feedAddress}/new-post`}>
+      <Link href={`/boards/${boardSlug}/new-post`}>
         <Button
           size="sm"
           className="gap-2"

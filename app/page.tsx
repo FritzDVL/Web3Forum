@@ -1,25 +1,39 @@
-import { CommunityGrid } from "@/components/home/community-grid";
+import { CommunityLinks } from "@/components/home/community-links";
 import { ForumCategory } from "@/components/home/forum-category";
 import { FunctionGrid } from "@/components/home/function-grid";
-import { getFeaturedCommunities } from "@/lib/services/community/get-featured-communities";
 import { getBoardSections, getPartnerSection } from "@/lib/services/board/get-boards";
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+async function getLocalCommunities() {
+  const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+  const { data } = await supabase
+    .from("communities")
+    .select("id, name, lens_group_address, members_count")
+    .eq("visible", true)
+    .order("members_count", { ascending: false })
+    .limit(9);
+
+  return (data || []).map((c: any) => ({
+    id: c.id,
+    name: c.name,
+    lensGroupAddress: c.lens_group_address,
+    membersCount: c.members_count,
+  }));
+}
+
 export default async function HomePage() {
-  const [boardSections, partnerSection, featuredCommunitiesResult] = await Promise.all([
+  const [boardSections, partnerSection, communities] = await Promise.all([
     getBoardSections(),
     getPartnerSection(),
-    getFeaturedCommunities(),
+    getLocalCommunities(),
   ]);
-  
-  const featuredCommunities = featuredCommunitiesResult.success ? (featuredCommunitiesResult.communities ?? []) : [];
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="flex flex-col items-center gap-12">
-        {/* Board Sections (general, functions, others) */}
         {boardSections.map((section) => (
           <div key={section.sectionTitle} className="w-full max-w-5xl">
             {section.layout === "grid" ? (
@@ -39,7 +53,6 @@ export default async function HomePage() {
           </div>
         ))}
 
-        {/* Partner Communities */}
         {partnerSection && (
           <div className="w-full max-w-5xl">
             <ForumCategory
@@ -51,12 +64,11 @@ export default async function HomePage() {
           </div>
         )}
 
-        {/* LOCAL */}
         <div className="w-full max-w-5xl">
-          <h2 className="mb-8 text-left text-xl font-bold text-slate-900 dark:text-gray-100">
+          <h2 className="mb-4 text-left text-xl font-bold text-slate-900 dark:text-gray-100">
             LOCAL
           </h2>
-          <CommunityGrid communities={featuredCommunities} />
+          <CommunityLinks communities={communities} />
         </div>
       </div>
     </div>

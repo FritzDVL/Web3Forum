@@ -1,5 +1,3 @@
-"use server";
-
 import { ForumBoard } from "@/lib/domain/forum/types";
 import { fetchForumBoardBySlug, ForumBoardRow } from "@/lib/external/supabase/forum-boards";
 

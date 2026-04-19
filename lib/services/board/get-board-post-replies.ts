@@ -1,5 +1,3 @@
-"use server";
-
 import { ForumReply } from "@/lib/domain/forum/types";
 import { fetchForumRepliesByThread, ForumReplyRow } from "@/lib/external/supabase/forum-replies";
 
