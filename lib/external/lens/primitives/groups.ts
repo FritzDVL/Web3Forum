@@ -1,320 +1,44 @@
-import { Moderator } from "@/lib/domain/communities/types";
-import { MembershipApprovalGroupRule, SimplePaymentGroupRule, TokenGatedGroupRule } from "@/lib/domain/rules/types";
-import { storageClient } from "@/lib/external/grove/client";
-import { lensChain } from "@/lib/external/lens/chain";
-import { client } from "@/lib/external/lens/protocol-client";
-import { ADMIN_USER_ADDRESS } from "@/lib/shared/constants";
-import { immutable } from "@lens-chain/storage-client";
-import { evmAddress } from "@lens-protocol/client";
-import type { Group, GroupStatsResponse, RuleId, SessionClient } from "@lens-protocol/client";
-import {
-  addAdmins,
-  createGroup,
-  fetchAdminsFor,
-  fetchGroup,
-  fetchGroupStats,
-  fetchGroups,
-  removeAdmins,
-  updateGroupRules,
-} from "@lens-protocol/client/actions";
+import { joinGroup } from "@lens-protocol/client/actions";
+import { evmAddress, SessionClient } from "@lens-protocol/client";
 import { handleOperationWith } from "@lens-protocol/client/viem";
-import { group } from "@lens-protocol/metadata";
-import { Address, WalletClient } from "viem";
+import { WalletClient } from "viem";
 
-export async function createLensGroup(
+export interface JoinGroupResult {
+  success: boolean;
+  alreadyMember?: boolean;
+  error?: string;
+}
+
+/**
+ * Join a Lens Group. Required to satisfy GROUP_GATED rules on a feed
+ * (e.g. the Commons feed requires Society-Commons group membership before
+ * a user can publish posts there).
+ */
+export async function joinLensGroup(
+  groupAddress: string,
   sessionClient: SessionClient,
   walletClient: WalletClient,
-  params: {
-    name: string;
-    description: string;
-    adminAddress: string;
-    iconUri?: string;
-    communityRule?: any;
-  },
-): Promise<Group | null> {
+): Promise<JoinGroupResult> {
   try {
-    const groupName = params.name.replace(/\s+/g, "-").slice(0, 20);
-    const groupMetadata = group({
-      name: groupName,
-      description: params.description,
-      ...(params.iconUri ? { icon: params.iconUri } : {}),
-    });
-    const acl = immutable(lensChain.id);
-    const { uri } = await storageClient.uploadAsJson(groupMetadata, { acl });
-
-    const createGroupParams: any = {
-      metadataUri: uri,
-      admins: [evmAddress(params.adminAddress), ADMIN_USER_ADDRESS],
-      owner: evmAddress(params.adminAddress),
-    };
-    if (params.communityRule) {
-      createGroupParams.rules = {
-        required: [params.communityRule],
-      };
-    }
-
-    const result = await createGroup(sessionClient, createGroupParams)
+    const result = await joinGroup(sessionClient, {
+      group: evmAddress(groupAddress),
+    })
       .andThen(handleOperationWith(walletClient))
-      .andThen(sessionClient.waitForTransaction)
-      .andThen((txHash: unknown) => {
-        return fetchGroup(sessionClient, { txHash: txHash as string });
-      });
-
-    if (result.isErr() || !result.value) {
-      return null;
-    }
-
-    return result.value as Group;
-  } catch (error) {
-    console.error("Failed to create group in Lens:", error);
-    return null;
-  }
-}
-
-/**
- * Fetches a single group from Lens Protocol
- */
-export async function fetchGroupFromLens(address: string, sessionClient?: SessionClient): Promise<Group | null> {
-  try {
-    const lensClient = sessionClient || client;
-    const result = await fetchGroup(lensClient, { group: evmAddress(address) });
-
-    if (result.isErr() || !result.value) {
-      return null;
-    }
-
-    return result.value;
-  } catch (error) {
-    console.error("Failed to fetch group from Lens:", error);
-    throw new Error(`Failed to fetch group: ${error instanceof Error ? error.message : "Unknown error"}`);
-  }
-}
-
-/**
- * Fetches group stats from Lens Protocol
- */
-export async function fetchGroupStatsFromLens(address: string): Promise<GroupStatsResponse | null> {
-  try {
-    const result = await fetchGroupStats(client, { group: evmAddress(address) });
-
-    if (result.isErr() || !result.value) {
-      return null;
-    }
-
-    return result.value as GroupStatsResponse;
-  } catch (error) {
-    console.error("Failed to fetch group stats from Lens:", error);
-    throw new Error(`Failed to fetch group stats: ${error instanceof Error ? error.message : "Unknown error"}`);
-  }
-}
-
-/**
- * Fetches groups by filter from Lens Protocol
- */
-export async function fetchGroupsJoinedByMember(member: string): Promise<Group[]> {
-  try {
-    const result = await fetchGroups(client, {
-      filter: { member: evmAddress(member) },
-    });
+      .andThen(sessionClient.waitForTransaction);
 
     if (result.isErr()) {
-      console.error(result.error);
-      return [];
+      const msg = result.error?.message || String(result.error);
+      const alreadyMember =
+        /already.*member|already joined|membership.*exists/i.test(msg);
+      console.error("[Groups] joinGroup failed:", msg);
+      return { success: alreadyMember, alreadyMember, error: alreadyMember ? undefined : msg };
     }
-
-    return result.value.items ? [...result.value.items] : [];
+    return { success: true };
   } catch (error) {
-    console.error("Failed to fetch groups by filter from Lens:", error);
-    throw new Error(`Failed to fetch groups: ${error instanceof Error ? error.message : "Unknown error"}`);
+    const msg = error instanceof Error ? error.message : String(error);
+    const alreadyMember =
+      /already.*member|already joined|membership.*exists/i.test(msg);
+    console.error("[Groups] joinGroup exception:", msg);
+    return { success: alreadyMember, alreadyMember, error: alreadyMember ? undefined : msg };
   }
-}
-
-/**
- * Batch fetch multiple groups from Lens Protocol
- */
-export async function fetchGroupsBatch(addresses: string[]): Promise<Array<{ address: string; result: Group | null }>> {
-  try {
-    const groupPromises = addresses.map(async address => {
-      const result = await fetchGroup(client, { group: evmAddress(address) });
-      return {
-        address,
-        result: result.isOk() ? result.value : null,
-      };
-    });
-
-    return await Promise.all(groupPromises);
-  } catch (error) {
-    console.error("Failed to batch fetch groups from Lens:", error);
-    throw new Error(`Failed to batch fetch groups: ${error instanceof Error ? error.message : "Unknown error"}`);
-  }
-}
-
-/**
- * Batch fetch multiple group stats from Lens Protocol
- */
-export async function fetchGroupStatsBatch(
-  addresses: string[],
-): Promise<Array<{ address: string; result: GroupStatsResponse | null }>> {
-  try {
-    const statsPromises = addresses.map(async address => {
-      const result = await fetchGroupStats(client, { group: evmAddress(address) });
-      return {
-        address,
-        result: result.isOk() ? (result.value as GroupStatsResponse) : null,
-      };
-    });
-
-    return await Promise.all(statsPromises);
-  } catch (error) {
-    console.error("Failed to batch fetch group stats from Lens:", error);
-    throw new Error(`Failed to batch fetch group stats: ${error instanceof Error ? error.message : "Unknown error"}`);
-  }
-}
-
-/**
- * Batch fetch multiple group admins from Lens Protocol
- */
-export async function fetchGroupAdminsBatch(
-  addresses: string[],
-): Promise<Array<{ address: string; result: Moderator[] }>> {
-  try {
-    const adminsPromises = addresses.map(async address => {
-      const moderators = await fetchAdminsFromGroup(address);
-      return {
-        address,
-        result: moderators,
-      };
-    });
-
-    return await Promise.all(adminsPromises);
-  } catch (error) {
-    console.error("Failed to batch fetch group admins from Lens:", error);
-    throw new Error(`Failed to batch fetch group admins: ${error instanceof Error ? error.message : "Unknown error"}`);
-  }
-}
-
-export async function addAdminToGroup(
-  newAdmin: Address,
-  group: Address,
-  sessionClient: SessionClient,
-  walletClient: WalletClient,
-): Promise<boolean> {
-  const addAdminResult = await addAdmins(sessionClient, {
-    admins: [newAdmin],
-    address: group,
-  })
-    .andThen(handleOperationWith(walletClient))
-    .andThen(sessionClient.waitForTransaction);
-
-  if (addAdminResult.isErr()) {
-    console.error("Error adding admin to group:", addAdminResult.error);
-    return false;
-  }
-
-  return true;
-}
-
-export async function removeAdminFromGroup(
-  admin: Address,
-  group: Address,
-  sessionClient: SessionClient,
-  walletClient: WalletClient,
-): Promise<boolean> {
-  const removeAdminResult = await removeAdmins(sessionClient, {
-    admins: [admin],
-    address: group,
-  })
-    .andThen(handleOperationWith(walletClient))
-    .andThen(sessionClient.waitForTransaction);
-
-  if (removeAdminResult.isErr()) {
-    console.error("Error removing admin to group:", removeAdminResult.error);
-    return false;
-  }
-
-  return true;
-}
-
-export async function fetchAdminsFromGroup(address: string): Promise<Moderator[]> {
-  try {
-    const result = await fetchAdminsFor(client, { address: evmAddress(address) });
-
-    if (result.isErr()) {
-      return [];
-    }
-
-    return result.value.items.map(admin => ({
-      username: admin.account.username?.value || "",
-      address: admin.account.address,
-      picture: admin.account.metadata?.picture,
-      displayName: admin.account.username?.localName || "",
-    }));
-  } catch (error) {
-    console.error("Failed to fetch group admins from Lens:", error);
-    throw new Error(`Failed to fetch group admins: ${error instanceof Error ? error.message : "Unknown error"}`);
-  }
-}
-
-/**
- * Updates a group rule by first removing the old rule (if provided) and then adding the new rule as required.
- */
-export async function updateGroupRule(
-  groupAddress: string,
-  ruleIdToRemove: RuleId | undefined,
-  ruleToAdd: SimplePaymentGroupRule | TokenGatedGroupRule | MembershipApprovalGroupRule,
-  sessionClient: SessionClient,
-  walletClient: WalletClient,
-): Promise<boolean> {
-  // Remove the old rule if provided
-  if (ruleIdToRemove) {
-    const removed = await removeGroupRule(groupAddress, ruleIdToRemove, sessionClient, walletClient);
-    if (!removed) {
-      return false;
-    }
-  }
-
-  // Remove the 'type' root attribute for Lens API
-  const { type, ...ruleWithoutType } = ruleToAdd;
-  void type;
-
-  // Add the new rule
-  const addResult = await updateGroupRules(sessionClient, {
-    group: groupAddress,
-    toAdd: {
-      required: [ruleWithoutType],
-    },
-  })
-    .andThen(handleOperationWith(walletClient))
-    .andThen(sessionClient.waitForTransaction);
-
-  if (addResult.isErr()) {
-    console.error("Error adding new rule to group:", addResult.error);
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * Removes a group rule by ruleId.
- */
-export async function removeGroupRule(
-  groupAddress: string,
-  ruleIdToRemove: RuleId,
-  sessionClient: SessionClient,
-  walletClient: WalletClient,
-): Promise<boolean> {
-  const removeResult = await updateGroupRules(sessionClient, {
-    group: groupAddress,
-    toRemove: [ruleIdToRemove],
-  })
-    .andThen(handleOperationWith(walletClient))
-    .andThen(sessionClient.waitForTransaction);
-
-  if (removeResult.isErr()) {
-    console.error("Error removing rule from group:", removeResult.error);
-    return false;
-  }
-
-  return true;
 }
