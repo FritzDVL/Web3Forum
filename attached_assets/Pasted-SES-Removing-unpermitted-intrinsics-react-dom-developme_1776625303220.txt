@@ -1,0 +1,79 @@
+SES Removing unpermitted intrinsics
+react-dom.development.js:38560 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+lockdown-install.js:1 SES Removing unpermitted intrinsics
+v8c78df7c7c0f484497ecbca7046644da1771523124516:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+app-index.js:33 Warning: Cannot update a component (`BoardReplyBox`) while rendering a different component (`Hydrate`). To locate the bad setState() call inside `Hydrate`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render
+    at Hydrate (webpack-internal:///(app-pages-browser)/./node_modules/wagmi/dist/esm/hydrate.js:12:13)
+    at WagmiProvider (webpack-internal:///(app-pages-browser)/./node_modules/wagmi/dist/esm/context.js:12:13)
+    at Web3Provider (webpack-internal:///(app-pages-browser)/./components/providers/web3-provider.tsx:68:11)
+    at V (webpack-internal:///(app-pages-browser)/./node_modules/next-themes/dist/index.mjs:54:24)
+    at J (webpack-internal:///(app-pages-browser)/./node_modules/next-themes/dist/index.mjs:47:47)
+    at ThemeProvider (webpack-internal:///(app-pages-browser)/./components/theme/theme-provider.tsx:13:11)
+    at body
+    at html
+    at RootLayout (Server)
+    at RedirectErrorBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/redirect-boundary.js:74:9)
+    at RedirectBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/redirect-boundary.js:82:11)
+    at NotFoundErrorBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/not-found-boundary.js:76:9)
+    at NotFoundBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/not-found-boundary.js:84:11)
+    at DevRootNotFoundBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/dev-root-not-found-boundary.js:33:11)
+    at ReactDevOverlay (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/ReactDevOverlay.js:87:9)
+    at HotReload (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:321:11)
+    at Router (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/app-router.js:207:11)
+    at ErrorBoundaryHandler (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/error-boundary.js:113:9)
+    at ErrorBoundary (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/error-boundary.js:160:11)
+    at AppRouter (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/components/app-router.js:585:13)
+    at ServerRoot (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:112:27)
+    at Root (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/client/app-index.js:117:11)
+window.console.error @ app-index.js:33
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/metrics:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+app-index.js:33 Analytics SDK: TypeError: Failed to fetch
+    at _t (<anonymous>:1:64025)
+    at <anonymous>:1:68106 Object
+window.console.error @ app-index.js:33
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/metrics:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+app-index.js:33 Analytics SDK: TypeError: Failed to fetch
+    at _t (<anonymous>:1:64025)
+    at <anonymous>:1:68106 Object
+window.console.error @ app-index.js:33
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/metrics:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+app-index.js:33 Analytics SDK: TypeError: Failed to fetch
+    at _t (<anonymous>:1:64025)
+    at <anonymous>:1:68106 Object
+window.console.error @ app-index.js:33
+cca-lite.coinbase.com/amp:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+cca-lite.coinbase.com/metrics:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+app-index.js:33 Analytics SDK: TypeError: Failed to fetch
+    at _t (<anonymous>:1:64025)
+    at <anonymous>:1:68106 Object
+window.console.error @ app-index.js:33
+hot-reloader-client.js:187 [Fast Refresh] rebuilding
+hot-reloader-client.js:44 [Fast Refresh] done in 1446ms
