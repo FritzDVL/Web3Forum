@@ -4,6 +4,7 @@ import {
   persistForumThread,
   updateForumThreadLensData,
   updateForumThreadStatus,
+  revalidateBoardPath,
 } from "@/lib/external/supabase/forum-threads";
 import { incrementBoardThreadCount } from "@/lib/external/supabase/forum-boards";
 import { COMMONS_FEED_ADDRESS } from "@/lib/shared/constants";
@@ -56,6 +57,10 @@ export async function saveForumThread(
     });
 
     await incrementBoardThreadCount(params.boardSlug);
+
+    // Bust Next.js Router Cache for the board listing so the new post
+    // appears immediately when the user navigates back.
+    await revalidateBoardPath(params.boardSlug);
 
     // Resolve username in background (non-blocking)
     fetchAccountFromLens(params.authorAddress).then((account) => {

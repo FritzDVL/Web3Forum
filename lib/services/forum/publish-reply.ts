@@ -47,8 +47,11 @@ export async function saveForumReply(
       authorUsername: null, // resolved async
     });
 
-    const { incrementForumReplyCount } = await import("@/lib/external/supabase/forum-replies");
+    const { incrementForumReplyCount, revalidateBoardAndThreadPaths } = await import("@/lib/external/supabase/forum-replies");
     await incrementForumReplyCount(params.threadId);
+    if (thread.board_slug) {
+      await revalidateBoardAndThreadPaths(thread.board_slug, params.threadId);
+    }
 
     // Resolve username in background
     fetchAccountFromLens(params.authorAddress).then((account) => {

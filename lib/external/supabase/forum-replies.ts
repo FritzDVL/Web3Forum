@@ -1,7 +1,15 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { PublishStatus } from "@/lib/domain/forum/types";
+
+export async function revalidateBoardAndThreadPaths(boardSlug: string, threadId: string): Promise<void> {
+  try {
+    revalidatePath(`/boards/${boardSlug}`);
+    revalidatePath(`/boards/${boardSlug}/post/${threadId}`);
+  } catch {}
+}
 
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
 
