@@ -1,0 +1,52 @@
+user@MacBookAir Web3Forum % PORT=3000 npx next dev -p 3000 -H 0.0.0.0
+  ▲ Next.js 14.2.13
+  - Local:        http://localhost:3000
+  - Network:      http://0.0.0.0:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1214ms
+ ○ Compiling / ...
+ ✓ Compiled / in 12.5s (11636 modules)
+ ✓ Compiled in 900ms (5499 modules)
+ GET / 200 in 15413ms
+ HEAD / 200 in 96ms
+ ○ Compiling /boards/[slug] ...
+ ✓ Compiled /boards/[slug] in 1197ms (11653 modules)
+ ○ Compiling /boards/[slug]/new-post ...
+ ✓ Compiled /boards/[slug]/new-post in 3.6s (13496 modules)
+WalletConnect Core is already initialized. This is probably a mistake and can lead to unexpected behavior. Init() was called 2 times.
+ HEAD /boards/dao-governance 200 in 325ms
+ POST /boards/dao-governance/new-post 200 in 299ms
+ POST /boards/dao-governance/new-post 200 in 168ms
+ POST /boards/dao-governance/new-post 200 in 168ms
+ POST /boards/dao-governance/new-post 200 in 439ms
+ ○ Compiling /boards/[slug]/post/[postId] ...
+ ✓ Compiled /boards/[slug]/post/[postId] in 1661ms (13556 modules)
+ POST /boards/dao-governance/new-post 200 in 188ms
+ ○ Compiling /api/posts/[postId]/view ...
+ ✓ Compiled /api/posts/[postId]/view in 799ms (7105 modules)
+ POST /boards/dao-governance/post/for-replit-x2-1776622955768 200 in 1969ms
+ POST /api/posts/ea47fd8d-d025-4dbc-b7a1-3a736bfd8752/view 200 in 2472ms
+ POST /api/posts/ea47fd8d-d025-4dbc-b7a1-3a736bfd8752/view 200 in 2552ms
+WalletConnect Core is already initialized. This is probably a mistake and can lead to unexpected behavior. Init() was called 3 times.
+ GET /boards/dao-governance/post/for-replit-x2-1776622955768 200 in 338ms
+ POST /api/posts/ea47fd8d-d025-4dbc-b7a1-3a736bfd8752/view 200 in 256ms
+ POST /api/posts/ea47fd8d-d025-4dbc-b7a1-3a736bfd8752/view 200 in 449ms
+ HEAD /boards/dao-governance/post/for-replit-x2-1776622955768 200 in 42ms
+ GET /boards/dao-governance/post/for-replit-x2-1776622955768 200 in 36ms
+ POST /api/posts/ea47fd8d-d025-4dbc-b7a1-3a736bfd8752/view 200 in 659ms
+ POST /api/posts/ea47fd8d-d025-4dbc-b7a1-3a736bfd8752/view 200 in 671ms
+ HEAD /boards/dao-governance/post/for-replit-x2-1776622955768 200 in 13ms
+ GET /boards/dao-governance/post/for-replit-x2-1776622955768 200 in 23ms
+ HEAD /boards/dao-governance/post/for-replit-x2-1776622955768 200 in 13ms
+ POST /api/posts/ea47fd8d-d025-4dbc-b7a1-3a736bfd8752/view 200 in 743ms
+ POST /api/posts/ea47fd8d-d025-4dbc-b7a1-3a736bfd8752/view 200 in 744ms
+ POST /api/posts/ea47fd8d-d025-4dbc-b7a1-3a736bfd8752/view 200 in 171ms
+ POST /api/posts/ea47fd8d-d025-4dbc-b7a1-3a736bfd8752/view 200 in 252ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 3.3s (13559 modules)
+WalletConnect Core is already initialized. This is probably a mistake and can lead to unexpected behavior. Init() was called 4 times.
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 3573ms
+ GET /_next/static/chunks/app/index.es.js.map 404 in 2429ms
+ GET /_next/static/chunks/index.es.js.map 404 in 2430ms
