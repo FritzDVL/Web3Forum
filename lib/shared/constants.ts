@@ -38,8 +38,8 @@ export const APP_NAME = isTestnet ? "LensForumV1" : "LensForum";
 
 // Commons (Boards) — single group + single feed for all child-boards
 // TODO: Replace with actual addresses after creating the Commons Group and Feed on Lens
-export const COMMONS_GROUP_ADDRESS: Address = "0x724CCb155b813b8a21E7C452167d22828871c7E1";
-export const COMMONS_FEED_ADDRESS: Address = "0x7d0aA1975693926708327d665Af10C0c68Ecb096";
+export const COMMONS_GROUP_ADDRESS: Address = "0xC49d554071dC12498Df4bDCD39E337062c782644";
+export const COMMONS_FEED_ADDRESS: Address = "0x3e7EEfaC1cF8Aaf260d045694B2312139f46fd03";
 
 // Research — single group + single feed, posts separated by category/tags
 export const RESEARCH_GROUP_ADDRESS: Address = "0x7f2b18933152DF1c6ded211583c95A739831743d";
