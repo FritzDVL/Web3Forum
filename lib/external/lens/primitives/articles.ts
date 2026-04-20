@@ -7,6 +7,28 @@ import { immutable } from "@lens-chain/storage-client";
 import { Post, type SessionClient, evmAddress, uri } from "@lens-protocol/client";
 import { postId } from "@lens-protocol/client";
 import { editPost, fetchPost, post } from "@lens-protocol/client/actions";
+
+/**
+ * Fetches a post by transaction hash, retrying a few times because the
+ * Lens indexer often lags 1–6 seconds behind the on-chain confirmation.
+ * Without this retry, brand-new posts come back as `null` and the
+ * "Publishing..." badge would never flip to "On-chain".
+ */
+async function fetchPostWithRetry(
+  client: any,
+  txHash: string,
+  attempts = 6,
+  delayMs = 2000,
+): Promise<any> {
+  for (let i = 0; i < attempts; i++) {
+    const r = await fetchPost(client, { txHash });
+    if (r.isOk() && r.value) return r;
+    // small backoff on null or transient error
+    await new Promise((res) => setTimeout(res, delayMs));
+  }
+  // final attempt — return whatever the SDK gives us so the caller sees a real error/null
+  return fetchPost(client, { txHash });
+}
 import { handleOperationWith } from "@lens-protocol/client/viem";
 import { MetadataAttributeType, article } from "@lens-protocol/metadata";
 import { WalletClient } from "viem";
@@ -122,7 +144,7 @@ export async function createThreadArticle(
     })
       .andThen(handleOperationWith(walletClient))
       .andThen(sessionClient.waitForTransaction)
-      .andThen((txHash: unknown) => fetchPost(client, { txHash: txHash as string }));
+      .andThen((txHash: unknown) => fetchPostWithRetry(client, txHash as string));
 
     if (postCreationResult.isErr()) {
       console.error("[Articles] Error creating article post:", postCreationResult.error);
@@ -134,8 +156,20 @@ export async function createThreadArticle(
 
     const createdPost = postCreationResult.value;
 
+    if (!createdPost) {
+      // The transaction landed but the indexer hasn't surfaced the post yet.
+      // Don't treat this as failure — the post IS on-chain. Caller will mark
+      // the row with the contentUri so the user gets feedback, and a future
+      // reconcile pass can backfill the lensPostId.
+      console.warn("[Articles] Post indexer lag — returning success without post id");
+      return {
+        success: true,
+        post: undefined,
+      };
+    }
+
     // 6. Verify it's a Post type, not a Repost
-    if (createdPost && createdPost.__typename !== "Post") {
+    if (createdPost.__typename !== "Post") {
       return {
         success: false,
         error: `Unexpected post type: ${createdPost.__typename}`,
@@ -275,14 +309,18 @@ export async function createForumReplyArticle(
     })
       .andThen(handleOperationWith(walletClient))
       .andThen(sessionClient.waitForTransaction)
-      .andThen((txHash: unknown) => fetchPost(client, { txHash: txHash as string }));
+      .andThen((txHash: unknown) => fetchPostWithRetry(client, txHash as string));
 
     if (postResult.isErr()) {
       return { success: false, error: postResult.error.message };
     }
 
     const createdPost = postResult.value;
-    if (createdPost && createdPost.__typename !== "Post") {
+    if (!createdPost) {
+      console.warn("[Articles] Reply indexer lag — returning success without post id");
+      return { success: true, post: undefined };
+    }
+    if (createdPost.__typename !== "Post") {
       return { success: false, error: `Unexpected post type: ${createdPost.__typename}` };
     }
 

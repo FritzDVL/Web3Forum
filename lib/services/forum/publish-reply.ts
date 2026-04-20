@@ -106,9 +106,15 @@ export async function publishForumReplyToLens(
       walletClient,
     );
 
-    if (!articleResult.success || !articleResult.post) {
+    if (!articleResult.success) {
       await updateForumReplyStatus(replyId, "failed");
       return { success: false, error: articleResult.error };
+    }
+
+    if (!articleResult.post) {
+      // Lens transaction landed but indexer lag — mark confirmed without postId.
+      await updateForumReplyStatus(replyId, "confirmed");
+      return { success: true };
     }
 
     await updateForumReplyLensData(replyId, articleResult.post.id, articleResult.post.contentUri || "");

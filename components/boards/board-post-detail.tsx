@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import { BoardReplyBox } from "./board-reply-box";
 import { ForumThread, ForumReply } from "@/lib/domain/forum/types";
 import { PublishStatusBadge } from "@/components/shared/publish-status-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getLensPostUrl } from "@/lib/shared/lens-urls";
 
 interface BoardPostDetailProps {
   post: ForumThread;
@@ -160,6 +161,25 @@ function PostCard({
             {content}
           </ReactMarkdown>
         </div>
+
+        {/* "Wrapped" link to the underlying Lens publication */}
+        {(() => {
+          const lensUrl = getLensPostUrl(lensPostId);
+          if (!lensUrl) return null;
+          return (
+            <div className="mt-3 border-t border-slate-100 pt-3 dark:border-gray-700/50">
+              <a
+                href={lensUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
+              >
+                View as article on Lens
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

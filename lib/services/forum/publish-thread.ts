@@ -114,9 +114,17 @@ export async function publishForumThreadToLens(
       walletClient,
     );
 
-    if (!articleResult.success || !articleResult.post) {
+    if (!articleResult.success) {
       await updateForumThreadStatus(threadId, "failed");
       return { success: false, error: articleResult.error || "Lens publish failed" };
+    }
+
+    if (!articleResult.post) {
+      // Lens transaction landed but the indexer hasn't surfaced the post id yet.
+      // Mark as confirmed anyway so the user gets accurate feedback — the
+      // post IS on-chain. The post id can be backfilled later if needed.
+      await updateForumThreadStatus(threadId, "confirmed");
+      return { success: true };
     }
 
     await updateForumThreadLensData(threadId, articleResult.post.id, articleResult.post.contentUri || "");
