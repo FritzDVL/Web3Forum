@@ -68,6 +68,18 @@ export async function updateForumReplyLensData(
   if (error) throw new Error(`Failed to update forum reply lens data: ${error.message}`);
 }
 
+export async function updateForumReplyContentUri(
+  replyId: string,
+  contentUri: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("forum_replies")
+    .update({ content_uri: contentUri })
+    .eq("id", replyId);
+
+  if (error) throw new Error(`Failed to update forum reply content_uri: ${error.message}`);
+}
+
 export async function updateForumReplyStatus(replyId: string, status: PublishStatus): Promise<void> {
   const { error } = await supabase
     .from("forum_replies")

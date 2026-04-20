@@ -1,5 +1,6 @@
 import { ForumReply } from "@/lib/domain/forum/types";
 import { fetchForumRepliesByThread, ForumReplyRow } from "@/lib/external/supabase/forum-replies";
+import { reconcileForumRepliesForThread } from "@/lib/services/forum/reconcile";
 
 export interface GetBoardPostRepliesResult {
   success: boolean;
@@ -27,7 +28,18 @@ function rowToReply(row: ForumReplyRow): ForumReply {
 
 export async function getBoardPostReplies(threadId: string): Promise<GetBoardPostRepliesResult> {
   try {
-    const rows = await fetchForumRepliesByThread(threadId);
+    let rows = await fetchForumRepliesByThread(threadId);
+
+    // If any reply is still pending, try to reconcile against Lens once.
+    if (rows.some((r) => r.publish_status === "pending")) {
+      try {
+        const changed = await reconcileForumRepliesForThread(threadId);
+        if (changed) rows = await fetchForumRepliesByThread(threadId);
+      } catch (e) {
+        console.warn("[getBoardPostReplies] reconcile failed:", e);
+      }
+    }
+
     return { success: true, replies: rows.map(rowToReply) };
   } catch (error) {
     console.error("Failed to fetch board post replies:", error);

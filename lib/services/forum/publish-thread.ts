@@ -3,6 +3,7 @@ import { fetchAccountFromLens } from "@/lib/external/lens/primitives/accounts";
 import {
   persistForumThread,
   updateForumThreadLensData,
+  updateForumThreadContentUri,
   updateForumThreadStatus,
   revalidateBoardPath,
 } from "@/lib/external/supabase/forum-threads";
@@ -114,20 +115,31 @@ export async function publishForumThreadToLens(
       walletClient,
     );
 
+    // Always persist the contentUri the moment we have it, even if the post
+    // step failed or the indexer is lagging. This gives the reconciler an
+    // anchor to find the on-chain post later.
+    if (articleResult.contentUri) {
+      try {
+        await updateForumThreadContentUri(threadId, articleResult.contentUri);
+      } catch (e) {
+        console.warn("Failed to persist contentUri early:", e);
+      }
+    }
+
     if (!articleResult.success) {
       await updateForumThreadStatus(threadId, "failed");
       return { success: false, error: articleResult.error || "Lens publish failed" };
     }
 
     if (!articleResult.post) {
-      // Lens transaction landed but the indexer hasn't surfaced the post id yet.
-      // Mark as confirmed anyway so the user gets accurate feedback — the
-      // post IS on-chain. The post id can be backfilled later if needed.
-      await updateForumThreadStatus(threadId, "confirmed");
+      // Lens transaction landed but the indexer hasn't surfaced the post id.
+      // Leave status as "pending" — the server-side reconciler (called when
+      // the post detail page loads) will look up the post by contentUri and
+      // flip it to "confirmed" with the real lens_post_id.
       return { success: true };
     }
 
-    await updateForumThreadLensData(threadId, articleResult.post.id, articleResult.post.contentUri || "");
+    await updateForumThreadLensData(threadId, articleResult.post.id, articleResult.post.contentUri || articleResult.contentUri || "");
     return { success: true, lensPostId: articleResult.post.id };
   } catch (error) {
     try { await updateForumThreadStatus(threadId, "failed"); } catch {}

@@ -1,5 +1,6 @@
 import { ForumThread } from "@/lib/domain/forum/types";
 import { fetchForumThreadBySlug, fetchForumThreadById, ForumThreadRow } from "@/lib/external/supabase/forum-threads";
+import { reconcileForumThread } from "@/lib/services/forum/reconcile";
 
 export interface GetBoardPostResult {
   success: boolean;
@@ -40,6 +41,21 @@ export async function getBoardPost(postId: string): Promise<GetBoardPostResult> 
     let row = await fetchForumThreadBySlug(postId);
     if (!row) row = await fetchForumThreadById(postId);
     if (!row) return { success: false, error: "Post not found" };
+
+    // If anything on this thread is still in flight, attempt a server-side
+    // reconciliation against Lens. If something changes, re-read the row so
+    // the page renders the freshest state on this same request.
+    if (row.publish_status === "pending") {
+      try {
+        const { threadChanged, repliesChanged } = await reconcileForumThread(row.id);
+        if (threadChanged || repliesChanged) {
+          const refreshed = await fetchForumThreadById(row.id);
+          if (refreshed) row = refreshed;
+        }
+      } catch (e) {
+        console.warn("[getBoardPost] reconcile failed:", e);
+      }
+    }
 
     return { success: true, post: rowToThread(row) };
   } catch (error) {

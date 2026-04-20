@@ -17,7 +17,7 @@ import { editPost, fetchPost, post } from "@lens-protocol/client/actions";
 async function fetchPostWithRetry(
   client: any,
   txHash: string,
-  attempts = 6,
+  attempts = 15,
   delayMs = 2000,
 ): Promise<any> {
   for (let i = 0; i < attempts; i++) {
@@ -66,6 +66,10 @@ export interface GroveUploadResult {
 export interface ArticleCreationResult {
   success: boolean;
   post?: Post;
+  /** Always populated when the Grove upload succeeded — even if the Lens post
+   *  step lags or the post id can't be resolved. Lets callers persist the
+   *  contentUri immediately so reconciliation can find the post later. */
+  contentUri?: string;
   error?: string;
 }
 
@@ -150,6 +154,7 @@ export async function createThreadArticle(
       console.error("[Articles] Error creating article post:", postCreationResult.error);
       return {
         success: false,
+        contentUri: articleUri,
         error: postCreationResult.error.message,
       };
     }
@@ -158,13 +163,13 @@ export async function createThreadArticle(
 
     if (!createdPost) {
       // The transaction landed but the indexer hasn't surfaced the post yet.
-      // Don't treat this as failure — the post IS on-chain. Caller will mark
-      // the row with the contentUri so the user gets feedback, and a future
-      // reconcile pass can backfill the lensPostId.
+      // Don't treat this as failure — the post IS on-chain. Caller will save
+      // the contentUri so a server-side reconciler can backfill the post id.
       console.warn("[Articles] Post indexer lag — returning success without post id");
       return {
         success: true,
         post: undefined,
+        contentUri: articleUri,
       };
     }
 
@@ -172,6 +177,7 @@ export async function createThreadArticle(
     if (createdPost.__typename !== "Post") {
       return {
         success: false,
+        contentUri: articleUri,
         error: `Unexpected post type: ${createdPost.__typename}`,
       };
     }
@@ -179,6 +185,7 @@ export async function createThreadArticle(
     return {
       success: true,
       post: createdPost as Post,
+      contentUri: articleUri,
     };
   } catch (error) {
     console.error("Article creation failed:", error);
@@ -312,19 +319,19 @@ export async function createForumReplyArticle(
       .andThen((txHash: unknown) => fetchPostWithRetry(client, txHash as string));
 
     if (postResult.isErr()) {
-      return { success: false, error: postResult.error.message };
+      return { success: false, contentUri, error: postResult.error.message };
     }
 
     const createdPost = postResult.value;
     if (!createdPost) {
       console.warn("[Articles] Reply indexer lag — returning success without post id");
-      return { success: true, post: undefined };
+      return { success: true, post: undefined, contentUri };
     }
     if (createdPost.__typename !== "Post") {
-      return { success: false, error: `Unexpected post type: ${createdPost.__typename}` };
+      return { success: false, contentUri, error: `Unexpected post type: ${createdPost.__typename}` };
     }
 
-    return { success: true, post: createdPost as Post };
+    return { success: true, post: createdPost as Post, contentUri };
   } catch (error) {
     console.error("Reply article creation failed:", error);
     return { success: false, error: error instanceof Error ? error.message : "Failed to create reply article" };

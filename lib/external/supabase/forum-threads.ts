@@ -84,6 +84,24 @@ export async function updateForumThreadLensData(
   if (error) throw new Error(`Failed to update forum thread lens data: ${error.message}`);
 }
 
+/**
+ * Save the Grove contentUri for a thread without changing publish status.
+ * Used by the save-first flow: the upload to Grove succeeds before the Lens
+ * indexer surfaces the post id, so we persist the URI immediately so the
+ * reconciler (and the article page) can find canonical content right away.
+ */
+export async function updateForumThreadContentUri(
+  threadId: string,
+  contentUri: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("forum_threads")
+    .update({ content_uri: contentUri })
+    .eq("id", threadId);
+
+  if (error) throw new Error(`Failed to update forum thread content_uri: ${error.message}`);
+}
+
 export async function updateForumThreadStatus(threadId: string, status: PublishStatus): Promise<void> {
   const { error } = await supabase
     .from("forum_threads")

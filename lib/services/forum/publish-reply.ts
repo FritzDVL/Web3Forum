@@ -3,6 +3,7 @@ import { fetchAccountFromLens } from "@/lib/external/lens/primitives/accounts";
 import {
   persistForumReply,
   updateForumReplyLensData,
+  updateForumReplyContentUri,
   updateForumReplyStatus,
   getNextReplyPosition,
   fetchForumReplyById,
@@ -106,18 +107,28 @@ export async function publishForumReplyToLens(
       walletClient,
     );
 
+    // Persist contentUri the moment we have it so the reconciler can find
+    // the post on Lens later, even if the indexer is lagging or our process dies.
+    if (articleResult.contentUri) {
+      try {
+        await updateForumReplyContentUri(replyId, articleResult.contentUri);
+      } catch (e) {
+        console.warn("Failed to persist reply contentUri early:", e);
+      }
+    }
+
     if (!articleResult.success) {
       await updateForumReplyStatus(replyId, "failed");
       return { success: false, error: articleResult.error };
     }
 
     if (!articleResult.post) {
-      // Lens transaction landed but indexer lag — mark confirmed without postId.
-      await updateForumReplyStatus(replyId, "confirmed");
+      // Lens transaction landed but indexer lag — leave as pending; the
+      // server-side reconciler will flip to confirmed once it finds the post.
       return { success: true };
     }
 
-    await updateForumReplyLensData(replyId, articleResult.post.id, articleResult.post.contentUri || "");
+    await updateForumReplyLensData(replyId, articleResult.post.id, articleResult.post.contentUri || articleResult.contentUri || "");
     return { success: true };
   } catch (error) {
     try { await updateForumReplyStatus(replyId, "failed"); } catch {}
