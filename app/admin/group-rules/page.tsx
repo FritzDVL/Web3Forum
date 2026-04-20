@@ -508,13 +508,23 @@ export default function GroupRulesAdminPage() {
           </div>
         </section>
 
-        <div className="text-sm">
-          <Link
-            href="/admin/research-requests"
-            className="text-blue-600 underline dark:text-blue-400"
-          >
-            Go to pending Research requests →
-          </Link>
+        <div className="space-y-2 text-sm">
+          <div>
+            <Link
+              href="/admin/setup-globals"
+              className="text-blue-600 underline dark:text-blue-400"
+            >
+              Set up new global groups (signed by your MetaMask) →
+            </Link>
+          </div>
+          <div>
+            <Link
+              href="/admin/research-requests"
+              className="text-blue-600 underline dark:text-blue-400"
+            >
+              Go to pending Research requests →
+            </Link>
+          </div>
         </div>
       </div>
     </div>
