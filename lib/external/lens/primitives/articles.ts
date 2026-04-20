@@ -117,7 +117,7 @@ export async function createThreadArticle(
     }
 
     // 2. Add thread content prefix with URL, title and summary
-    const threadUrl = `${APP_URL}/thread/${articleData.slug}`;
+    const threadUrl = `${APP_URL}/forum/p/${articleData.slug}`;
     const contentWithPrefix = formatThreadArticleContent(
       articleData.content,
       threadUrl,
@@ -200,7 +200,7 @@ export async function updateThreadArticle(
 ): Promise<ArticleUpdateResult> {
   try {
     // 1. Format content with thread prefix
-    const threadUrl = `${APP_URL}/thread/${updateData.slug}`;
+    const threadUrl = `${APP_URL}/forum/p/${updateData.slug}`;
     const formattedContent = formatThreadArticleContent(
       updateData.content,
       threadUrl,
@@ -279,7 +279,7 @@ export async function createForumReplyArticle(
   walletClient: WalletClient,
 ): Promise<ArticleCreationResult> {
   try {
-    const displayContent = `Re: ${data.threadTitle} — ${APP_URL}/thread/${data.slug}`;
+    const displayContent = `Re: ${data.threadTitle} — ${APP_URL}/forum/p/${data.slug}/r/${data.forumReplyPosition}`;
 
     const attributes: any[] = [
       { key: "app", type: MetadataAttributeType.STRING, value: "lensforum" },

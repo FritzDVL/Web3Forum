@@ -1,45 +1,52 @@
 "use client";
 
+import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { PublishStatus } from "@/lib/domain/forum/types";
-import { getLensPostUrl } from "@/lib/shared/lens-urls";
+import { getArticleUrl, getReplyArticleUrl } from "@/lib/shared/lens-urls";
 
 interface PublishStatusBadgeProps {
   status: PublishStatus;
   lensPostId?: string | null;
   contentUri?: string | null;
+  /** Required to build the article link. */
+  threadSlug?: string | null;
+  /** If set, links to the reply article URL instead of the root article URL. */
+  replyPosition?: number | null;
   onRetry?: () => void;
 }
 
-export function PublishStatusBadge({ status, lensPostId, contentUri, onRetry }: PublishStatusBadgeProps) {
+export function PublishStatusBadge({
+  status,
+  lensPostId,
+  threadSlug,
+  replyPosition,
+  onRetry,
+}: PublishStatusBadgeProps) {
   if (status === "confirmed") {
-    const lensUrl = getLensPostUrl(lensPostId);
+    const articleUrl = replyPosition
+      ? getReplyArticleUrl(threadSlug, replyPosition)
+      : getArticleUrl(threadSlug);
+    const className =
+      "inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400";
     const inner = (
       <>
         ✓ On-chain
-        {lensUrl && <ExternalLink className="h-3 w-3" />}
+        {articleUrl && <ExternalLink className="h-3 w-3" />}
       </>
     );
-    const className =
-      "inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400";
-    if (lensUrl) {
+    if (articleUrl) {
       return (
-        <a
-          href={lensUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href={articleUrl}
           className={`${className} hover:underline`}
-          title={`View on Lens: ${lensPostId}`}
+          title={lensPostId ? `Lens post: ${lensPostId}` : undefined}
         >
           {inner}
-        </a>
+        </Link>
       );
     }
-    return (
-      <span className={className} title={contentUri || undefined}>
-        {inner}
-      </span>
-    );
+    return <span className={className}>{inner}</span>;
   }
 
   if (status === "pending") {

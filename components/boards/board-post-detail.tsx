@@ -10,7 +10,7 @@ import { BoardReplyBox } from "./board-reply-box";
 import { ForumThread, ForumReply } from "@/lib/domain/forum/types";
 import { PublishStatusBadge } from "@/components/shared/publish-status-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getLensPostUrl } from "@/lib/shared/lens-urls";
+import { getArticleUrl, getReplyArticleUrl } from "@/lib/shared/lens-urls";
 
 interface BoardPostDetailProps {
   post: ForumThread;
@@ -73,6 +73,7 @@ export function BoardPostDetail({ post, replies }: BoardPostDetailProps) {
           createdAt={post.createdAt}
           position={0}
           isRoot
+          threadSlug={post.slug}
         />
 
         {/* Replies */}
@@ -87,6 +88,7 @@ export function BoardPostDetail({ post, replies }: BoardPostDetailProps) {
             contentUri={reply.contentUri}
             createdAt={reply.createdAt}
             position={reply.position}
+            threadSlug={post.slug}
           />
         ))}
       </div>
@@ -112,6 +114,7 @@ function PostCard({
   createdAt,
   position,
   isRoot,
+  threadSlug,
 }: {
   authorAddress: string;
   authorUsername: string | null;
@@ -122,6 +125,7 @@ function PostCard({
   createdAt: string;
   position: number;
   isRoot?: boolean;
+  threadSlug: string | null;
 }) {
   const authorName = authorUsername || authorAddress.slice(0, 8);
   const timeAgo = formatDistanceToNow(new Date(createdAt), { addSuffix: true });
@@ -146,6 +150,8 @@ function PostCard({
           status={publishStatus}
           lensPostId={lensPostId}
           contentUri={contentUri}
+          threadSlug={threadSlug}
+          replyPosition={isRoot ? null : position}
         />
       </div>
 
@@ -162,21 +168,21 @@ function PostCard({
           </ReactMarkdown>
         </div>
 
-        {/* "Wrapped" link to the underlying Lens publication */}
+        {/* Link to the standalone article page (rendered from on-chain content) */}
         {(() => {
-          const lensUrl = getLensPostUrl(lensPostId);
-          if (!lensUrl) return null;
+          const articleUrl = isRoot
+            ? getArticleUrl(threadSlug)
+            : getReplyArticleUrl(threadSlug, position);
+          if (!articleUrl) return null;
           return (
             <div className="mt-3 border-t border-slate-100 pt-3 dark:border-gray-700/50">
-              <a
-                href={lensUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href={articleUrl}
                 className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
               >
-                View as article on Lens
+                View as standalone article
                 <ExternalLink className="h-3 w-3" />
-              </a>
+              </Link>
             </div>
           );
         })()}

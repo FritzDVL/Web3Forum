@@ -102,6 +102,26 @@ export async function getNextReplyPosition(threadId: string): Promise<number> {
   return data ?? 1;
 }
 
+export async function fetchForumReplyByThreadAndPosition(
+  threadId: string,
+  position: number,
+): Promise<ForumReplyRow | null> {
+  const { data, error } = await supabase
+    .from("forum_replies")
+    .select("*")
+    .eq("thread_id", threadId)
+    .eq("position", position)
+    .eq("is_hidden", false)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    console.error("Error fetching forum reply by position:", error);
+    return null;
+  }
+  return data;
+}
+
 export async function fetchForumReplyById(replyId: string): Promise<ForumReplyRow | null> {
   const { data, error } = await supabase
     .from("forum_replies")
