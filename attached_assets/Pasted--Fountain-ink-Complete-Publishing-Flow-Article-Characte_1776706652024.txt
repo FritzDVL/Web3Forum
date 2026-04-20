@@ -1,0 +1,436 @@
+# Fountain.ink — Complete Publishing Flow & Article Characteristics
+
+This document details the end-to-end publishing pipeline in Fountain.ink, from draft creation to permanent on-chain record. Use this as a reference to recreate the flow in a separate application.
+
+---
+
+## 1. High-Level Architecture
+
+```
+User → Plate Editor → Local Storage + Supabase Draft → Publish Dialog
+  → Lens Metadata (article) → Grove/Arweave Storage → Lens Protocol Post (on-chain)
+  → Supabase Post Record → Slug-based URL
+```
+
+**Two parallel data layers:**
+- **On-chain (permanent):** Lens Protocol post with metadata stored on Grove/Arweave
+- **Off-chain (operational):** Supabase PostgreSQL for drafts, slug mappings, user records, blog config
+
+---
+
+## 2. Draft Creation
+
+### Entry Point
+`DraftCreateButton` → generates a random UUID (`documentId`) → navigates to `/w/{documentId}` → calls `createDraft()`.
+
+### What `createDraft()` Does
+1. Generates a `documentId` (random UID) if not provided
+2. If collaborative mode: creates a Y.js document from Slate content, encodes as base64
+3. POSTs to `/api/drafts` with:
+   - `documentId` — unique identifier
+   - `contentJson` — Slate JSON structure (the editor content)
+   - `yDocBase64` — Y.js binary state (only if collaborative)
+   - `publishedId` — reference to original post (only when editing a published post)
+
+### Draft Data Model (Supabase `drafts` table)
+```
+id              BIGINT (auto-increment)
+documentId      TEXT (UUID, unique) — the primary lookup key
+author          TEXT (wallet address)
+contributors    TEXT[]
+contentJson     JSONB — full Slate editor state
+contentHtml     TEXT
+contentMarkdown TEXT
+yDoc            BYTEA — Y.js binary for collaboration
+title           TEXT
+subtitle        TEXT
+coverUrl        TEXT
+tags            TEXT[]
+published_id    TEXT — links to Lens post ID if editing
+createdAt       TIMESTAMPTZ
+updatedAt       TIMESTAMPTZ
+```
+
+### Extended Draft Type (client-side)
+The client-side `Draft` type extends the DB row with:
+- `slug` — custom URL slug
+- `images` — extracted image URLs
+- `originalDate` — for republished content
+- `canonicalUrl` — SEO canonical link
+- `distributionSettings` — blog selection, newsletter toggle, Lens display mode
+- `collectingSettings` — monetization config (price, limits, revenue splits, license)
+
+---
+
+## 3. Editor & Content Management
+
+### Editor Stack
+- **Plate.js** (Slate-based) with 40+ plugins
+- **Y.js** for real-time collaboration via Hocuspocus WebSocket server
+- Content stored as **Slate JSON** (the canonical format)
+
+### Auto-Save Flow
+`AutoSave` component (debounced at ~500ms):
+1. Extracts metadata from editor content: title, subtitle, cover image, images
+2. Serializes content to Markdown via `MarkdownPlugin`
+3. Saves to local Zustand store (`useDocumentStorage`)
+4. PUTs to `/api/drafts?id={documentId}` with content, title, subtitle, coverUrl
+5. If collaborative: syncs via Hocuspocus WebSocket
+
+### Collaboration
+- Hocuspocus server at `collab.fountain.ink` (Express + `@hocuspocus/server`)
+- Y.js documents stored as binary in Supabase `drafts.yDoc`
+- Real-time cursor overlay and conflict resolution
+
+---
+
+## 4. Publish Dialog (3-Tab Form)
+
+When the user clicks "Publish", a dialog opens with three tabs:
+
+### Tab 1: Article Details (`detailsFormSchema`)
+| Field | Type | Description |
+|-------|------|-------------|
+| `title` | string (1-100 chars) | Article title (required) |
+| `subtitle` | string (optional) | Article subtitle |
+| `coverUrl` | string (optional) | Cover image URL |
+| `slug` | string (optional) | Custom URL slug (lowercase, numbers, hyphens only) |
+| `tags` | string[] (max 5) | Content tags |
+| `images` | string[] | Extracted image gallery |
+| `originalDate` | Date (optional) | Original publication date (for republished content) |
+| `canonicalUrl` | string (optional) | Canonical URL for SEO |
+
+**Slug generation:** Auto-generated from title+subtitle (first 10 words, lowercased, hyphenated). Checked for availability via `/api/posts/slug/check`.
+
+### Tab 2: Distribution (`distributionFormSchema`)
+| Field | Type | Description |
+|-------|------|-------------|
+| `selectedBlogAddress` | string (optional) | Lens Group address to publish into |
+| `sendNewsletter` | boolean | Send to blog's Listmonk mailing list |
+| `lensDisplay` | enum | How content appears on Lens: `"link"`, `"title_link"`, `"content_link"`, `"content_only"` |
+
+### Tab 3: Monetization (`collectingFormSchema`)
+| Field | Type | Description |
+|-------|------|-------------|
+| `isCollectingEnabled` | boolean | Enable Lens SimpleCollect action |
+| `isChargeEnabled` | boolean | Require payment to collect |
+| `price` | string | Price in native token (GHO) |
+| `isLimitedEdition` | boolean | Cap number of collects |
+| `collectLimit` | number | Max collects |
+| `isCollectExpiryEnabled` | boolean | Time-limited collecting |
+| `collectExpiryDays` | number | Days until collect expires |
+| `isReferralRewardsEnabled` | boolean | Reward reposters |
+| `referralPercent` | number | Referral reward percentage |
+| `isRevenueSplitEnabled` | boolean | Split revenue among recipients |
+| `recipients` | {address, percentage}[] | Revenue split recipients |
+| `collectingLicense` | string | Content license (CC-BY, etc.) |
+
+---
+
+## 5. Publishing Pipeline (On-Chain)
+
+### Step-by-step flow in `publishPost()`:
+
+#### 5.1 Authentication
+```typescript
+const { username, account, address } = await getUserAccount();
+const lens = await getLensClient(); // Resume Lens session from cookies
+```
+
+#### 5.2 Generate Post Content
+`getPostContent(draft, username)` formats the Markdown body based on `lensDisplay`:
+- `"link"` → just the URL: `https://fountain.ink/p/{username}/{slug}`
+- `"title_link"` → `{title} - {url}`
+- `"content_link"` → `*Posted on Fountain - {url}*\n\n{markdown}`
+- `"content_only"` → full markdown content
+
+#### 5.3 Build Metadata Attributes
+`getPostAttributes()` creates an array of typed key-value pairs:
+```typescript
+[
+  { key: "contentJson", type: JSON, value: "<full Slate JSON>" },
+  { key: "subtitle", type: STRING, value: "..." },
+  { key: "coverUrl", type: STRING, value: "https://..." },
+  { key: "slug", type: STRING, value: "my-article-slug" },
+  { key: "originalDate", type: DATE, value: "2025-01-01T00:00:00Z" },
+  { key: "canonicalUrl", type: STRING, value: "https://..." },
+  { key: "license", type: STRING, value: "CC-BY-4.0" },
+  { key: "lensDisplay", type: STRING, value: "title_link" },
+]
+```
+
+**Key insight:** The `contentJson` attribute is the full Slate editor state serialized as JSON. This is what allows Fountain to render the rich content exactly as authored, while the `content` field (Markdown) serves as a fallback for other Lens clients.
+
+#### 5.4 Create Lens Article Metadata
+```typescript
+import { article } from "@lens-protocol/metadata";
+
+const metadata = article({
+  title: draft.title || "",
+  content: postContent,        // Markdown (for Lens ecosystem)
+  locale: "en",
+  tags: draft.tags || [],
+  attributes,                  // Rich metadata including contentJson
+});
+```
+
+This produces a JSON object conforming to the [Lens Metadata Standard](https://docs.lens.xyz/docs/metadata-standards) with `__typename: "ArticleMetadata"`.
+
+#### 5.5 Upload to Decentralized Storage
+```typescript
+import { StorageClient } from "@lens-chain/storage-client";
+const storageClient = StorageClient.create();
+
+const { uri: contentUri } = await storageClient.uploadAsJson(metadata);
+// Returns: lens://... or ar://... URI
+```
+
+The metadata JSON is uploaded to **Grove** (Lens's storage layer, backed by Arweave). This produces a permanent, content-addressed URI.
+
+#### 5.6 Resolve Feed Address
+If publishing to a blog (Lens Group):
+```typescript
+const feed = await getFeedAddress(lens, selectedBlogAddress);
+// Fetches the Group's feed address via fetchGroup()
+```
+
+#### 5.7 Build Collect Actions
+```typescript
+const actions = getPostActions(collectingSettings, address);
+// Returns SimpleCollect config: { collectLimit, endsAt, payToCollect: { native, referralShare, recipients } }
+```
+
+#### 5.8 Post to Lens Protocol
+```typescript
+const result = await post(lens, {
+  contentUri,    // Grove/Arweave URI
+  feed,          // Optional: blog feed address
+  actions,       // Optional: collect/monetization config
+})
+  .andThen(handleOperationWith(walletClient))  // Sign with wallet
+  .andThen(lens.waitForTransaction);           // Wait for indexing
+```
+
+This creates an **on-chain transaction** on the Lens chain (L2). The wallet signs the transaction, and Lens indexes it.
+
+#### 5.9 Fetch Published Post
+```typescript
+const postValue = await fetchPost(lens, { txHash: hash });
+const postSlug = postValue.value.slug;  // Lens-generated slug
+```
+
+#### 5.10 Create Supabase Post Record
+```typescript
+await createPostRecord({
+  lensSlug: postSlug,           // Lens-generated identifier
+  draftSlug: draft.slug,        // Custom user slug
+  username,
+  postId: postValue.value.id,   // Lens post ID
+});
+```
+
+This maps the custom slug to the Lens post ID in the `posts` table:
+```
+posts table:
+  id          TEXT (Lens post ID)
+  lens_slug   TEXT (Lens-generated slug)
+  slug        TEXT (custom user slug)
+  author      TEXT (wallet address)
+  handle      TEXT (username)
+  created_at  TIMESTAMPTZ
+```
+
+#### 5.11 Cleanup & Redirect
+- Delete the cloud draft from Supabase
+- Redirect to `/p/{username}/{slug}?success=true`
+- Optionally create newsletter campaign via Listmonk
+
+---
+
+## 6. Post Editing Flow
+
+`publishPostEdit()` follows the same pipeline but uses `editPost()` instead of `post()`:
+1. References original post via `draft.published_id`
+2. Rebuilds metadata and attributes
+3. Uploads new metadata to Grove/Arweave (new URI)
+4. Calls `editPost(lens, { post: postId(published_id), contentUri })` 
+5. Updates the post record in Supabase
+
+---
+
+## 7. Published Post Viewing
+
+### URL Resolution (`/p/[user]/[post]`)
+1. Try to resolve `[post]` as a custom slug via `getPostIdBySlug()`
+2. If not found, treat `[post]` as a Lens slug/ID directly
+3. Fetch post from Lens Protocol via `fetchPost(lens, { post: postId })`
+
+### Content Rendering
+1. Extract `contentJson` from `post.metadata.attributes`
+2. Parse the Slate JSON
+3. Render with Plate editor in **read-only mode** (`<Editor readOnly={true} value={contentJson} />`)
+4. Fallback: render `contentHtml` with DOMPurify sanitization
+
+### Displayed Metadata
+- Author (avatar + name via `AuthorView`)
+- Date (with optional original date)
+- Forum thread reference (if `forumThreadId` attribute exists)
+- Title (unless embedded in contentJson)
+- Table of contents sidebar
+- Post actions bar (collect, comment, like, share, bookmark, tip)
+- Tags
+- Post metadata (Lens stats)
+
+---
+
+## 8. Characteristics of Each Published Article
+
+Every Fountain article has these permanent characteristics:
+
+### On-Chain (Immutable Record)
+| Property | Description |
+|----------|-------------|
+| **Lens Post ID** | Unique identifier on Lens Protocol |
+| **Content URI** | Grove/Arweave link to metadata JSON |
+| **Author** | Wallet address of the publisher |
+| **Feed** | Blog/Group feed address (if published to a blog) |
+| **Timestamp** | On-chain creation time |
+| **Actions** | Collect configuration (monetization rules) |
+
+### Metadata (Stored on Grove/Arweave)
+| Property | Description |
+|----------|-------------|
+| **title** | Article title |
+| **content** | Markdown body (formatted per lensDisplay setting) |
+| **locale** | Language code (default: "en") |
+| **tags** | Up to 5 content tags |
+| **contentJson** | Full Slate editor JSON (rich content) |
+| **subtitle** | Article subtitle |
+| **coverUrl** | Cover image URL |
+| **slug** | Custom URL slug |
+| **originalDate** | Original publication date |
+| **canonicalUrl** | SEO canonical URL |
+| **license** | Content license |
+| **lensDisplay** | Display mode preference |
+
+### Off-Chain (Supabase)
+| Property | Description |
+|----------|-------------|
+| **slug mapping** | Custom slug → Lens post ID |
+| **author handle** | Username for URL routing |
+| **blog association** | Which blog/group the post belongs to |
+
+---
+
+## 9. Forum Integration (Already in This Fork)
+
+This fork already has a parallel forum system that uses the **same Lens primitives** but with a different data model:
+
+### Forum vs Article Publishing — Key Differences
+
+| Aspect | Fountain Article | Forum Thread |
+|--------|-----------------|--------------|
+| **Content type** | Long-form article | Discussion thread |
+| **Metadata** | `article()` with rich attributes | `article()` with `forumCategory` attribute |
+| **Feed** | User's blog feed (Lens Group) | Forum feed (commons/research) |
+| **Slug system** | Custom slugs in Supabase | `root_publication_id` as identifier |
+| **Replies** | Lens comments (`commentOn`) | Standalone posts with `forumThreadId` attribute |
+| **Storage** | `drafts` + `posts` tables | `forum_threads` + `forum_thread_replies` tables |
+| **Monetization** | SimpleCollect with payment | None |
+| **Newsletter** | Listmonk integration | None |
+| **Collaboration** | Y.js real-time editing | None (simple composer) |
+| **Editor** | Full Plate.js with 40+ plugins | Simplified Plate.js composer |
+
+### Forum Data Model
+```sql
+forum_threads:
+  id, root_publication_id, content_uri, content_json,
+  feed (commons/research), category, title, summary,
+  author_address, author_username, tags[],
+  reply_count, views_count, upvotes, downvotes,
+  is_pinned, is_locked, is_hidden,
+  last_reply_at, created_at
+
+forum_thread_replies:
+  id, thread_id (FK), publication_id, content_uri, content_json,
+  position, author_address, author_username, summary,
+  upvotes, downvotes, is_hidden, created_at
+
+forum_categories:
+  slug, thread_count, display_order
+```
+
+### Forum Publishing Flow
+1. User writes in simplified composer
+2. Content uploaded to Grove as `article()` metadata with `forumCategory` attribute
+3. Posted to forum feed (commons or research) — **no `commentOn`**, standalone posts
+4. Thread tracked in `forum_threads` table
+5. Replies are also standalone posts with `forumThreadId` attribute linking to parent
+6. Replies tracked in `forum_thread_replies` table
+
+### Shared Primitives
+Both systems share:
+- Lens Protocol client (`@lens-protocol/client`)
+- Grove/Arweave storage (`@lens-chain/storage-client`)
+- Wallet authentication (WalletConnect + ConnectKit)
+- `article()` metadata format
+- Supabase for off-chain state
+- Same user identity system
+
+---
+
+## 10. Recreating This Flow in Another App
+
+To recreate the Fountain publishing experience, you need:
+
+### Minimum Viable Stack
+1. **Lens Protocol SDK** (`@lens-protocol/client`) — for posting, fetching, authentication
+2. **Lens Metadata SDK** (`@lens-protocol/metadata`) — for `article()` metadata creation
+3. **Grove Storage Client** (`@lens-chain/storage-client`) — for uploading metadata JSON
+4. **Wallet integration** (wagmi + viem) — for signing transactions
+5. **Rich text editor** — Plate.js or any Slate-based editor that outputs JSON
+6. **Database** — for slug mappings, drafts, thread tracking
+
+### Core Publishing Function (Simplified)
+```typescript
+import { post } from "@lens-protocol/client/actions";
+import { handleOperationWith } from "@lens-protocol/client/viem";
+import { article, MetadataAttributeType } from "@lens-protocol/metadata";
+import { StorageClient } from "@lens-chain/storage-client";
+
+async function publish(title, contentJson, contentMarkdown, tags, feedAddress) {
+  const storageClient = StorageClient.create();
+  
+  const metadata = article({
+    title,
+    content: contentMarkdown,
+    locale: "en",
+    tags,
+    attributes: [
+      { key: "contentJson", type: MetadataAttributeType.JSON, value: JSON.stringify(contentJson) },
+    ],
+  });
+
+  const { uri } = await storageClient.uploadAsJson(metadata);
+
+  const result = await post(lensClient, {
+    contentUri: uri,
+    feed: feedAddress,  // optional: Lens Group feed
+  })
+    .andThen(handleOperationWith(walletClient))
+    .andThen(lensClient.waitForTransaction);
+
+  return result;
+}
+```
+
+### Reading Published Content
+```typescript
+import { fetchPost } from "@lens-protocol/client/actions";
+
+async function readPost(postId) {
+  const post = await fetchPost(lensClient, { post: postId });
+  const contentJson = post.metadata.attributes.find(a => a.key === "contentJson")?.value;
+  // Render contentJson with your editor in read-only mode
+}
+```
