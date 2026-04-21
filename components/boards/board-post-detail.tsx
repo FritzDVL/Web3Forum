@@ -11,6 +11,7 @@ import { ForumThread, ForumReply } from "@/lib/domain/forum/types";
 import { PublishStatusBadge } from "@/components/shared/publish-status-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getArticleUrl, getReplyArticleUrl } from "@/lib/shared/lens-urls";
+import { groveUriToHttpUrl } from "@/lib/external/grove/fetch-metadata";
 
 interface BoardPostDetailProps {
   post: ForumThread;
@@ -168,21 +169,36 @@ function PostCard({
           </ReactMarkdown>
         </div>
 
-        {/* Link to the standalone article page (rendered from on-chain content) */}
+        {/* Footer links: standalone article + raw Grove source (Fountain-style) */}
         {(() => {
           const articleUrl = isRoot
             ? getArticleUrl(threadSlug)
             : getReplyArticleUrl(threadSlug, position);
-          if (!articleUrl) return null;
+          const groveUrl = groveUriToHttpUrl(contentUri || "");
+          if (!articleUrl && !groveUrl) return null;
           return (
-            <div className="mt-3 border-t border-slate-100 pt-3 dark:border-gray-700/50">
-              <Link
-                href={articleUrl}
-                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
-              >
-                View as standalone article
-                <ExternalLink className="h-3 w-3" />
-              </Link>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-100 pt-3 dark:border-gray-700/50">
+              {articleUrl && (
+                <Link
+                  href={articleUrl}
+                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
+                >
+                  View as standalone article
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
+              )}
+              {groveUrl && (
+                <a
+                  href={groveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Raw Lens article metadata on Grove"
+                  className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 hover:underline dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  Source on Grove
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
             </div>
           );
         })()}

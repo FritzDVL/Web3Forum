@@ -18,6 +18,29 @@ import { COMMONS_FEED_ADDRESS } from "@/lib/shared/constants";
 const RECONCILE_GRACE_MS = 10_000;
 
 /**
+ * Lens SDK / GraphQL has historically exposed the Grove URI under several
+ * different property names depending on the post variant. Normalize them all
+ * down so we can compare against whatever we saved in Supabase.
+ */
+function extractContentUri(p: any): string | null {
+  if (!p || typeof p !== "object") return null;
+  return (
+    p.contentUri ||
+    p.contentURI ||
+    p.metadata?.rawURI ||
+    p.metadata?.contentURI ||
+    p.metadata?.contentUri ||
+    p.metadata?.id ||
+    null
+  );
+}
+
+function uriEquals(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false;
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+/**
  * If a thread is still `pending` after the grace window, query Lens for any
  * post on the Commons feed by this author whose contentUri matches what we
  * uploaded to Grove. If we find a match, save the lens_post_id and flip the
@@ -43,17 +66,31 @@ export async function reconcileForumThreadIfStale(threadId: string): Promise<boo
       pageSize: PageSize.Fifty,
     });
 
-    if (!result.isOk() || !result.value.items?.length) return false;
-
-    const match = (result.value.items as any[]).find(
-      (p) =>
-        p &&
-        p.__typename === "Post" &&
-        (p.contentUri === thread.content_uri || p.metadata?.id === thread.content_uri),
+    if (!result.isOk()) {
+      console.warn("[reconcile] thread fetchPosts failed:", result.error);
+      return false;
+    }
+    const items = (result.value.items || []) as any[];
+    console.log(
+      `[reconcile] thread ${thread.id}: scanning ${items.length} Lens posts for contentUri=${thread.content_uri}`,
     );
 
-    if (!match) return false;
+    const match = items.find(
+      (p) => p && p.__typename === "Post" && uriEquals(extractContentUri(p), thread.content_uri),
+    );
 
+    if (!match) {
+      // Helpful debug: log the first 3 candidates' URIs so we can see what
+      // shape the SDK is actually returning.
+      const sample = items.slice(0, 3).map((p) => ({
+        id: p?.id,
+        uri: extractContentUri(p),
+      }));
+      console.warn("[reconcile] thread no contentUri match. Sample candidates:", sample);
+      return false;
+    }
+
+    console.log(`[reconcile] thread ${thread.id} matched Lens post ${match.id}`);
     await updateForumThreadLensData(thread.id, match.id, thread.content_uri);
     if (thread.board_slug) await revalidateBoardPath(thread.board_slug);
     return true;
@@ -91,18 +128,24 @@ export async function reconcileForumRepliesForThread(threadId: string): Promise<
 
     if (!result.isOk() || !result.value.items?.length) return false;
 
+    const items = (result.value.items || []) as any[];
     let changed = false;
     for (const reply of stale) {
-      const match = (result.value.items as any[]).find(
+      const match = items.find(
         (p) =>
           p &&
           p.__typename === "Post" &&
           p.author?.address?.toLowerCase() === reply.author_address.toLowerCase() &&
-          (p.contentUri === reply.content_uri || p.metadata?.id === reply.content_uri),
+          uriEquals(extractContentUri(p), reply.content_uri),
       );
       if (match) {
+        console.log(`[reconcile] reply ${reply.id} matched Lens post ${match.id}`);
         await updateForumReplyLensData(reply.id, match.id, reply.content_uri!);
         changed = true;
+      } else {
+        console.warn(
+          `[reconcile] reply ${reply.id} no match. contentUri=${reply.content_uri}, ${items.length} candidates`,
+        );
       }
     }
 
