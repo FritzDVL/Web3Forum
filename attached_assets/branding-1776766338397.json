@@ -1,0 +1,111 @@
+{
+  "colorScheme": "light",
+  "fonts": [
+    {
+      "family": "Segoe UI",
+      "role": "body"
+    },
+    {
+      "family": "Roboto",
+      "role": "body"
+    },
+    {
+      "family": "Helvetica",
+      "role": "body"
+    },
+    {
+      "family": "Arial",
+      "role": "body"
+    }
+  ],
+  "colors": {
+    "primary": "#16A249",
+    "secondary": "#6B7280",
+    "accent": "#111827",
+    "background": "#FFFFFF",
+    "textPrimary": "#111827",
+    "link": "#111827"
+  },
+  "typography": {
+    "fontFamilies": {
+      "primary": "Segoe UI",
+      "heading": "Segoe UI"
+    },
+    "fontStacks": {
+      "heading": [
+        "system-ui",
+        "Segoe UI",
+        "Roboto",
+        "Helvetica",
+        "Arial",
+        "sans-serif",
+        "Apple Color Emoji"
+      ],
+      "body": [
+        "__customFont_60c5ca",
+        "__customFont_Fallback_60c5ca",
+        "system-ui",
+        "sans-serif"
+      ],
+      "paragraph": [
+        "__customFont_60c5ca",
+        "__customFont_Fallback_60c5ca",
+        "system-ui",
+        "sans-serif"
+      ]
+    },
+    "fontSizes": {
+      "h1": "24px",
+      "h2": "14px",
+      "body": "16px"
+    }
+  },
+  "spacing": {
+    "baseUnit": 4,
+    "borderRadius": "6px"
+  },
+  "components": {},
+  "images": {
+    "logo": "File saved at: attached_assets/logo.png",
+    "favicon": null,
+    "ogImage": null,
+    "logoHref": "File saved at: attached_assets/logoHref.html",
+    "logoAlt": "LensForum Logo"
+  },
+  "__llm_logo_reasoning": {
+    "selectedIndex": 0,
+    "reasoning": "Selected #0 because it is visible, located in the header, links to the homepage, and has an alt text matching the brand 'LensForum'.",
+    "confidence": 0.9,
+    "source": "llm"
+  },
+  "personality": {
+    "tone": "modern",
+    "energy": "medium",
+    "targetAudience": "unknown"
+  },
+  "designSystem": {
+    "framework": "custom",
+    "componentLibrary": ""
+  },
+  "confidence": {
+    "buttons": 0,
+    "colors": 0.9,
+    "overall": 0.45
+  },
+  "__llm_metadata": {
+    "logoSelection": {
+      "llmCalled": true,
+      "llmSucceeded": true,
+      "finalSource": "llm",
+      "rawLogoSelection": {
+        "selectedLogoIndex": 0,
+        "selectedLogoReasoning": "Selected #0 because it is visible, located in the header, links to the homepage, and has an alt text matching the brand 'LensForum'.",
+        "confidence": 0.9
+      }
+    },
+    "buttonClassification": {
+      "llmCalled": false,
+      "llmSucceeded": false
+    }
+  }
+}
