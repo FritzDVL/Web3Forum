@@ -1,0 +1,130 @@
+1 updates could not be installed automatically. For more details,
+see /var/log/unattended-upgrades/unattended-upgrades.log
+
+*** System restart required ***
+Last login: Fri Apr 10 22:25:15 2026 from 169.254.0.1
+root@srv1133784:~# # --- 1. What's currently listening on which ports
+ss -tlnp
+
+# --- 2. Is there a web server / reverse proxy already?
+which nginx caddy apache2 2>/dev/null
+systemctl list-units --type=service --state=running | grep -E "nginx|caddy|apache|pm2|node|docker" || true
+
+# --- 3. Existing site configs (so we know which domains are already served)
+ls -la /etc/nginx/sites-enabled/ 2>/dev/null
+ls -la /etc/caddy/ 2>/dev/null
+
+# --- 4. Existing process managers (your other project is probably under one of these)
+which pm2 docker docker-compose 2>/dev/null
+pm2 list 2>/dev/null || true
+docker ps 2>/dev/null || true
+
+# --- 5. Node / pnpm / git availability
+node -v 2>/dev/null
+npm -v 2>/dev/null
+pnpm -v 2>/dev/null
+git --version
+
+# --- 6. SSL / certbot setup
+which certbot 2>/dev/null
+ls /etc/letsencrypt/live/ 2>/dev/null
+
+# --- 7. Where the existing project lives (helps me see the deployment pattern you already use)
+ls -la /var/www/ 2>/dev/null
+ls -la /root/ /home/ 2>/dev/null
+
+# --- 8. Firewall state
+ufw status 2>/dev/null
+
+# --- 9. Free disk + memory
+df -h /
+free -h
+State   Recv-Q   Send-Q     Local Address:Port     Peer Address:Port  Process                                                                                 
+LISTEN  0        4096             0.0.0.0:6543          0.0.0.0:*      users:(("docker-proxy",pid=3551,fd=8))                                                 
+LISTEN  0        4096             0.0.0.0:8000          0.0.0.0:*      users:(("docker-proxy",pid=5163,fd=8))                                                 
+LISTEN  0        511              0.0.0.0:443           0.0.0.0:*      users:(("nginx",pid=175732,fd=5),("nginx",pid=175731,fd=5),("nginx",pid=175730,fd=5))  
+LISTEN  0        4096       127.0.0.53%lo:53            0.0.0.0:*      users:(("systemd-resolve",pid=175712,fd=15))                                           
+LISTEN  0        4096             0.0.0.0:22            0.0.0.0:*      users:(("sshd",pid=175705,fd=3),("systemd",pid=1,fd=145))                              
+LISTEN  0        511              0.0.0.0:80            0.0.0.0:*      users:(("nginx",pid=175732,fd=6),("nginx",pid=175731,fd=6),("nginx",pid=175730,fd=6))  
+LISTEN  0        4096             0.0.0.0:8443          0.0.0.0:*      users:(("docker-proxy",pid=5183,fd=8))                                                 
+LISTEN  0        4096             0.0.0.0:5432          0.0.0.0:*      users:(("docker-proxy",pid=3502,fd=8))                                                 
+LISTEN  0        4096          127.0.0.54:53            0.0.0.0:*      users:(("systemd-resolve",pid=175712,fd=17))                                           
+LISTEN  0        4096                [::]:6543             [::]:*      users:(("docker-proxy",pid=3560,fd=8))                                                 
+LISTEN  0        511                    *:3000                *:*      users:(("next-server (v1",pid=2669735,fd=19))                                          
+LISTEN  0        512                    *:3004                *:*      users:(("bun",pid=63493,fd=14))                                                        
+LISTEN  0        4096                [::]:8000             [::]:*      users:(("docker-proxy",pid=5168,fd=8))                                                 
+LISTEN  0        4096                [::]:22               [::]:*      users:(("sshd",pid=175705,fd=4),("systemd",pid=1,fd=146))                              
+LISTEN  0        511                 [::]:80               [::]:*      users:(("nginx",pid=175732,fd=7),("nginx",pid=175731,fd=7),("nginx",pid=175730,fd=7))  
+LISTEN  0        4096                [::]:8443             [::]:*      users:(("docker-proxy",pid=5189,fd=8))                                                 
+LISTEN  0        4096                [::]:5432             [::]:*      users:(("docker-proxy",pid=3510,fd=8))                                                 
+/usr/sbin/nginx
+  docker.service              loaded active running Docker Application Container Engine
+  nginx.service               loaded active running A high performance web server and a reverse proxy server
+  pm2-root.service            loaded active running PM2 process manager
+total 8
+drwxr-xr-x 2 root root 4096 Apr  3 11:07 .
+drwxr-xr-x 8 root root 4096 Apr  3 11:08 ..
+lrwxrwxrwx 1 root root   38 Apr  3 11:07 auth-server -> /etc/nginx/sites-available/auth-server
+lrwxrwxrwx 1 root root   34 Mar  3 11:13 default -> /etc/nginx/sites-available/default
+lrwxrwxrwx 1 root root   36 Mar  3 11:14 web3forum -> /etc/nginx/sites-available/web3forum
+/usr/bin/pm2
+/usr/bin/docker
+┌────┬────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name           │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 1  │ auth-server    │ default     │ N/A     │ fork    │ 63491    │ 18D    │ 0    │ online    │ 0%       │ 3.0mb    │ root     │ disabled │
+│ 2  │ fountain       │ default     │ N/A     │ fork    │ 2669734  │ 10D    │ 3    │ online    │ 0%       │ 9.4mb    │ root     │ disabled │
+└────┴────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+CONTAINER ID   IMAGE                                    COMMAND                  CREATED       STATUS                 PORTS                                                                                                                    NAMES
+a0e11ecb95ca   supabase/edge-runtime:v1.71.2            "edge-runtime start …"   2 weeks ago   Up 2 weeks                                                                                                                                      supabase-edge-functions
+abbd78e579a1   kong/kong:3.9.1                          "/home/kong/kong-ent…"   2 weeks ago   Up 2 weeks (healthy)   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp, 8001-8004/tcp, 0.0.0.0:8443->8443/tcp, [::]:8443->8443/tcp, 8444-8447/tcp   supabase-kong
+583facf9b03f   supabase/studio:2026.03.16-sha-5528817   "docker-entrypoint.s…"   2 weeks ago   Up 2 weeks (healthy)   3000/tcp                                                                                                                 supabase-studio
+d775e21b89a7   supabase/storage-api:v1.44.2             "docker-entrypoint.s…"   2 weeks ago   Up 2 weeks (healthy)   5000/tcp                                                                                                                 supabase-storage
+3a4c1ac503c5   postgrest/postgrest:v14.6                "postgrest"              2 weeks ago   Up 2 weeks             3000/tcp                                                                                                                 supabase-rest
+563e1e50c8d8   supabase/gotrue:v2.186.0                 "auth"                   2 weeks ago   Up 2 weeks (healthy)                                                                                                                            supabase-auth
+52dd66c2d349   supabase/postgres-meta:v0.95.2           "docker-entrypoint.s…"   2 weeks ago   Up 2 weeks (healthy)   8080/tcp                                                                                                                 supabase-meta
+67be04f63080   supabase/logflare:1.31.2                 "sh run.sh"              2 weeks ago   Up 2 weeks (healthy)                                                                                                                            supabase-analytics
+b4431ce310da   supabase/realtime:v2.76.5                "/usr/bin/tini -s -g…"   2 weeks ago   Up 2 weeks (healthy)                                                                                                                            realtime-dev.supabase-realtime
+91971d25880a   supabase/supavisor:2.7.4                 "/usr/bin/tini -s -g…"   2 weeks ago   Up 2 weeks (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp, 0.0.0.0:6543->6543/tcp, [::]:6543->6543/tcp                                 supabase-pooler
+42656069e32f   darthsim/imgproxy:v3.30.1                "entrypoint.sh imgpr…"   2 weeks ago   Up 2 weeks (healthy)   8080/tcp                                                                                                                 supabase-imgproxy
+15122fa91b9d   supabase/postgres:15.8.1.085             "docker-entrypoint.s…"   2 weeks ago   Up 2 weeks (healthy)   5432/tcp                                                                                                                 supabase-db
+222d878253b9   timberio/vector:0.53.0-alpine            "/usr/local/bin/vect…"   2 weeks ago   Up 2 weeks (healthy)                                                                                                                            supabase-vector
+v20.20.2
+10.8.2
+git version 2.43.0
+/usr/bin/certbot
+README  auth.societyprotocol.io  forum.societyprotocol.io
+total 16
+drwxr-xr-x  4 root root 4096 Mar  3 11:13 .
+drwxr-xr-x 15 root root 4096 Mar  3 10:23 ..
+drwxr-xr-x 21 root root 4096 Mar 20 16:04 Web3Forum
+drwxr-xr-x  2 root root 4096 Mar  3 11:13 html
+/home/:
+total 12
+drwxr-xr-x  3 root   root   4096 Oct 18  2025 .
+drwxr-xr-x 23 root   root   4096 Apr 21 13:25 ..
+drwxr-x---  3 ubuntu ubuntu 4096 Oct 18  2025 ubuntu
+
+/root/:
+total 92
+drwx------  9 root root  4096 Apr  8 08:34 .
+drwxr-xr-x 23 root root  4096 Apr 21 13:25 ..
+-rw-------  1 root root 24283 Apr 10 22:52 .bash_history
+-rw-r--r--  1 root root  3847 Apr  3 10:12 .bashrc
+drwxr-xr-x  4 root root  4096 Apr  3 10:43 .bun
+drwx------  2 root root  4096 Nov 18 05:35 .cache
+drwx------  4 root root  4096 Mar  3 10:51 .config
+-rw-------  1 root root    20 Apr  8 08:34 .lesshst
+drwxr-xr-x  3 root root  4096 Mar  3 10:25 .local
+drwxr-xr-x  4 root root  4096 Mar  3 10:45 .npm
+drwxr-xr-x  5 root root  4096 Apr  3 10:10 .pm2
+-rw-r--r--  1 root root   161 Apr 22  2024 .profile
+drwx------  2 root root  4096 Apr 21 13:32 .ssh
+-rw-r--r--  1 root root   180 Nov 17 08:06 .wget-hsts
+Status: inactive
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1        96G   21G   76G  22% /
+               total        used        free      shared  buff/cache   available
+Mem:           7.8Gi       3.3Gi       1.2Gi       231Mi       3.9Gi       4.5Gi
+Swap:             0B          0B          0B
+root@srv1133784:~# 
