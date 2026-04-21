@@ -56,17 +56,6 @@ export function BoardPostCreateForm({ board }: BoardPostCreateFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="summary" className="text-sm font-medium text-foreground">Summary</Label>
-            <Input
-              id="summary"
-              value={formData.summary}
-              onChange={(e) => handleChange("summary", e.target.value)}
-              placeholder="Brief description (max 100 chars)"
-              maxLength={100}
-            />
-          </div>
-
-          <div className="space-y-2">
             <Label className="text-sm font-medium text-foreground">
               Content <span className="text-red-500">*</span>
             </Label>

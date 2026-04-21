@@ -10,7 +10,6 @@ import { useWalletClient } from "wagmi";
 
 interface FormData {
   title: string;
-  summary: string;
   content: string;
 }
 
@@ -25,7 +24,7 @@ interface TouchedFields {
 }
 
 export function useBoardPostCreateForm({ board }: { board: ForumBoard }) {
-  const [formData, setFormData] = useState<FormData>({ title: "", summary: "", content: "" });
+  const [formData, setFormData] = useState<FormData>({ title: "", content: "" });
   const [isCreating, setIsCreating] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<TouchedFields>({ title: false, content: false });
@@ -87,7 +86,7 @@ export function useBoardPostCreateForm({ board }: { board: ForumBoard }) {
       const saveResult = await saveForumThread({
         boardSlug: board.slug,
         title: formData.title,
-        summary: formData.summary,
+        summary: "",
         contentMarkdown: formData.content,
         contentJson: null,
         authorAddress: account.address,
@@ -107,7 +106,7 @@ export function useBoardPostCreateForm({ board }: { board: ForumBoard }) {
         saveResult.threadId!,
         {
           title: formData.title,
-          summary: formData.summary,
+          summary: "",
           contentMarkdown: formData.content,
           contentJson: null,
           authorAddress: account.address,

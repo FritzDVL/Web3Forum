@@ -9,18 +9,17 @@ export const formatThreadArticleContent = (
   content: string,
   threadUrl: string,
   title?: string,
-  summary?: string,
+  _summary?: string,
 ): string => {
-  // If we have both a title and a thread URL, wrap the title in a markdown
-  // link so the post is clickable when rendered by other Lens apps
-  // (Hey, Fountain, etc.). Falls back to plain bold if no URL.
+  // Render the title as a plain markdown link (no heading, no bold) so the
+  // post is clickable in other Lens apps without dominating the layout.
+  // Falls back to plain text if no URL is available.
   const titleSection = title
     ? threadUrl
-      ? `# [**${title}**](${threadUrl})\n\n`
-      : `# **${title}**\n\n`
+      ? `[${title}](${threadUrl})\n\n`
+      : `${title}\n\n`
     : "";
-  const summarySection = summary ? `*${summary}*\n\n` : "";
-  return `${titleSection}${summarySection}${content}`;
+  return `${titleSection}${content}`;
 };
 
 export const stripThreadArticleFormatting = (content: string): string => {
@@ -33,13 +32,22 @@ export const stripThreadArticleFormatting = (content: string): string => {
   );
   result = result.replace(prefixRegex, "");
 
-  // Step 2: Remove H1 title if present. Matches both legacy plain-bold form
-  // (`# **title**`) and the linked form (`# [**title**](url)`).
-  const linkedTitleRegex = /^# \[\*\*.*?\*\*\]\([^)]*\)\n\n/;
-  const plainTitleRegex = /^# \*\*.*?\*\*\n\n/;
-  result = result.replace(linkedTitleRegex, "").replace(plainTitleRegex, "");
+  // Step 2: Remove the leading title line if present. Handles all three
+  // formats we've ever shipped:
+  //   `[title](url)\n\n`        — current (plain link)
+  //   `# [**title**](url)\n\n`  — previous (linked H1)
+  //   `# **title**\n\n`         — legacy (plain bold H1)
+  const plainLinkedTitleRegex = /^\[[^\]]*\]\([^)]*\)\n\n/;
+  const linkedH1TitleRegex = /^# \[\*\*.*?\*\*\]\([^)]*\)\n\n/;
+  const plainH1TitleRegex = /^# \*\*.*?\*\*\n\n/;
+  result = result
+    .replace(plainLinkedTitleRegex, "")
+    .replace(linkedH1TitleRegex, "")
+    .replace(plainH1TitleRegex, "");
 
-  // Step 3: Remove italic summary if present (*summary*)
+  // Step 3: Remove legacy italic summary line if present (`*summary*`).
+  // The summary field has been removed from the publish flow, but old posts
+  // may still carry one in their on-chain metadata.
   const summaryRegex = /^\*.*?\*\n\n/;
   result = result.replace(summaryRegex, "");
 
