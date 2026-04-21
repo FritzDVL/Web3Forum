@@ -14,11 +14,8 @@ const TESTNET_ADMIN_USER_ADDRESS: Address = "0xaa4C60b784E2b3E485035399bF1b1aBDe
 const TESTNET_LENS_CONTRACT_GROUP_MANAGER_ADDRESS: Address = "0xd12E1aD028d550F85F2a8d9130C46dB77A6A0a41";
 
 // URLs
-// Allow per-environment override via NEXT_PUBLIC_APP_URL (e.g. http://localhost:5000
-// for local dev, your Replit preview URL for staging, https://lensforum.xyz for prod).
-// Falls back to the hard-coded defaults below if the env var isn't set.
 const MAINNET_APP_URL = "https://lensforum.xyz";
-const TESTNET_APP_URL = "http://localhost:5000";
+const TESTNET_APP_URL = "http://localhost:3000";
 
 const env = getCurrentEnv();
 const isTestnet = env === Env.TESTNET;
@@ -30,8 +27,7 @@ export const LENS_CONTRACT_GROUP_MANAGER: Address = isTestnet
   ? TESTNET_LENS_CONTRACT_GROUP_MANAGER_ADDRESS
   : MAINNET_LENS_CONTRACT_GROUP_MANAGER_ADDRESS;
 
-export const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL || (isTestnet ? TESTNET_APP_URL : MAINNET_APP_URL);
+export const APP_URL = isTestnet ? TESTNET_APP_URL : MAINNET_APP_URL;
 
 // Common URLs
 export const HEY_URL = "https://hey.xyz/";
