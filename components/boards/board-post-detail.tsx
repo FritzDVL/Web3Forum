@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/auth-store";
+import { useSessionClient } from "@lens-protocol/react";
+import { useWalletClient } from "wagmi";
+import { publishForumReplyToLens } from "@/lib/services/forum/publish-reply";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { formatDistanceToNow } from "date-fns";
@@ -20,10 +24,50 @@ interface BoardPostDetailProps {
 
 export function BoardPostDetail({ post, replies }: BoardPostDetailProps) {
   const router = useRouter();
+  const { account } = useAuthStore();
+  const sessionClient = useSessionClient();
+  const walletClient = useWalletClient();
+  // Track which replies we've already auto-retried this session so we don't
+  // re-spam the wallet popup on every poll tick.
+  const retriedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     fetch(`/api/posts/${post.id}/view`, { method: "POST" }).catch(() => {});
   }, [post.id]);
+
+  // Auto-retry: if the parent thread is now confirmed and there are pending
+  // replies authored by the current user that never got their Lens publish
+  // (no contentUri yet), kick off the publish now.
+  useEffect(() => {
+    if (post.publishStatus !== "confirmed" || !post.lensPostId) return;
+    if (!account?.address || !sessionClient.data || !walletClient.data) return;
+
+    const myStuckReplies = replies.filter(
+      (r) =>
+        r.publishStatus === "pending" &&
+        !r.contentUri &&
+        r.authorAddress.toLowerCase() === account.address.toLowerCase() &&
+        !retriedRef.current.has(r.id),
+    );
+
+    for (const reply of myStuckReplies) {
+      retriedRef.current.add(reply.id);
+      console.log(`[ReplyRetry] auto-retrying reply ${reply.id}`);
+      publishForumReplyToLens(
+        reply.id,
+        {
+          threadId: post.id,
+          contentMarkdown: reply.contentMarkdown || "",
+          contentJson: reply.contentJson,
+          authorAddress: account.address,
+        },
+        sessionClient.data,
+        walletClient.data,
+      ).catch((err) => {
+        console.error(`[ReplyRetry] failed for ${reply.id}:`, err);
+      });
+    }
+  }, [post.publishStatus, post.lensPostId, post.id, replies, account, sessionClient.data, walletClient.data]);
 
   // Poll for status updates while anything is still pending. As soon as Lens
   // confirms in the background, router.refresh() re-fetches server data and
@@ -97,7 +141,7 @@ export function BoardPostDetail({ post, replies }: BoardPostDetailProps) {
       {/* Reply box */}
       {!post.isLocked && (
         <div className="mt-6">
-          <BoardReplyBox postId={post.lensPostId || post.id} threadId={post.id} />
+          <BoardReplyBox postId={post.lensPostId || post.id} threadId={post.id} threadStatus={post.publishStatus} />
         </div>
       )}
     </div>

@@ -78,14 +78,15 @@ export async function publishForumReplyToLens(
   params: PublishForumReplyParams,
   sessionClient: SessionClient,
   walletClient: WalletClient,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; retryable?: boolean }> {
   try {
     const thread = await fetchForumThreadById(params.threadId);
-    if (!thread || !thread.lens_post_id) {
-      // Parent thread isn't on-chain yet. Mark this reply as failed so the
-      // status badge stops showing "Publishing..." forever and the user can retry.
-      try { await updateForumReplyStatus(replyId, "failed"); } catch {}
-      return { success: false, error: "Thread not on-chain yet" };
+    if (!thread) return { success: false, error: "Thread not found" };
+    if (!thread.lens_post_id) {
+      // Parent thread isn't on-chain yet. Leave this reply as `pending` and
+      // tell the caller it's retryable — the client should re-attempt once
+      // the parent thread's status flips to `confirmed`.
+      return { success: false, error: "Thread not on-chain yet", retryable: true };
     }
 
     const reply = await fetchForumReplyById(replyId);

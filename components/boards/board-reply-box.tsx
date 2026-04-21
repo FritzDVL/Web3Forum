@@ -16,9 +16,11 @@ import { MessageCircle } from "lucide-react";
 interface BoardReplyBoxProps {
   postId: string;
   threadId: string;
+  /** Parent thread publish status — used to surface a helpful note if it's still pending. */
+  threadStatus?: "pending" | "confirmed" | "failed";
 }
 
-export function BoardReplyBox({ postId, threadId }: BoardReplyBoxProps) {
+export function BoardReplyBox({ postId, threadId, threadStatus }: BoardReplyBoxProps) {
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
@@ -53,7 +55,11 @@ export function BoardReplyBox({ postId, threadId }: BoardReplyBoxProps) {
 
       // Step 2: Fire Lens publish in the BACKGROUND. Don't wait — the user
       // sees the reply instantly via Supabase; the badge will update when Lens confirms.
-      if (sessionClient.data && walletClient.data) {
+      if (!sessionClient.data) {
+        toast.info("Reply saved. Sign in to Lens to publish on-chain.");
+      } else if (!walletClient.data) {
+        toast.info("Reply saved. Connect your wallet to publish on-chain.");
+      } else {
         publishForumReplyToLens(
           saveResult.replyId,
           {
@@ -66,18 +72,24 @@ export function BoardReplyBox({ postId, threadId }: BoardReplyBoxProps) {
           walletClient.data,
         )
           .then((res) => {
-            if (res.success) toast.success("Reply published on-chain ✓");
-            else toast.info("Reply saved. On-chain publish can be retried.");
+            if (res.success) {
+              toast.success("Reply published on-chain ✓");
+            } else if (res.retryable) {
+              // Parent thread still confirming. Reply stays pending; the
+              // detail page poll will pick it up and re-publish once the
+              // parent confirms.
+              toast.info(
+                "Reply saved. Will publish to Lens once the original post finishes confirming.",
+              );
+            } else {
+              console.error("[Reply] Lens publish failed:", res.error);
+              toast.error(`On-chain publish failed: ${res.error || "unknown error"}`);
+            }
           })
           .catch((err) => {
             console.error("[Reply] Lens publish error:", err);
-            toast.info("Reply saved. On-chain publish can be retried.");
+            toast.error(`On-chain publish error: ${err?.message || "unknown"}`);
           });
-      } else {
-        // No wallet → mark reply as failed so the badge shows "Off-chain"
-        // and the polling on the detail page can stop.
-        updateForumReplyStatus(saveResult.replyId, "failed").catch(() => {});
-        toast.info("Wallet not connected — reply saved off-chain only.");
       }
 
       setContent("");
@@ -110,6 +122,13 @@ export function BoardReplyBox({ postId, threadId }: BoardReplyBoxProps) {
         </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1 space-y-3">
+        {threadStatus === "pending" && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-300">
+            The original post is still confirming on-chain. Your reply will be
+            saved immediately and published to Lens automatically once the
+            parent post finishes.
+          </div>
+        )}
         <TextEditor key={editorKey} onChange={setContent} />
         <div className="flex justify-end">
           <Button
