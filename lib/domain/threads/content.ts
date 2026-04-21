@@ -7,11 +7,18 @@ export const THREAD_CONTENT_PREFIX = "";
 
 export const formatThreadArticleContent = (
   content: string,
-  _threadUrl: string,
+  threadUrl: string,
   title?: string,
   summary?: string,
 ): string => {
-  const titleSection = title ? `# **${title}**\n\n` : "";
+  // If we have both a title and a thread URL, wrap the title in a markdown
+  // link so the post is clickable when rendered by other Lens apps
+  // (Hey, Fountain, etc.). Falls back to plain bold if no URL.
+  const titleSection = title
+    ? threadUrl
+      ? `# [**${title}**](${threadUrl})\n\n`
+      : `# **${title}**\n\n`
+    : "";
   const summarySection = summary ? `*${summary}*\n\n` : "";
   return `${titleSection}${summarySection}${content}`;
 };
@@ -26,9 +33,11 @@ export const stripThreadArticleFormatting = (content: string): string => {
   );
   result = result.replace(prefixRegex, "");
 
-  // Step 2: Remove H1 bold title if present (# **title**)
-  const titleRegex = /^# \*\*.*?\*\*\n\n/;
-  result = result.replace(titleRegex, "");
+  // Step 2: Remove H1 title if present. Matches both legacy plain-bold form
+  // (`# **title**`) and the linked form (`# [**title**](url)`).
+  const linkedTitleRegex = /^# \[\*\*.*?\*\*\]\([^)]*\)\n\n/;
+  const plainTitleRegex = /^# \*\*.*?\*\*\n\n/;
+  result = result.replace(linkedTitleRegex, "").replace(plainTitleRegex, "");
 
   // Step 3: Remove italic summary if present (*summary*)
   const summaryRegex = /^\*.*?\*\n\n/;
