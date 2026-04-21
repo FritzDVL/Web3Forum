@@ -1,0 +1,126 @@
+root@srv1133784:~# # Confirm what's serving forum.societyprotocol.io right now
+cat /etc/nginx/sites-available/web3forum
+
+# Confirm what fountain process is and where it lives
+pm2 show fountain | head -30
+ls -la /var/www/Web3Forum
+
+# Check pnpm availability (we'll need it)
+which pnpm corepack
+node -v && corepack -v 2>/dev/null
+
+# Confirm cert paths
+ls /etc/letsencrypt/live/forum.societyprotocol.io/
+
+# DNS check from the VPS itself
+dig +short forum.societyprotocol.io A
+
+# Make sure the cron / systemd timer for cert renewal is in place
+systemctl list-timers | grep -i certbot
+server {
+    server_name forum.societyprotocol.io;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/forum.societyprotocol.io/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/forum.societyprotocol.io/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+server {
+    if ($host = forum.societyprotocol.io) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    server_name forum.societyprotocol.io;
+    listen 80;
+    return 404; # managed by Certbot
+
+
+} Describing process with id 2 - name fountain 
+┌───────────────────┬────────────────────────────────────┐
+│ status            │ online                             │
+│ name              │ fountain                           │
+│ namespace         │ default                            │
+│ version           │ N/A                                │
+│ restarts          │ 3                                  │
+│ uptime            │ 10D                                │
+│ script path       │ /root/.bun/bin/bun                 │
+│ script args       │ run start                          │
+│ error log path    │ /root/.pm2/logs/fountain-error.log │
+│ out log path      │ /root/.pm2/logs/fountain-out.log   │
+│ pid path          │ /root/.pm2/pids/fountain-2.pid     │
+│ interpreter       │ none                               │
+│ interpreter args  │ N/A                                │
+│ script id         │ 2                                  │
+│ exec cwd          │ /opt/fountainFork                  │
+│ exec mode         │ fork_mode                          │
+│ node.js version   │ N/A                                │
+│ node env          │ N/A                                │
+│ watch & reload    │ ✘                                  │
+│ unstable restarts │ 0                                  │
+│ created at        │ 2026-04-10T22:46:47.509Z           │
+└───────────────────┴────────────────────────────────────┘
+ Divergent env variables from local env 
+┌────────────────┬────────────────────────────────────┐
+│ PWD            │ /opt/fountainFork                  │
+│ SSH_CONNECTION │ 169.254.0.1 38492 72.61.119.100 22 │
+│ XDG_SESSION_ID │ 873                                │
+│ SSH_CLIENT     │ 169.254.0.1 38492 22               │
+total 1412
+drwxr-xr-x  21 root root   4096 Mar 20 16:04 .
+drwxr-xr-x   4 root root   4096 Mar  3 11:13 ..
+-rw-r--r--   1 root root    563 Mar  3 10:27 .env
+-rw-r--r--   1 root root    306 Mar  3 10:24 .env.example
+-rw-r--r--   1 root root    261 Mar  3 10:24 .eslintrc.json
+drwxr-xr-x   8 root root   4096 Mar 20 16:04 .git
+drwxr-xr-x   2 root root   4096 Mar  3 10:24 .github
+-rw-r--r--   1 root root    337 Mar  3 10:24 .gitignore
+drwxr-xr-x   6 root root   4096 Mar 20 16:04 .kiro
+drwxr-xr-x   6 root root   4096 Mar 20 16:05 .next
+-rw-r--r--   1 root root     59 Mar  3 10:24 .prettierignore
+-rw-r--r--   1 root root    360 Mar  3 10:24 .prettierrc.js
+drwxr-xr-x   2 root root   4096 Mar  3 10:24 .vscode
+-rw-r--r--   1 root root  64283 Mar  3 10:24 LensForumPrimitives.png
+drwxr-xr-x   2 root root   4096 Mar 20 16:04 MyDataSource
+drwxr-xr-x  13 root root   4096 Mar 20 16:04 app
+drwxr-xr-x  20 root root   4096 Mar 20 16:04 components
+-rw-r--r--   1 root root    444 Mar  3 10:24 components.json
+drwxr-xr-x   2 root root   4096 Mar  3 10:24 config
+drwxr-xr-x   2 root root   4096 Mar  3 10:24 fragments
+drwxr-xr-x  16 root root   4096 Mar 20 16:04 hooks
+drwxr-xr-x   7 root root   4096 Mar  3 10:24 lib
+-rw-r--r--   1 root root    228 Mar  3 10:52 next-env.d.ts
+-rw-r--r--   1 root root   1072 Mar  3 10:24 next.config.mjs
+drwxr-xr-x 813 root root  32768 Mar 20 16:04 node_modules
+-rw-r--r--   1 root root 727209 Mar 20 16:04 package-lock.json
+-rw-r--r--   1 root root   4132 Mar  3 10:24 package.json
+-rw-r--r--   1 root root 467129 Mar  3 10:24 pnpm-lock.yaml
+-rw-r--r--   1 root root     36 Mar  3 10:24 pnpm-workspace.yaml
+-rw-r--r--   1 root root    135 Mar  3 10:24 postcss.config.mjs
+drwxr-xr-x   2 root root   4096 Mar  3 10:24 public
+drwxr-xr-x   2 root root   4096 Mar  3 10:24 scripts
+drwxr-xr-x   2 root root   4096 Mar  3 10:24 stores
+drwxr-xr-x   2 root root   4096 Mar  3 10:24 styles
+drwxr-xr-x   3 root root   4096 Mar  3 10:24 supabase
+-rw-r--r--   1 root root   2899 Mar  3 10:24 tailwind.config.ts
+-rw-r--r--   1 root root    595 Mar  3 10:24 tsconfig.json
+drwxr-xr-x   2 root root   4096 Mar  3 10:24 types
+/usr/bin/corepack
+v20.20.2
+0.34.6
+README  cert.pem  chain.pem  fullchain.pem  privkey.pem
+72.61.119.100
+Tue 2026-04-21 23:58:02 UTC           10h Tue 2026-04-21 02:13:06 UTC       11h ago certbot.timer                  certbot.service
+root@srv1133784:~# 
