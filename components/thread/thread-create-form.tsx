@@ -66,19 +66,6 @@ export function ThreadCreateForm({ community }: ThreadCreateFormProps) {
               required
             />
           </div>
-          {/* Summary */}
-          <div className="space-y-2">
-            <Label htmlFor="summary" className="text-sm font-medium text-foreground">
-              Summary
-            </Label>
-            <Input
-              id="summary"
-              value={formData.summary}
-              onChange={e => handleChange("summary", e.target.value)}
-              placeholder="Brief description (max 100 chars)"
-              maxLength={100}
-            />
-          </div>
           {/* Content Editor */}
           <div className="space-y-2">
             <Label htmlFor="content" className="text-sm font-medium text-foreground">
