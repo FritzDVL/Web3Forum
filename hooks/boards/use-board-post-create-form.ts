@@ -2,11 +2,29 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTagsInput } from "@/hooks/forms/use-tags-input";
 import { ForumBoard } from "@/lib/domain/forum/types";
-import { saveForumThread, publishForumThreadToLens } from "@/lib/services/forum/publish-thread";
+import { saveForumThread } from "@/lib/services/forum/publish-thread";
 import { useAuthStore } from "@/stores/auth-store";
 import { useSessionClient } from "@lens-protocol/react";
 import { toast } from "sonner";
 import { useWalletClient } from "wagmi";
+
+const AUTO_PUBLISH_KEY_PREFIX = "lensforum:autopublish:";
+
+interface AutoPublishPayload {
+  title: string;
+  contentMarkdown: string;
+  contentJson: any;
+  authorAddress: string;
+  boardSlug: string;
+  slug: string;
+  tags?: string[];
+}
+
+function stashAutoPublish(threadId: string, payload: AutoPublishPayload) {
+  try {
+    sessionStorage.setItem(AUTO_PUBLISH_KEY_PREFIX + threadId, JSON.stringify(payload));
+  } catch {}
+}
 
 interface FormData {
   title: string;
@@ -97,40 +115,23 @@ export function useBoardPostCreateForm({ board }: { board: ForumBoard }) {
 
       if (!saveResult.success) throw new Error(saveResult.error || "Failed to save post");
 
-      toast.success("Post created! Publishing on-chain in background...", { id: loadingToast });
+      toast.success("Post saved! Opening post page to publish on-chain...", { id: loadingToast });
 
-      // Step 2: Fire Lens publish in the BACKGROUND. Do NOT await.
-      // The wallet popup will appear on the destination page; the status
-      // badge there will flip from "Publishing..." to "✓ On-chain" when done.
-      publishForumThreadToLens(
-        saveResult.threadId!,
-        {
-          title: formData.title,
-          summary: "",
-          contentMarkdown: formData.content,
-          contentJson: null,
-          authorAddress: account.address,
-          boardSlug: board.slug,
-          slug: saveResult.slug!,
-          tags: tags.length > 0 ? tags : undefined,
-        },
-        sessionClient.data,
-        walletClient.data,
-      )
-        .then((lensResult) => {
-          console.log("[CreatePost] Lens result:", lensResult);
-          if (lensResult.success) {
-            toast.success("Published on-chain ✓");
-          } else {
-            toast.info("Post saved. On-chain publish can be retried later.");
-          }
-        })
-        .catch((err) => {
-          console.error("[CreatePost] Lens publish error:", err);
-          toast.info("Post saved. On-chain publish can be retried later.");
-        });
+      // Stash the publish payload in sessionStorage. The post detail page
+      // will read this on mount and run the Lens publish from there. This
+      // avoids the orphaned-promise problem where running publish from the
+      // create form (which unmounts on navigation) loses the wallet flow
+      // and the follow-up Supabase writes for content_uri / lens_post_id.
+      stashAutoPublish(saveResult.threadId!, {
+        title: formData.title,
+        contentMarkdown: formData.content,
+        contentJson: null,
+        authorAddress: account.address,
+        boardSlug: board.slug,
+        slug: saveResult.slug!,
+        tags: tags.length > 0 ? tags : undefined,
+      });
 
-      // Redirect immediately (soft navigation) so the in-flight Lens promise above keeps running.
       router.push(`/boards/${board.slug}/post/${saveResult.slug || saveResult.threadId}`);
     } catch (error) {
       toast.error("Failed to create post", {
